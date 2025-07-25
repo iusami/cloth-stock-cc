@@ -157,8 +157,8 @@ class ClothRepositoryImpl(
      */
     private fun validateClothItem(clothItem: ClothItem) {
         val validationResult = clothItem.validate()
-        if (!validationResult.isValid) {
-            throw IllegalArgumentException("バリデーションエラー: ${validationResult.errors.joinToString(", ")}")
+        if (!validationResult.isSuccess()) {
+            throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")
         }
     }
 }
