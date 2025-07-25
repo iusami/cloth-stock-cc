@@ -39,8 +39,9 @@ object DatabasePerformanceMonitor {
         operationName: String,
         operation: suspend () -> T
     ): T {
+        lateinit var result: T
         val executionTime = measureTimeMillis {
-            return operation()
+            result = operation()
         }
         
         recordQueryExecution(operationName, executionTime)
@@ -49,7 +50,7 @@ object DatabasePerformanceMonitor {
             Log.w(TAG, "遅いクエリ検出: $operationName (${executionTime}ms)")
         }
         
-        return operation()
+        return result
     }
     
     /**
