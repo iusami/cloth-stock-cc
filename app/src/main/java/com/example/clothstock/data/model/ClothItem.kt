@@ -59,6 +59,12 @@ data class ClothItem(
     
     /**
      * バリデーション実行（Validatableインターフェース実装）
+     * 
+     * ClothItemの全フィールドの整合性をチェックする
+     * - imagePath: 空文字やブランクでないことを確認
+     * - tagData: 埋め込まれたTagDataのバリデーション結果を使用
+     * 
+     * @return ValidationResult バリデーション結果（成功時はSuccess、失敗時はError）
      */
     override fun validate(): ValidationResult {
         return when {

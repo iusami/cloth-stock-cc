@@ -171,11 +171,14 @@ class ClothRepositoryImpl(
     /**
      * ClothItemのバリデーションを実行
      * 
-     * @param clothItem バリデーション対象のアイテム
+     * Validatableインターフェースで定義されたvalidate()メソッドを使用して
+     * ClothItemとその埋め込まれたTagDataの整合性をチェックする
+     * 
+     * @param clothItem バリデーション対象のアイテム（Validatableを実装）
      * @throws IllegalArgumentException バリデーションエラーの場合
      */
     private fun validateClothItem(clothItem: ClothItem) {
-        val validationResult = clothItem.validate()
+        val validationResult = clothItem.validate() // Validatable.validate()を呼び出し
         if (!validationResult.isSuccess()) {
             throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")
         }
