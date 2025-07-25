@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- カメラ機能に必要な権限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- 写真保存のためのストレージ権限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="32" />
+    
+    <!-- Android 13 (API 33) 以降の画像アクセス権限 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- カメラハードウェアの要求 -->
+    <uses-feature 
+        android:name="android.hardware.camera"
+        android:required="true" />
+    
+    <!-- オートフォーカス機能 -->
+    <uses-feature 
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ClothStock"
+        tools:targetApi="31">
+        
+        <!-- メインアクティビティ -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ClothStock">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <!-- FileProviderの設定（カメラで撮影した写真の一時保存用） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        
+    </application>
+
+</manifest>
