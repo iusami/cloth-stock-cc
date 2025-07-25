@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- カメラで撮影した写真の一時保存パス -->
+    <files-path name="images" path="images/" />
+    <!-- アプリケーション内部ストレージの画像フォルダ -->
+    <cache-path name="image_cache" path="images/" />
+</paths>

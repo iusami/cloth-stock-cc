@@ -1,0 +1,31 @@
+<!-- アプリケーションの文字列リソース -->
+<resources>
+    <!-- アプリケーション名 -->
+    <string name="app_name">ClothStock</string>
+    
+    <!-- メイン画面 -->
+    <string name="main_title">衣服管理</string>
+    <string name="button_camera">写真を撮る</string>
+    <string name="button_gallery">ギャラリー</string>
+    
+    <!-- カメラ機能 -->
+    <string name="camera_capture">撮影</string>
+    <string name="camera_permission_denied">カメラの権限が必要です</string>
+    <string name="camera_error">カメラエラーが発生しました</string>
+    
+    <!-- タグ編集 -->
+    <string name="tag_size">サイズ</string>
+    <string name="tag_color">色</string>
+    <string name="tag_category">カテゴリ</string>
+    <string name="tag_save">保存</string>
+    <string name="tag_cancel">キャンセル</string>
+    
+    <!-- エラーメッセージ -->
+    <string name="error_invalid_size">サイズは60～160の範囲で入力してください</string>
+    <string name="error_required_field">必須項目です</string>
+    
+    <!-- 共通 -->
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    <string name="delete">削除</string>
+</resources>
