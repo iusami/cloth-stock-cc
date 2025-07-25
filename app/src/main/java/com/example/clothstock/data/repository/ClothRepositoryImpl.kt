@@ -149,10 +149,14 @@ class ClothRepositoryImpl(
 
     override suspend fun optimizeDatabase() {
         try {
+            // データベースの不要な領域を削除し、ファイルサイズを最適化
             clothDao.vacuum()
+            
+            // テーブル統計情報を更新し、クエリプランナーの性能を向上
             clothDao.analyze()
         } catch (e: Exception) {
-            // ログ出力やエラー通知を行う（実装は後で追加）
+            // データベース最適化操作の失敗をログ出力し、上位層に例外を伝播
+            // TODO: 適切なログ出力システムを実装後に詳細ログを追加
             throw e
         }
     }
