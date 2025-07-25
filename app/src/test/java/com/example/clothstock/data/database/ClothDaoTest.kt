@@ -83,7 +83,7 @@ class ClothDaoTest {
     @Test
     fun `insert_複数のClothItem_正しく保存される`() = runTest {
         // Given
-        val item1 = testClothItem.copy(imagePath = "/storage/test/image1.jpg")
+        val item1 = testClothItem // 既にimage1.jpgパスを持っている
         val item2 = testClothItem.copy(imagePath = "/storage/test/image2.jpg")
 
         // When
