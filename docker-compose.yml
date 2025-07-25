@@ -1,0 +1,40 @@
+# cloth-stock Android アプリ開発環境
+# Docker Compose 設定ファイル
+
+services:
+  android-dev:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: cloth-stock-android-dev
+    volumes:
+      # ソースコードのマウント
+      - .:/workspace
+      # Gradleキャッシュの永続化（パフォーマンス向上）
+      - gradle-cache:/home/android/.gradle
+      # Android SDKキャッシュの永続化
+      - android-sdk-cache:/opt/android-sdk
+    environment:
+      # Android SDK関連の環境変数
+      - ANDROID_HOME=/opt/android-sdk
+      - ANDROID_SDK_ROOT=/opt/android-sdk
+      # Gradle最適化設定
+      - GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
+      # JVM設定（メモリ最適化）
+      - JAVA_OPTS=-Xmx4g -XX:+UseG1GC
+    working_dir: /workspace
+    # コンテナをバックグラウンドで実行し続ける
+    stdin_open: true
+    tty: true
+    # ポート設定（将来のエミュレータやサーバー用）
+    ports:
+      - "5554:5554"  # Android エミュレータ
+      - "5555:5555"  # Android エミュレータ ADB
+      - "8080:8080"  # 開発サーバー用
+
+# 名前付きボリューム定義
+volumes:
+  gradle-cache:
+    driver: local
+  android-sdk-cache:
+    driver: local
