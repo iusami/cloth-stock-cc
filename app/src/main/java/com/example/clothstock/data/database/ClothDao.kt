@@ -3,6 +3,9 @@ package com.example.clothstock.data.database
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.model.ClothItem
+import com.example.clothstock.data.model.CategoryCount
+import com.example.clothstock.data.model.ColorCount
+import com.example.clothstock.data.model.SizeCount
 
 /**
  * ClothItem のデータアクセスオブジェクト (DAO)
@@ -164,26 +167,26 @@ interface ClothDao {
     /**
      * カテゴリ別のアイテム数を取得
      * 
-     * @return カテゴリ別のアイテム数マップ
+     * @return カテゴリ別のアイテム数リスト
      */
     @Query("SELECT category, COUNT(*) as count FROM cloth_items GROUP BY category")
-    suspend fun getItemCountByCategory(): Map<String, Int>
+    suspend fun getItemCountByCategory(): List<CategoryCount>
 
     /**
      * 色別のアイテム数を取得
      * 
-     * @return 色別のアイテム数マップ
+     * @return 色別のアイテム数リスト
      */
     @Query("SELECT color, COUNT(*) as count FROM cloth_items GROUP BY color")
-    suspend fun getItemCountByColor(): Map<String, Int>
+    suspend fun getItemCountByColor(): List<ColorCount>
 
     /**
      * サイズ別のアイテム数を取得
      * 
-     * @return サイズ別のアイテム数マップ
+     * @return サイズ別のアイテム数リスト
      */
     @Query("SELECT size, COUNT(*) as count FROM cloth_items GROUP BY size ORDER BY size")
-    suspend fun getItemCountBySize(): Map<Int, Int>
+    suspend fun getItemCountBySize(): List<SizeCount>
 
     /**
      * 最近追加されたアイテムを取得

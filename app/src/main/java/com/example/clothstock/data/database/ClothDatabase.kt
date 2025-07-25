@@ -166,8 +166,8 @@ abstract class ClothDatabase : RoomDatabase() {
         val dao = clothDao()
         return DatabaseStats(
             totalItems = dao.getItemCount(),
-            categoryCounts = emptyMap(), // 実装予定
-            sizeCounts = emptyMap()       // 実装予定
+            categoryCounts = dao.getItemCountByCategory().associate { it.category to it.count },
+            sizeCounts = dao.getItemCountBySize().associate { it.size to it.count }
         )
     }
 
