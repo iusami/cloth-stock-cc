@@ -51,7 +51,6 @@ abstract class ClothDatabase : RoomDatabase() {
                     ClothDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addTypeConverter(Converters())
                     .addCallback(DatabaseCallback())
                     .build()
                 
@@ -71,7 +70,6 @@ abstract class ClothDatabase : RoomDatabase() {
                 context.applicationContext,
                 ClothDatabase::class.java
             )
-                .addTypeConverter(Converters())
                 .allowMainThreadQueries() // テスト用のみ
                 .build()
         }
