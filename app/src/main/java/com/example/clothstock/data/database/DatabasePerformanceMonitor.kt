@@ -54,7 +54,8 @@ object DatabasePerformanceMonitor {
     }
     
     /**
-     * Flowの各要素に対して実行時間を測定
+     * Flowの各要素に対してログ出力のみ実行
+     * 注意: Flowは非同期でコールドストリームのため、正確な実行時間測定は困難
      */
     fun <T> measureFlow(
         operationName: String,
@@ -64,10 +65,7 @@ object DatabasePerformanceMonitor {
             .onEach { 
                 Log.d(TAG, "Flow データ取得: $operationName")
             }
-            .map { data ->
-                recordQueryExecution("${operationName}_flow", 0) // Flowは非同期なので時間測定困難
-                data
-            }
+            // 実行時間の記録は削除（不正確な統計データを避けるため）
     }
     
     /**
