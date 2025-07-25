@@ -125,9 +125,24 @@ class ClothRepositoryImpl(
     override suspend fun checkDataIntegrity(): Boolean {
         return try {
             val integrityResults = clothDao.checkIntegrity()
-            // "ok" が返されれば整合性に問題なし
-            integrityResults.isNotEmpty() && integrityResults[0].equals("ok", ignoreCase = true)
+            // SQLiteのPRAGMA integrity_checkは問題がない場合"ok"を返す
+            // 問題がある場合は詳細エラーメッセージのリストを返す
+            when {
+                integrityResults.isEmpty() -> {
+                    // 空のリストは予期しない状態
+                    false
+                }
+                integrityResults.size == 1 && integrityResults[0].equals("ok", ignoreCase = true) -> {
+                    // 正常状態
+                    true
+                }
+                else -> {
+                    // エラーメッセージが含まれている場合は整合性に問題あり
+                    false
+                }
+            }
         } catch (e: Exception) {
+            // データベースアクセスエラーの場合は整合性チェック失敗とみなす
             false
         }
     }
