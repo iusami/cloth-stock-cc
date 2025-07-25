@@ -51,13 +51,20 @@ data class ClothItem(
         }
         
         // TagDataの基本検証（詳細はTagData内で実施）
-        require(tagData.isValid()) { 
-            "無効なタグデータです: ${tagData.getValidationError()}" 
+        val tagValidation = tagData.validate()
+        require(tagValidation.isSuccess()) { 
+            "無効なタグデータです: ${tagValidation.getErrorMessage()}" 
         }
     }
     
     /**
      * バリデーション実行（Validatableインターフェース実装）
+     * 
+     * ClothItemの全フィールドの整合性をチェックする
+     * - imagePath: 空文字やブランクでないことを確認
+     * - tagData: 埋め込まれたTagDataのバリデーション結果を使用
+     * 
+     * @return ValidationResult バリデーション結果（成功時はSuccess、失敗時はError）
      */
     override fun validate(): ValidationResult {
         return when {
@@ -92,8 +99,9 @@ data class ClothItem(
      * タグ情報を更新した新しいインスタンスを作成
      */
     fun withUpdatedTag(newTagData: TagData): ClothItem {
-        require(newTagData.isValid()) { 
-            "無効なタグデータです: ${newTagData.getValidationError()}" 
+        val tagValidation = newTagData.validate()
+        require(tagValidation.isSuccess()) { 
+            "無効なタグデータです: ${tagValidation.getErrorMessage()}" 
         }
         
         return copy(tagData = newTagData)
