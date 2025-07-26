@@ -2,6 +2,7 @@ package com.example.clothstock.ui.camera
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -260,8 +261,12 @@ class CameraViewModel : ViewModel() {
     /**
      * キャプチャ結果を設定（テスト用）
      * 
+     * このメソッドはユニットテストでのみ使用されることを想定している。
+     * 実際のアプリでは画像キャプチャ処理によって自動的に結果が設定される。
+     * 
      * @param result 設定するキャプチャ結果
      */
+    @VisibleForTesting
     fun setCaptureResult(result: CaptureResult) {
         _captureResult.value = result
     }
