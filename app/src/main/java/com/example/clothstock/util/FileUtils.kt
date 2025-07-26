@@ -65,7 +65,11 @@ object FileUtils {
             val freeSpace = filesDir.freeSpace
             freeSpace >= requiredBytes
         } catch (e: Exception) {
-            Log.w(TAG, "ストレージ容量チェック中にエラーが発生しました", e)
+            try {
+                Log.w(TAG, "ストレージ容量チェック中にエラーが発生しました", e)
+            } catch (logException: Exception) {
+                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
+            }
             false
         }
     }
@@ -93,7 +97,11 @@ object FileUtils {
             }
         } catch (e: Exception) {
             // ファイル削除エラーをログに記録（アプリの動作に影響しないため処理は継続）
-            Log.w(TAG, "ファイルクリーンアップ中にエラーが発生しました", e)
+            try {
+                Log.w(TAG, "ファイルクリーンアップ中にエラーが発生しました", e)
+            } catch (logException: Exception) {
+                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
+            }
         }
     }
     
@@ -138,7 +146,11 @@ object FileUtils {
                 ?.filter { it.isFile }
                 ?.sumOf { it.length() } ?: 0L
         } catch (e: Exception) {
-            Log.w(TAG, "ディレクトリサイズ計算中にエラーが発生しました", e)
+            try {
+                Log.w(TAG, "ディレクトリサイズ計算中にエラーが発生しました", e)
+            } catch (logException: Exception) {
+                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
+            }
             0L
         }
     }

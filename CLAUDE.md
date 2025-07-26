@@ -115,6 +115,8 @@ alias dandroid="docker compose exec android-dev"
 - Espressoを使用したUIテスト
 - 目標コードカバレッジ：80%以上
 
+**[CRITICAL]** コードを追加、変更した時にはunittest, linterが通ることを確認し、buildも成功することを確認する
+
 ## Playwright MCPについて
 Playwright MCP（Multi-Context Protocol）は、Playwrightを使用してブラウザの操作を自動化するためのプロトコルです。
 Playwright MCPを使用することで、ブラウザの操作をスクリプト化し、テストや自動化タスクを効率的に実行できます。
