@@ -13,6 +13,9 @@ import com.example.clothstock.util.FileUtils
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -69,16 +72,50 @@ class CameraViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-                cameraProvider = cameraProviderFuture.get()
+                cameraProvider = getCameraProviderAsync(context)
                 
                 setupCamera()
                 
                 _cameraState.value = CameraState.READY
                 isInitialized = true
                 
+                Log.d(TAG, "カメラの初期化が完了しました")
+                
             } catch (e: Exception) {
+                Log.e(TAG, "カメラの初期化中にエラーが発生しました", e)
                 handleCameraError(CameraError.INITIALIZATION_FAILED)
+            }
+        }
+    }
+
+    /**
+     * ProcessCameraProviderを非同期で取得
+     * 
+     * ListenableFutureを適切にコルーチンと統合して、ブロッキング呼び出しを回避する
+     * 
+     * @param context アプリケーションコンテキスト
+     * @return ProcessCameraProvider
+     */
+    private suspend fun getCameraProviderAsync(context: Context): ProcessCameraProvider {
+        return suspendCancellableCoroutine { continuation ->
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            
+            cameraProviderFuture.addListener({
+                try {
+                    val provider = cameraProviderFuture.get()
+                    continuation.resume(provider)
+                } catch (e: Exception) {
+                    continuation.resumeWithException(e)
+                }
+            }, cameraExecutor)
+            
+            // キャンセル時の処理
+            continuation.invokeOnCancellation {
+                try {
+                    cameraProviderFuture.cancel(true)
+                } catch (e: Exception) {
+                    Log.w(TAG, "CameraProviderFutureのキャンセル中にエラーが発生しました", e)
+                }
             }
         }
     }
