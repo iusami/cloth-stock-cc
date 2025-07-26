@@ -51,14 +51,14 @@ jobs:
       run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
       
     - name: Run unit tests
-      run: ./gradlew test --stacktrace
+      run: ./gradlew testDebugUnitTest --stacktrace
       
     - name: Generate test report
       uses: dorny/test-reporter@v1
       if: success() || failure()  # テスト失敗時もレポート生成
       with:
         name: Unit Tests Results
-        path: '**/build/test-results/test/TEST-*.xml'
+        path: '**/build/test-results/testDebugUnitTest/TEST-*.xml'
         reporter: java-junit
         fail-on-error: false
         
@@ -79,8 +79,8 @@ jobs:
       with:
         name: test-results-${{ github.sha }}
         path: |
-          **/build/test-results/test/
-          **/build/reports/tests/test/
+          **/build/test-results/testDebugUnitTest/
+          **/build/reports/tests/testDebugUnitTest/
         retention-days: 30
         
     - name: Upload build logs
@@ -137,7 +137,7 @@ jobs:
       uses: codecov/codecov-action@v4
       if: success()
       with:
-        file: '**/build/reports/coverage/test/debug/report.xml'
+        file: '**/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml'
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false  # カバレッジ失敗でもCIは継続
