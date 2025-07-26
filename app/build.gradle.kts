@@ -64,6 +64,55 @@ android {
     }
 }
 
+// Jacoco テストレポートタスクの設定
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*\$WhenMappings.*",
+        "**/*\$serializer.*",
+        "**/*MapperImpl*.*",
+        "**/*\$ViewInjector*.*",
+        "**/*\$ViewBinder*.*",
+        "**/BuildConfig.*",
+        "**/*Component*.*",
+        "**/*BR*.*",
+        "**/Manifest*.*",
+        "**/*\$Lambda$*.*",
+        "**/*Companion*.*",
+        "**/*Module*.*",
+        "**/*Dagger*.*",
+        "**/*Hilt*.*",
+        "**/*MembersInjector*.*",
+        "**/*_MembersInjector.class",
+        "**/*_Factory*.*",
+        "**/*_Provide*Factory*.*",
+        "**/*Extensions*.*"
+    )
+
+    val debugTree = fileTree("${buildDir}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    val mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(buildDir) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    })
+}
+
 dependencies {
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.12.0")

@@ -144,13 +144,13 @@ jobs:
       run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
       
     - name: Generate code coverage report
-      run: ./gradlew testDebugUnitTest jacocoTestReport --stacktrace
+      run: ./gradlew jacocoTestReport --stacktrace
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       if: success()
       with:
-        file: '**/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
+        file: 'app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false  # カバレッジ失敗でもCIは継続
