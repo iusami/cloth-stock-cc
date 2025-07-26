@@ -1,6 +1,7 @@
 package com.example.clothstock.ui.camera
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -23,6 +24,10 @@ import java.util.concurrent.Executors
  * MVVMパターンに従い、UIとビジネスロジックを分離
  */
 class CameraViewModel : ViewModel() {
+
+    companion object {
+        private const val TAG = "CameraViewModel"
+    }
 
     // ===== LiveData =====
     
@@ -80,27 +85,22 @@ class CameraViewModel : ViewModel() {
 
     /**
      * CameraXのUseCaseを設定
+     * 
+     * このメソッドはUseCaseオブジェクトの準備のみを行う。
+     * 実際のLifecycleOwnerへのバインドはbindToLifecycle()メソッドで実行される。
      */
     private fun setupCamera() {
-        val cameraProvider = this.cameraProvider ?: return
-
-        // プレビューの設定
-        preview = Preview.Builder().build()
-
-        // 画像キャプチャの設定
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .build()
-
-        // カメラセレクター（背面カメラを選択）
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
         try {
-            // 既存のUseCaseをアンバインド
-            cameraProvider.unbindAll()
+            // プレビューの設定
+            preview = Preview.Builder().build()
 
-            // 注意: 実際の実装ではlifecycleOwnerが設定された後にバインドする
-            // 現在はUseCaseの準備のみ行う
+            // 画像キャプチャの設定
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
+
+            // UseCaseオブジェクトの準備完了
+            // 実際のLifecycleOwnerへのバインドはbindToLifecycle()で実行される
             
         } catch (e: Exception) {
             handleCameraError(CameraError.INITIALIZATION_FAILED)
@@ -250,29 +250,51 @@ class CameraViewModel : ViewModel() {
     /**
      * LifecycleOwnerを設定してカメラをバインド
      * 
+     * カメラが初期化済みの場合のみバインドを実行する。
+     * 初期化されていない場合は、initializeCamera()を先に呼び出す必要がある。
+     * 
      * @param lifecycleOwner LifecycleOwner（通常はActivityまたはFragment）
      */
     fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         this.lifecycleOwner = lifecycleOwner
         
-        if (isInitialized && cameraProvider != null) {
-            try {
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                
-                // 既存のUseCaseをアンバインド
-                cameraProvider?.unbindAll()
-                
-                // 新しいUseCaseをバインド
-                camera = cameraProvider?.bindToLifecycle(
-                    lifecycleOwner,
-                    cameraSelector,
-                    preview,
-                    imageCapture
-                )
-                
-            } catch (e: Exception) {
-                handleCameraError(CameraError.INITIALIZATION_FAILED)
-            }
+        if (!isInitialized) {
+            Log.w(TAG, "カメラが初期化されていません。先にinitializeCamera()を呼び出してください。")
+            return
+        }
+        
+        val cameraProvider = this.cameraProvider
+        if (cameraProvider == null) {
+            Log.e(TAG, "CameraProviderが利用できません")
+            handleCameraError(CameraError.INITIALIZATION_FAILED)
+            return
+        }
+        
+        if (preview == null || imageCapture == null) {
+            Log.e(TAG, "UseCaseが準備されていません")
+            handleCameraError(CameraError.INITIALIZATION_FAILED)
+            return
+        }
+        
+        try {
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            
+            // 既存のUseCaseをアンバインド
+            cameraProvider.unbindAll()
+            
+            // 新しいUseCaseをバインド
+            camera = cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                cameraSelector,
+                preview,
+                imageCapture
+            )
+            
+            Log.d(TAG, "カメラのLifecycleバインドが完了しました")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "カメラのLifecycleバインド中にエラーが発生しました", e)
+            handleCameraError(CameraError.INITIALIZATION_FAILED)
         }
     }
 
