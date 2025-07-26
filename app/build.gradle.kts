@@ -94,8 +94,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 
-    // Permissions handling
-    implementation("androidx.activity:activity-result:1.2.3")
+    // Permissions handling (included in activity-ktx above)
 
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")
