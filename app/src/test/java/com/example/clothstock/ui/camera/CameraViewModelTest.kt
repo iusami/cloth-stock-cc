@@ -233,14 +233,14 @@ class CameraViewModelTest {
     // ===== ViewModel ライフサイクルテスト =====
 
     @Test
-    fun `onCleared_リソース解放_適切にクリーンアップ`() {
+    fun `releaseCamera_リソース解放_適切にクリーンアップ`() {
         // Given
         cameraViewModel.initializeCamera(mockContext)
 
         // When
-        cameraViewModel.onCleared()
+        cameraViewModel.releaseCamera()
 
         // Then
-        assertEquals("クリア後はIDLE状態になるべき", CameraState.IDLE, cameraViewModel.cameraState.value)
+        assertEquals("リソース解放後はIDLE状態になるべき", CameraState.IDLE, cameraViewModel.cameraState.value)
     }
 }
