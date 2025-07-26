@@ -2,6 +2,7 @@ package com.example.clothstock.util
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -15,6 +16,7 @@ import java.util.Locale
  */
 object FileUtils {
     
+    private const val TAG = "FileUtils"
     private const val IMAGES_DIRECTORY = "images"
     private const val AUTHORITY_SUFFIX = ".fileprovider"
     
@@ -63,6 +65,7 @@ object FileUtils {
             val freeSpace = filesDir.freeSpace
             freeSpace >= requiredBytes
         } catch (e: Exception) {
+            Log.w(TAG, "ストレージ容量チェック中にエラーが発生しました", e)
             false
         }
     }
@@ -89,7 +92,8 @@ object FileUtils {
                 file.delete()
             }
         } catch (e: Exception) {
-            // ファイル削除エラーは無視（ログ記録のみ）
+            // ファイル削除エラーをログに記録（アプリの動作に影響しないため処理は継続）
+            Log.w(TAG, "ファイルクリーンアップ中にエラーが発生しました", e)
         }
     }
     
@@ -134,6 +138,7 @@ object FileUtils {
                 ?.filter { it.isFile }
                 ?.sumOf { it.length() } ?: 0L
         } catch (e: Exception) {
+            Log.w(TAG, "ディレクトリサイズ計算中にエラーが発生しました", e)
             0L
         }
     }
