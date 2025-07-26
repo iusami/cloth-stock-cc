@@ -31,8 +31,7 @@ class FileUtilsTest {
 
     @Before
     fun setUp() {
-        // Context の設定
-        `when`(mockContext.packageName).thenReturn("com.example.clothstock")
+        // 共通的に使用されるContext設定のみを設定
         `when`(mockContext.filesDir).thenReturn(mockFilesDir)
     }
 
@@ -220,6 +219,9 @@ class FileUtilsTest {
 
     @Test
     fun `Context_パッケージ名_正しく設定される`() {
+        // Given
+        `when`(mockContext.packageName).thenReturn("com.example.clothstock")
+        
         // When
         val packageName = mockContext.packageName
 

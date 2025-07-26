@@ -62,6 +62,9 @@ class CameraViewModelTest {
         cameraViewModel.cameraState.observeForever(mockCameraStateObserver)
         cameraViewModel.captureResult.observeForever(mockCaptureResultObserver)
         cameraViewModel.cameraError.observeForever(mockErrorObserver)
+        
+        // setUp時の初期状態変更を記録から除外
+        reset(mockCameraStateObserver, mockCaptureResultObserver, mockErrorObserver)
     }
 
     // ===== 初期状態テスト =====
@@ -165,6 +168,10 @@ class CameraViewModelTest {
 
     @Test
     fun `releaseCamera_リソース解放_IDLE状態に戻る`() {
+        // Given - まずエラー状態などに変更しておく
+        cameraViewModel.handleCameraError(CameraError.HARDWARE_ERROR)
+        reset(mockCameraStateObserver) // 前の呼び出しをリセット
+        
         // When
         cameraViewModel.releaseCamera()
 
