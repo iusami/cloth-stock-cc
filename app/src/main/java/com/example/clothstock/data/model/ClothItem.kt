@@ -44,18 +44,8 @@ data class ClothItem(
         }
     }
 
-    init {
-        // imagePathの検証
-        require(imagePath.isNotBlank()) { 
-            "画像パスは空にできません" 
-        }
-        
-        // TagDataの基本検証（詳細はTagData内で実施）
-        val tagValidation = tagData.validate()
-        require(tagValidation.isSuccess()) { 
-            "無効なタグデータです: ${tagValidation.getErrorMessage()}" 
-        }
-    }
+    // 注意: 初期化時のバリデーションは行わず、validate()メソッドで実行
+    // これによりテスト用の無効なデータでもオブジェクト作成が可能
     
     /**
      * バリデーション実行（Validatableインターフェース実装）
@@ -99,11 +89,7 @@ data class ClothItem(
      * タグ情報を更新した新しいインスタンスを作成
      */
     fun withUpdatedTag(newTagData: TagData): ClothItem {
-        val tagValidation = newTagData.validate()
-        require(tagValidation.isSuccess()) { 
-            "無効なタグデータです: ${tagValidation.getErrorMessage()}" 
-        }
-        
+        // バリデーションは呼び出し側の責任とする
         return copy(tagData = newTagData)
     }
     

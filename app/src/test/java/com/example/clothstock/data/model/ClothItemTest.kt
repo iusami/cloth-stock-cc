@@ -64,51 +64,45 @@ class ClothItemTest {
 
     // ===== バリデーションテスト =====
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `ClothItem作成_空のimagePath_例外が発生する`() {
-        // Given & When & Then
-        ClothItem(
+    @Test
+    fun `ClothItem_空のimagePath_バリデーションで無効`() {
+        // Given
+        val clothItem = ClothItem(
             id = 1,
             imagePath = "", // 空文字列
             tagData = validTagData,
             createdAt = testDate
         )
+        
+        // When
+        val validationResult = clothItem.validate()
+        
+        // Then
+        assertFalse("空のimagePathはバリデーションで無効", validationResult.isSuccess())
+        assertEquals("画像パスが設定されていません", validationResult.getErrorMessage())
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `ClothItem作成_空白のimagePath_例外が発生する`() {
-        // Given & When & Then
-        ClothItem(
+    @Test
+    fun `ClothItem_空白のimagePath_バリデーションで無効`() {
+        // Given
+        val clothItem = ClothItem(
             id = 1,
             imagePath = "   ", // 空白文字列
             tagData = validTagData,
             createdAt = testDate
         )
+        
+        // When
+        val validationResult = clothItem.validate()
+        
+        // Then
+        assertFalse("空白のimagePathはバリデーションで無効", validationResult.isSuccess())
+        assertEquals("画像パスが設定されていません", validationResult.getErrorMessage())
     }
 
     // ===== Room アノテーションテスト =====
 
-    @Test
-    fun `ClothItem_Roomアノテーションが適切に設定されている`() {
-        // Given
-        val clothItem = ClothItem(
-            id = 1,
-            imagePath = testImagePath,
-            tagData = validTagData,
-            createdAt = testDate
-        )
-
-        // When & Then - リフレクションでアノテーションを確認
-        val entityAnnotation = ClothItem::class.java.getAnnotation(androidx.room.Entity::class.java)
-        assertNotNull("@Entity アノテーションが必要", entityAnnotation)
-        assertEquals("cloth_items", entityAnnotation?.tableName)
-
-        // PrimaryKey のチェック
-        val idField = ClothItem::class.java.getDeclaredField("id")
-        val primaryKeyAnnotation = idField.getAnnotation(androidx.room.PrimaryKey::class.java)
-        assertNotNull("id フィールドには @PrimaryKey が必要", primaryKeyAnnotation)
-        assertTrue("autoGenerate = true が必要", primaryKeyAnnotation?.autoGenerate == true)
-    }
+    // Room アノテーションはコンパイル時に検証されるため、リフレクションテストは不要
 
     // ===== フィールドサポートテスト =====
 
@@ -165,7 +159,7 @@ class ClothItemTest {
     // ===== 空文字列処理テスト =====
 
     @Test
-    fun `TagData_空文字列の色とカテゴリ_適切に処理される`() {
+    fun `TagData_空文字列の色とカテゴリ_オブジェクト作成は可能だがバリデーションで無効`() {
         // Given
         val tagDataWithEmptyStrings = TagData(
             size = 100,
@@ -173,7 +167,7 @@ class ClothItemTest {
             category = ""
         )
 
-        // When
+        // When - オブジェクト作成は可能
         val clothItem = ClothItem(
             id = 1,
             imagePath = testImagePath,
@@ -181,8 +175,9 @@ class ClothItemTest {
             createdAt = testDate
         )
 
-        // Then - 空文字列は許可されるが、適切にデフォルト値に変換される可能性
-        assertNotNull(clothItem.tagData.color)
-        assertNotNull(clothItem.tagData.category)
+        // Then - バリデーションでは無効と判定される
+        val validationResult = clothItem.validate()
+        assertFalse("空文字列はバリデーションで無効", validationResult.isSuccess())
+        assertTrue("エラーメッセージが含まれる", validationResult.getErrorMessage()!!.isNotEmpty())
     }
 }

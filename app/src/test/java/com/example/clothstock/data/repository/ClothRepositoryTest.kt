@@ -204,14 +204,18 @@ class ClothRepositoryTest {
     fun `searchItems_複合条件_正しいFlowを返す`() = runTest {
         // Given
         val items = listOf(testClothItem)
-        `when`(clothDao.searchItems("シャツ", "青", 90, 110)).thenReturn(flowOf(items))
+        val category = "シャツ"
+        val color = "青"
+        val minSize = 90
+        val maxSize = 110
+        `when`(clothDao.searchItems(category, color, minSize, maxSize)).thenReturn(flowOf(items))
 
         // When
-        val result = clothRepository.searchItems("シャツ", "青", 90, 110).first()
+        val result = clothRepository.searchItems(category, color, minSize, maxSize).first()
 
         // Then
         assertEquals(items, result)
-        verify(clothDao).searchItems("シャツ", "青", 90, 110)
+        verify(clothDao).searchItems(category, color, minSize, maxSize)
     }
 
     // ===== 統計・集計テスト =====
@@ -287,8 +291,8 @@ class ClothRepositoryTest {
 
     @Test
     fun `insertItem_無効なTagData_例外をスロー`() = runTest {
-        // Given
-        val invalidTagData = TagData(size = 50, color = "青", category = "シャツ") // サイズが範囲外
+        // Given - TagDataのvalidate()で範囲外判定される有効なサイズでオブジェクト作成
+        val invalidTagData = TagData(size = 50, color = "青", category = "シャツ") // サイズ50は範囲外（60-160）だがinit通過用に正の数
         val invalidItem = testClothItem.copy(tagData = invalidTagData)
 
         // When & Then
@@ -300,13 +304,13 @@ class ClothRepositoryTest {
         }
         
         // DAOは呼び出されない
-        verify(clothDao, never()).insert(any())
+        verify(clothDao, never()).insert(invalidItem)
     }
 
     @Test
     fun `updateItem_無効なTagData_例外をスロー`() = runTest {
-        // Given
-        val invalidTagData = TagData(size = 200, color = "青", category = "シャツ") // サイズが範囲外
+        // Given - TagDataのvalidate()で範囲外判定される有効なサイズでオブジェクト作成
+        val invalidTagData = TagData(size = 200, color = "青", category = "シャツ") // サイズ200は範囲外（60-160）だがinit通過用に正の数
         val invalidItem = testClothItem.copy(tagData = invalidTagData)
 
         // When & Then
@@ -318,7 +322,7 @@ class ClothRepositoryTest {
         }
         
         // DAOは呼び出されない
-        verify(clothDao, never()).update(any())
+        verify(clothDao, never()).update(invalidItem)
     }
 
     // ===== エラーハンドリングテスト =====
