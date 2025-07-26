@@ -6,7 +6,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -75,7 +75,7 @@ class CameraViewModelTest {
     // ===== カメラ初期化テスト =====
 
     @Test
-    fun `initializeCamera_正常初期化_READY状態になる`() = runBlockingTest(testDispatcher) {
+    fun `initializeCamera_正常初期化_READY状態になる`() = runTest {
         // When
         cameraViewModel.initializeCamera(mockContext)
 
@@ -85,7 +85,7 @@ class CameraViewModelTest {
     }
 
     @Test
-    fun `initializeCamera_既に初期化済み_重複初期化しない`() = runBlockingTest(testDispatcher) {
+    fun `initializeCamera_既に初期化済み_重複初期化しない`() = runTest {
         // Given
         cameraViewModel.initializeCamera(mockContext)
         reset(mockCameraStateObserver)
@@ -100,7 +100,7 @@ class CameraViewModelTest {
     // ===== 画像キャプチャテスト =====
 
     @Test
-    fun `captureImage_READY状態_キャプチャ実行`() = runBlockingTest(testDispatcher) {
+    fun `captureImage_READY状態_キャプチャ実行`() = runTest {
         // Given
         cameraViewModel.initializeCamera(mockContext)
         // ViewModelの状態をREADYに設定（実装で行われる）
@@ -113,7 +113,7 @@ class CameraViewModelTest {
     }
 
     @Test
-    fun `captureImage_IDLE状態_キャプチャ不可`() = runBlockingTest(testDispatcher) {
+    fun `captureImage_IDLE状態_キャプチャ不可`() = runTest {
         // When
         val result = cameraViewModel.captureImage()
 
@@ -123,7 +123,7 @@ class CameraViewModelTest {
     }
 
     @Test
-    fun `captureImage_CAPTURING状態_重複キャプチャ不可`() = runBlockingTest(testDispatcher) {
+    fun `captureImage_CAPTURING状態_重複キャプチャ不可`() = runTest {
         // Given
         cameraViewModel.initializeCamera(mockContext)
         cameraViewModel.captureImage() // 最初のキャプチャ

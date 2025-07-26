@@ -45,6 +45,7 @@ class CameraViewModel : ViewModel() {
     
     private var isInitialized = false
     private var currentContext: Context? = null
+    private var lifecycleOwner: androidx.lifecycle.LifecycleOwner? = null
 
     /**
      * カメラの初期化を実行
@@ -96,16 +97,9 @@ class CameraViewModel : ViewModel() {
             // 既存のUseCaseをアンバインド
             cameraProvider.unbindAll()
 
-            // 新しいUseCaseをバインド
-            camera = cameraProvider.bindToLifecycle(
-                // 注意: 実際の実装ではLifecycleOwnerを渡す必要がある
-                // ここではテスト用の簡略実装
-                null as androidx.lifecycle.LifecycleOwner?, 
-                cameraSelector,
-                preview,
-                imageCapture
-            )
-
+            // 注意: 実際の実装ではlifecycleOwnerが設定された後にバインドする
+            // 現在はUseCaseの準備のみ行う
+            
         } catch (e: Exception) {
             handleCameraError(CameraError.INITIALIZATION_FAILED)
         }
@@ -243,6 +237,35 @@ class CameraViewModel : ViewModel() {
      */
     fun isCapturing(): Boolean {
         return _cameraState.value == CameraState.CAPTURING
+    }
+
+    /**
+     * LifecycleOwnerを設定してカメラをバインド
+     * 
+     * @param lifecycleOwner LifecycleOwner（通常はActivityまたはFragment）
+     */
+    fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+        this.lifecycleOwner = lifecycleOwner
+        
+        if (isInitialized && cameraProvider != null) {
+            try {
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                
+                // 既存のUseCaseをアンバインド
+                cameraProvider?.unbindAll()
+                
+                // 新しいUseCaseをバインド
+                camera = cameraProvider?.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+                
+            } catch (e: Exception) {
+                handleCameraError(CameraError.INITIALIZATION_FAILED)
+            }
+        }
     }
 
     /**
