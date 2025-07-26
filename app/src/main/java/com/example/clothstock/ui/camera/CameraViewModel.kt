@@ -10,6 +10,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.example.clothstock.util.FileUtils
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -137,25 +139,31 @@ class CameraViewModel : ViewModel() {
                 // 画像キャプチャ実行
                 imageCapture.takePicture(
                     outputFileOptions,
-                    ContextCompat.getMainExecutor(context),
+                    cameraExecutor,
                     object : ImageCapture.OnImageSavedCallback {
                         override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                            try {
-                                val uri = FileUtils.getUriForFile(context, outputFile)
-                                val result = CaptureResult.Success(uri, outputFile.absolutePath)
-                                _captureResult.value = result
-                                _cameraState.value = CameraState.READY
-                                
-                                // 古いファイルをクリーンアップ
-                                FileUtils.cleanupOldFiles(context)
-                                
-                            } catch (e: Exception) {
-                                handleCaptureError(e)
+                            viewModelScope.launch(Dispatchers.Main) {
+                                try {
+                                    val uri = FileUtils.getUriForFile(context, outputFile)
+                                    val result = CaptureResult.Success(uri, outputFile.absolutePath)
+                                    _captureResult.value = result
+                                    _cameraState.value = CameraState.READY
+                                    
+                                    // 古いファイルをクリーンアップ（バックグラウンドで実行）
+                                    withContext(Dispatchers.IO) {
+                                        FileUtils.cleanupOldFiles(context)
+                                    }
+                                    
+                                } catch (e: Exception) {
+                                    handleCaptureError(e)
+                                }
                             }
                         }
 
                         override fun onError(exception: ImageCaptureException) {
-                            handleCaptureError(exception)
+                            viewModelScope.launch(Dispatchers.Main) {
+                                handleCaptureError(exception)
+                            }
                         }
                     }
                 )
