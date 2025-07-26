@@ -165,7 +165,7 @@ class ClothItemTest {
     // ===== 空文字列処理テスト =====
 
     @Test
-    fun `TagData_空文字列の色とカテゴリ_適切に処理される`() {
+    fun `TagData_空文字列の色とカテゴリ_オブジェクト作成は可能だがバリデーションで無効`() {
         // Given
         val tagDataWithEmptyStrings = TagData(
             size = 100,
@@ -173,7 +173,7 @@ class ClothItemTest {
             category = ""
         )
 
-        // When
+        // When - オブジェクト作成は可能
         val clothItem = ClothItem(
             id = 1,
             imagePath = testImagePath,
@@ -181,8 +181,9 @@ class ClothItemTest {
             createdAt = testDate
         )
 
-        // Then - 空文字列は許可されるが、適切にデフォルト値に変換される可能性
-        assertNotNull(clothItem.tagData.color)
-        assertNotNull(clothItem.tagData.category)
+        // Then - バリデーションでは無効と判定される
+        val validationResult = clothItem.validate()
+        assertFalse("空文字列はバリデーションで無効", validationResult.isSuccess())
+        assertTrue("エラーメッセージが含まれる", validationResult.getErrorMessage()!!.isNotEmpty())
     }
 }
