@@ -65,8 +65,7 @@ class FileUtilsTest {
     @Test
     fun `hasEnoughStorage_例外発生_falseを返す`() {
         // Given
-        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
-        `when`(mockFilesDir.freeSpace).thenThrow(RuntimeException("ストレージアクセスエラー"))
+        `when`(mockContext.filesDir).thenThrow(RuntimeException("ストレージアクセスエラー"))
 
         // When
         val result = FileUtils.hasEnoughStorage(mockContext)
