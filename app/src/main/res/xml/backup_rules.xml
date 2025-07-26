@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <!-- バックアップから除外するファイル/フォルダを指定 -->
-    <exclude domain="database" path="cache/" />
+    <!-- databaseドメインではサブディレクトリパスは使用できないため、特定のDB名で除外 -->
+    <exclude domain="database" path="cache.db" />
+    <exclude domain="database" path="cache.db-shm" />
+    <exclude domain="database" path="cache.db-wal" />
+    <!-- fileドメインではサブディレクトリパスが使用可能 -->
     <exclude domain="file" path="temp/" />
 </full-backup-content>
