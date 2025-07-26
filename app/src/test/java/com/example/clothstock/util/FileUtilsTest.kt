@@ -23,8 +23,7 @@ class FileUtilsTest {
     @Mock
     private lateinit var mockContext: Context
 
-    @Mock
-    private lateinit var mockFile: File
+    // mockFileは各テストで個別に作成する
 
     @Mock
     private lateinit var mockFilesDir: File
@@ -80,6 +79,7 @@ class FileUtilsTest {
     @Test
     fun `isFileValid_有効なファイル_trueを返す`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.exists()).thenReturn(true)
         `when`(mockFile.canRead()).thenReturn(true)
         `when`(mockFile.length()).thenReturn(1024L)
@@ -94,6 +94,7 @@ class FileUtilsTest {
     @Test
     fun `isFileValid_存在しないファイル_falseを返す`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.exists()).thenReturn(false)
         `when`(mockFile.canRead()).thenReturn(true)
         `when`(mockFile.length()).thenReturn(1024L)
@@ -108,6 +109,7 @@ class FileUtilsTest {
     @Test
     fun `isFileValid_読み取り不可ファイル_falseを返す`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.exists()).thenReturn(true)
         `when`(mockFile.canRead()).thenReturn(false)
         `when`(mockFile.length()).thenReturn(1024L)
@@ -122,6 +124,7 @@ class FileUtilsTest {
     @Test
     fun `isFileValid_空ファイル_falseを返す`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.exists()).thenReturn(true)
         `when`(mockFile.canRead()).thenReturn(true)
         `when`(mockFile.length()).thenReturn(0L)
@@ -138,6 +141,7 @@ class FileUtilsTest {
     @Test
     fun `getFormattedFileSize_バイト単位_正しいフォーマット`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.length()).thenReturn(512L)
 
         // When
@@ -150,6 +154,7 @@ class FileUtilsTest {
     @Test
     fun `getFormattedFileSize_キロバイト単位_正しいフォーマット`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.length()).thenReturn(1536L) // 1.5KB
 
         // When
@@ -162,6 +167,7 @@ class FileUtilsTest {
     @Test
     fun `getFormattedFileSize_メガバイト単位_正しいフォーマット`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.length()).thenReturn(2 * 1024 * 1024L + 512 * 1024L) // 2.5MB
 
         // When
@@ -174,6 +180,7 @@ class FileUtilsTest {
     @Test
     fun `getFormattedFileSize_ギガバイト単位_正しいフォーマット`() {
         // Given
+        val mockFile = mock(File::class.java)
         `when`(mockFile.length()).thenReturn(2L * 1024 * 1024 * 1024 + 512L * 1024 * 1024) // 2.5GB
 
         // When
