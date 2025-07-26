@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -37,7 +36,6 @@ class CameraActivity : AppCompatActivity() {
     }
     
     private lateinit var binding: ActivityCameraBinding
-    private val viewModel: CameraViewModel by viewModels()
     
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
