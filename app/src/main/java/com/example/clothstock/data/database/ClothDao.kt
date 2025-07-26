@@ -208,25 +208,6 @@ interface ClothDao {
     fun getItemsByDateRange(startTime: Long, endTime: Long): Flow<List<ClothItem>>
 
     // ===== メンテナンス操作 =====
-
-    /**
-     * データベースの整合性をチェック
-     * 
-     * @return 整合性チェック結果
-     */
-    @Query("PRAGMA integrity_check")
-    suspend fun checkIntegrity(): List<String>
-
-    /**
-     * データベースを最適化（VACUUM）
-     * 注意: この操作は時間がかかる可能性があります
-     */
-    @Query("VACUUM")
-    suspend fun vacuum()
-
-    /**
-     * 統計情報を更新（ANALYZE）
-     */
-    @Query("ANALYZE")
-    suspend fun analyze()
+    // 注意: PRAGMA、VACUUM、ANALYZEはRoomでサポートされていないため
+    // これらの操作は上位層で直接SQLiteDatabaseインスタンスを使用して実装する
 }
