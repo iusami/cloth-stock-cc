@@ -39,7 +39,7 @@ object DatabasePerformanceMonitor {
         operationName: String,
         operation: suspend () -> T
     ): T {
-        lateinit var result: T
+        var result: T? = null
         val executionTime = measureTimeMillis {
             result = operation()
         }
@@ -50,7 +50,8 @@ object DatabasePerformanceMonitor {
             Log.w(TAG, "遅いクエリ検出: $operationName (${executionTime}ms)")
         }
         
-        return result
+        @Suppress("UNCHECKED_CAST")
+        return result as T
     }
     
     /**
