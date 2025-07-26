@@ -1,9 +1,14 @@
 package com.example.clothstock
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.clothstock.databinding.ActivityMainBinding
+import com.example.clothstock.ui.camera.CameraActivity
 
 /**
  * cloth-stock アプリケーションのメインアクティビティ
@@ -15,7 +20,24 @@ import com.example.clothstock.databinding.ActivityMainBinding
  */
 class MainActivity : AppCompatActivity() {
     
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+    
     private lateinit var binding: ActivityMainBinding
+    
+    // カメラアクティビティからの結果を受け取る
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val imageUriString = result.data?.getStringExtra(CameraActivity.EXTRA_IMAGE_URI)
+            imageUriString?.let { uriString ->
+                val imageUri = Uri.parse(uriString)
+                handleCapturedImage(imageUri)
+            }
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +54,34 @@ class MainActivity : AppCompatActivity() {
      * アプリ内ナビゲーションの初期化
      */
     private fun setupNavigation() {
-        // TODO: Navigation Componentを使用したフラグメント間の遷移を実装予定
-        // 現在は基本的なActivity構造のみ設定
+        // カメラボタンのクリックリスナー設定
+        binding.buttonCamera.setOnClickListener {
+            launchCameraActivity()
+        }
+        
+        // ギャラリーボタンのクリックリスナー設定
+        binding.buttonGallery.setOnClickListener {
+            // TODO: ギャラリーアクティビティへの遷移を実装予定
+            Log.d(TAG, "Gallery button clicked - not implemented yet")
+        }
+    }
+    
+    /**
+     * カメラアクティビティを起動
+     */
+    private fun launchCameraActivity() {
+        val intent = Intent(this, CameraActivity::class.java)
+        cameraLauncher.launch(intent)
+    }
+    
+    /**
+     * 撮影された画像の処理
+     */
+    private fun handleCapturedImage(imageUri: Uri) {
+        Log.d(TAG, "Captured image URI: $imageUri")
+        
+        // TODO: 撮影された画像をTaggingActivityに渡して
+        // タグ編集画面に遷移する処理を実装予定
+        // 現在はログ出力のみ
     }
 }

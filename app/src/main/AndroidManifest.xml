@@ -46,6 +46,13 @@
             </intent-filter>
         </activity>
         
+        <!-- カメラアクティビティ -->
+        <activity
+            android:name=".ui.camera.CameraActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ClothStock" />
+        
         <!-- FileProviderの設定（カメラで撮影した写真の一時保存用） -->
         <provider
             android:name="androidx.core.content.FileProvider"

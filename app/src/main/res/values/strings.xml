@@ -12,6 +12,11 @@
     <string name="camera_capture">撮影</string>
     <string name="camera_permission_denied">カメラの権限が必要です</string>
     <string name="camera_error">カメラエラーが発生しました</string>
+    <string name="button_back">戻る</string>
+    <string name="button_capture">撮影</string>
+    <string name="button_retake">再撮影</string>
+    <string name="button_save">保存</string>
+    <string name="captured_photo">撮影された写真</string>
     
     <!-- タグ編集 -->
     <string name="tag_size">サイズ</string>
