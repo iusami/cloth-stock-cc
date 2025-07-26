@@ -31,8 +31,7 @@ class FileUtilsTest {
 
     @Before
     fun setUp() {
-        // 共通的に使用されるContext設定のみを設定
-        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
+        // 各テストで必要なスタブは個別に設定する
     }
 
     // ===== ストレージ容量チェックテスト =====
@@ -40,6 +39,7 @@ class FileUtilsTest {
     @Test
     fun `hasEnoughStorage_十分な容量_trueを返す`() {
         // Given
+        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
         `when`(mockFilesDir.freeSpace).thenReturn(50 * 1024 * 1024L) // 50MB
 
         // When
@@ -52,6 +52,7 @@ class FileUtilsTest {
     @Test
     fun `hasEnoughStorage_不十分な容量_falseを返す`() {
         // Given
+        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
         `when`(mockFilesDir.freeSpace).thenReturn(5 * 1024 * 1024L) // 5MB
 
         // When
@@ -64,6 +65,7 @@ class FileUtilsTest {
     @Test
     fun `hasEnoughStorage_例外発生_falseを返す`() {
         // Given
+        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
         `when`(mockFilesDir.freeSpace).thenThrow(RuntimeException("ストレージアクセスエラー"))
 
         // When
@@ -185,14 +187,9 @@ class FileUtilsTest {
 
     @Test
     fun `getImageDirectorySize_ディレクトリ存在しない_0を返す`() {
-        // Given
-        val imagesDir = mock(File::class.java)
-        `when`(imagesDir.exists()).thenReturn(false)
-        
+        // Given & When & Then
         // FileUtilsのstatic呼び出しをモック化するのは複雑なため、
         // この機能はインストルメンテーションテストで検証する
-
-        // When & Then
         // このテストは実際のFile操作が必要なため、インストルメンテーションテストで実装
         assertTrue("テスト実装のプレースホルダー", true)
     }
@@ -231,6 +228,9 @@ class FileUtilsTest {
 
     @Test
     fun `Context_filesDir_正しく設定される`() {
+        // Given
+        `when`(mockContext.filesDir).thenReturn(mockFilesDir)
+        
         // When
         val filesDir = mockContext.filesDir
 
