@@ -79,7 +79,7 @@ ksp {
 kapt {
     correctErrorTypes = true
     useBuildCache = true
-    includeCompileClasspath = false
+    // includeCompileClasspath設定はgradle.propertiesで一元管理
     // データバインディング専用設定
 }
 
