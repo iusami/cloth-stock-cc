@@ -105,7 +105,7 @@
 
 1. **ユニットテスト**: `./gradlew testDebugUnitTest --stacktrace` でテスト実行（CIと同一コマンド）
 2. **リンター**: `./gradlew lintDebug --stacktrace` でコード品質チェック
-3. **ビルド**: `./gradlew build` で全体ビルド確認
+3. **ビルド**: `./gradlew build --stacktrace` で全体ビルド確認
 4. **コミット**: すべて通過後にのみgit commit実行
 
 CI失敗を防ぐため、CIと同じコマンドでローカル事前確認を徹底すること
