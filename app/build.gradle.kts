@@ -169,9 +169,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Image Loading (temporarily disabled for Kotlin 2.x compatibility testing)
-    // implementation("com.github.bumptech.glide:glide:4.16.0")
-    // kapt("com.github.bumptech.glide:compiler:4.16.0")
+    // Image Loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     // Permissions handling (included in activity-ktx above)
 

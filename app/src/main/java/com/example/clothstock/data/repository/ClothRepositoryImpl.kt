@@ -1,7 +1,9 @@
 package com.example.clothstock.data.repository
 
+import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.database.ClothDao
+import com.example.clothstock.data.database.ClothDatabase
 import com.example.clothstock.data.model.ClothItem
 
 /**
@@ -163,6 +165,26 @@ class ClothRepositoryImpl(
         val validationResult = clothItem.validate() // Validatable.validate()を呼び出し
         if (!validationResult.isSuccess()) {
             throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var INSTANCE: ClothRepositoryImpl? = null
+
+        /**
+         * ClothRepositoryImplのシングルトンインスタンスを取得
+         * 
+         * @param context アプリケーションコンテキスト
+         * @return ClothRepositoryImplインスタンス
+         */
+        fun getInstance(context: Context): ClothRepositoryImpl {
+            return INSTANCE ?: synchronized(this) {
+                val database = ClothDatabase.getInstance(context)
+                val instance = ClothRepositoryImpl(database.clothDao())
+                INSTANCE = instance
+                instance
+            }
         }
     }
 }
