@@ -243,16 +243,17 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        // リポジトリが成功を返すようにモック
-        `when`(clothRepository.insertItem(ArgumentMatchers.any(ClothItem::class.java))).thenReturn(1L)
+        // リポジトリが成功を返すようにモック - 具体的なマッチャーを使用
+        `when`(clothRepository.insertItem(ArgumentMatchers.any())).thenReturn(1L)
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: 保存が成功する
-        verify(clothRepository).insertItem(ArgumentMatchers.any(ClothItem::class.java))
+        verify(clothRepository).insertItem(ArgumentMatchers.any())
         val saveResult = viewModel.saveResult.value
+        assertNotNull(saveResult)
         assertTrue(saveResult is TaggingViewModel.SaveResult.Success)
     }
 
@@ -283,7 +284,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        `when`(clothRepository.insertItem(ArgumentMatchers.any(ClothItem::class.java))).thenReturn(1L)
+        `when`(clothRepository.insertItem(ArgumentMatchers.any())).thenReturn(1L)
         
         // When: 保存を開始
         viewModel.saveTaggedItem(imagePath)
@@ -303,7 +304,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        `when`(clothRepository.insertItem(ArgumentMatchers.any(ClothItem::class.java))).thenThrow(RuntimeException("Database error"))
+        `when`(clothRepository.insertItem(ArgumentMatchers.any())).thenThrow(RuntimeException("Database error"))
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
@@ -311,6 +312,7 @@ class TaggingViewModelTest {
         
         // Then: エラー結果が返される
         val saveResult = viewModel.saveResult.value
+        assertNotNull(saveResult)
         assertTrue(saveResult is TaggingViewModel.SaveResult.Error)
         assertTrue((saveResult as TaggingViewModel.SaveResult.Error).message.contains("Database error"))
     }
