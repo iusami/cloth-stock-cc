@@ -37,24 +37,14 @@
 
 ## 開発環境
 
-このプロジェクトでは開発環境のコンテナ化にDockerを使用しています：
+このプロジェクトは標準的なAndroid開発環境で開発できます：
 
-### Dockerコマンド
-```bash
-# 開発環境起動
-docker compose up -d
+### 必要な環境
+- Android Studio
+- Android SDK
+- JDK 11以上
 
-# 開発環境停止
-docker compose down
-
-# 環境再構築（クリーンビルド）
-docker compose build --no-cache
-
-# 開発コンテナのシェルにアクセス
-docker compose exec android-dev bash
-```
-
-### ビルドコマンド（Dockerコンテナ内）
+### ビルドコマンド
 ```bash
 # プロジェクトビルド
 ./gradlew build
@@ -70,13 +60,6 @@ docker compose exec android-dev bash
 
 # リリースAPKビルド
 ./gradlew assembleRelease
-```
-
-### 便利なエイリアス
-シェルプロファイルに追加すると便利です：
-```bash
-alias dgradle="docker compose exec android-dev ./gradlew"
-alias dandroid="docker compose exec android-dev"
 ```
 
 ## アーキテクチャ・技術スタック
@@ -115,7 +98,14 @@ alias dandroid="docker compose exec android-dev"
 - Espressoを使用したUIテスト
 - 目標コードカバレッジ：80%以上
 
-**[CRITICAL]** コードを追加、変更した時にはunittest, linterが通ることを確認し、buildも成功することを確認する
+**[CRITICAL]** コードを追加、変更した時には以下を順序立てて実行する：
+
+1. **ユニットテスト**: `./gradlew test` でテスト実行
+2. **リンター**: `./gradlew lint` でコード品質チェック
+3. **ビルド**: `./gradlew build` で全体ビルド確認
+4. **コミット**: すべて通過後にのみgit commit実行
+
+CI失敗を防ぐため、ローカルでの事前確認を徹底すること
 
 ## Playwright MCPについて
 Playwright MCP（Multi-Context Protocol）は、Playwrightを使用してブラウザの操作を自動化するためのプロトコルです。
@@ -130,8 +120,7 @@ Playwright MCPを使用することで、ブラウザの操作をスクリプト
 
 ## プロジェクト構造
 
-プロジェクトはDocker環境内で標準的なAndroidプロジェクト構造に従います：
-- Docker設定は`docker/`ディレクトリに配置
+プロジェクトは標準的なAndroidプロジェクト構造に従います：
 - ドキュメントは`.kiro/`ディレクトリに配置（AIアシスタント向けガイダンス）
 - 計画されたアプリ構造は機能ベースパッケージングを伴うMVVMに従う
 - 一般的な開発ドキュメントは`docs/`ディレクトリに配置
