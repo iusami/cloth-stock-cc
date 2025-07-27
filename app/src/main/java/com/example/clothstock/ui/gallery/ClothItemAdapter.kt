@@ -47,14 +47,41 @@ class ClothItemAdapter(
             binding.clothItem = clothItem
             binding.executePendingBindings()
 
-            // Glideで画像読み込み
+            // Glideで画像読み込み（最適化済み）
             Glide.with(binding.imageViewCloth.context)
                 .load(clothItem.imagePath)
                 .placeholder(R.drawable.ic_photo_placeholder) 
                 .error(R.drawable.ic_error_photo)
                 .centerCrop()
-                .transition(DrawableTransitionOptions.withCrossFade())
+                .override(300, 300) // メモリ効率のためのリサイズ
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
+                .transition(DrawableTransitionOptions.withCrossFade(150))
+                .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+                    override fun onLoadFailed(
+                        e: com.bumptech.glide.load.engine.GlideException?,
+                        model: Any?,
+                        target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.progressBarImage.visibility = android.view.View.GONE
+                        return false
+                    }
+                    
+                    override fun onResourceReady(
+                        resource: android.graphics.drawable.Drawable,
+                        model: Any,
+                        target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                        dataSource: com.bumptech.glide.load.DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.progressBarImage.visibility = android.view.View.GONE
+                        return false
+                    }
+                })
                 .into(binding.imageViewCloth)
+            
+            // ローディング状態の初期設定
+            binding.progressBarImage.visibility = android.view.View.VISIBLE
 
             // クリックリスナー設定
             binding.root.setOnClickListener {

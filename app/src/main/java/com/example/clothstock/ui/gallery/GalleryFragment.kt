@@ -5,9 +5,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.clothstock.R
 import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.example.clothstock.ui.camera.CameraActivity
@@ -64,18 +68,31 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * RecyclerViewの設定
+     * RecyclerViewの設定（最適化済み）
      */
     private fun setupRecyclerView() {
         // GridLayoutManagerを設定（列数は画面サイズに応じて調整）
         val spanCount = calculateSpanCount()
-        binding.recyclerViewGallery.layoutManager = GridLayoutManager(requireContext(), spanCount)
+        val layoutManager = GridLayoutManager(requireContext(), spanCount)
+        binding.recyclerViewGallery.layoutManager = layoutManager
+
+        // RecyclerViewパフォーマンス最適化
+        binding.recyclerViewGallery.apply {
+            setHasFixedSize(true) // サイズ固定でパフォーマンス向上
+            itemAnimator = DefaultItemAnimator().apply {
+                addDuration = 200
+                removeDuration = 200
+                moveDuration = 200
+                changeDuration = 200
+            }
+            // ViewHolderプールサイズの最適化
+            recycledViewPool.setMaxRecycledViews(0, spanCount * 3)
+        }
 
         // Adapterを設定
         adapter = ClothItemAdapter { clothItem ->
-            // アイテムクリックで詳細画面へ遷移（TODO: DetailActivity実装後に有効化）
-            // navigateToDetail(clothItem)
-            showItemDetails(clothItem)
+            // アニメーション付きでアイテム詳細表示
+            showItemDetailsWithAnimation(clothItem)
         }
         binding.recyclerViewGallery.adapter = adapter
     }
@@ -111,31 +128,34 @@ class GalleryFragment : Fragment() {
      * ViewModelの監視設定
      */
     private fun observeViewModel() {
-        // 衣服アイテムの監視
+        // 衣服アイテムの監視（アニメーション付き）
         viewModel.clothItems.observe(viewLifecycleOwner) { items ->
-            adapter.submitList(items)
-        }
-
-        // 空状態の監視
-        viewModel.isEmpty.observe(viewLifecycleOwner) { isEmpty ->
-            binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
-            binding.recyclerViewGallery.visibility = if (isEmpty) View.GONE else View.VISIBLE
-        }
-
-        // ローディング状態の監視
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.swipeRefreshLayout.isRefreshing = isLoading
-            binding.layoutLoading.visibility = if (isLoading && adapter.itemCount == 0) {
-                View.VISIBLE
-            } else {
-                View.GONE
+            adapter.submitList(items) {
+                // リスト更新完了後のコールバック
+                if (items.isNotEmpty() && binding.recyclerViewGallery.visibility == View.GONE) {
+                    animateRecyclerViewEntry()
+                }
             }
         }
 
-        // エラーメッセージの監視
+        // 空状態の監視（アニメーション付き）
+        viewModel.isEmpty.observe(viewLifecycleOwner) { isEmpty ->
+            animateStateChange(isEmpty)
+        }
+
+        // ローディング状態の監視（改善版）
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.swipeRefreshLayout.isRefreshing = isLoading
+            
+            // 初回ローディング時のみフルスクリーンローディング表示
+            val shouldShowFullLoading = isLoading && adapter.itemCount == 0
+            animateLoadingState(shouldShowFullLoading)
+        }
+
+        // エラーメッセージの監視（改善版）
         viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let { message ->
-                showErrorMessage(message)
+                showEnhancedErrorMessage(message)
                 viewModel.clearErrorMessage()
             }
         }
@@ -160,22 +180,92 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * アイテム詳細表示（暫定実装）
+     * アニメーション付きアイテム詳細表示（改善版）
      */
-    private fun showItemDetails(clothItem: com.example.clothstock.data.model.ClothItem) {
+    private fun showItemDetailsWithAnimation(clothItem: com.example.clothstock.data.model.ClothItem) {
+        // バイブレーション付きフィードバック（API 26+）
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        }
+        
         val message = "アイテム詳細: ${clothItem.tagData.category} - ${clothItem.tagData.color}"
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT)
+            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+            .show()
     }
 
     /**
-     * エラーメッセージの表示
+     * 改善されたエラーメッセージ表示
      */
-    private fun showErrorMessage(message: String) {
+    private fun showEnhancedErrorMessage(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
             .setAction("再試行") {
                 viewModel.refreshData()
             }
+            .setActionTextColor(requireContext().getColor(android.R.color.holo_blue_light))
+            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
             .show()
+    }
+
+    /**
+     * RecyclerView表示アニメーション
+     */
+    private fun animateRecyclerViewEntry() {
+        binding.recyclerViewGallery.visibility = View.VISIBLE
+        val animation = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+        animation.duration = 300
+        binding.recyclerViewGallery.startAnimation(animation)
+    }
+
+    /**
+     * 状態変更アニメーション（空状態⇔データ表示）
+     */
+    private fun animateStateChange(isEmpty: Boolean) {
+        val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+        val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+        
+        fadeOut.duration = 150
+        fadeIn.duration = 150
+        
+        if (isEmpty) {
+            // データ→空状態
+            binding.recyclerViewGallery.startAnimation(fadeOut)
+            binding.recyclerViewGallery.visibility = View.GONE
+            
+            binding.layoutEmptyState.visibility = View.VISIBLE
+            binding.layoutEmptyState.startAnimation(fadeIn)
+        } else {
+            // 空状態→データ
+            binding.layoutEmptyState.startAnimation(fadeOut)
+            binding.layoutEmptyState.visibility = View.GONE
+            
+            binding.recyclerViewGallery.visibility = View.VISIBLE
+            binding.recyclerViewGallery.startAnimation(fadeIn)
+        }
+    }
+
+    /**
+     * ローディング状態アニメーション
+     */
+    private fun animateLoadingState(shouldShow: Boolean) {
+        if (shouldShow) {
+            binding.layoutLoading.visibility = View.VISIBLE
+            val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+            fadeIn.duration = 200
+            binding.layoutLoading.startAnimation(fadeIn)
+        } else {
+            val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+            fadeOut.duration = 200
+            fadeOut.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                    binding.layoutLoading.visibility = View.GONE
+                }
+            })
+            binding.layoutLoading.startAnimation(fadeOut)
+        }
     }
 
     companion object {
