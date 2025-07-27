@@ -18,9 +18,9 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
-import org.mockito.kotlin.any
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when` as whenever
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -243,14 +243,14 @@ class TaggingViewModelTest {
         viewModel.updateCategory(validTagData.category)
         
         // リポジトリが成功を返すようにモック
-        whenever(clothRepository.insertItem(any())).thenReturn(1L)
+        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: 保存が成功する
-        verify(clothRepository).insertItem(any())
+        verify(clothRepository).insertItem(any(ClothItem::class.java))
         val saveResult = viewModel.saveResult.value
         assertTrue(saveResult is TaggingViewModel.SaveResult.Success)
     }
@@ -282,7 +282,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        whenever(clothRepository.insertItem(any())).thenReturn(1L)
+        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
         
         // When: 保存を開始
         viewModel.saveTaggedItem(imagePath)
@@ -302,7 +302,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        whenever(clothRepository.insertItem(any())).thenThrow(RuntimeException("Database error"))
+        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenThrow(RuntimeException("Database error"))
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
