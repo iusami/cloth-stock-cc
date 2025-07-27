@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.clothstock.R
 import com.example.clothstock.databinding.ActivityCameraBinding
+import com.example.clothstock.ui.tagging.TaggingActivity
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -204,14 +205,14 @@ class CameraActivity : AppCompatActivity() {
     }
     
     /**
-     * 写真を保存して結果を返す
+     * 写真を保存してタグ入力画面に遷移
      */
     private fun savePhoto() {
         capturedImageUri?.let { uri ->
-            val resultIntent = Intent().apply {
-                putExtra(EXTRA_IMAGE_URI, uri.toString())
+            val intent = Intent(this, TaggingActivity::class.java).apply {
+                putExtra(TaggingActivity.EXTRA_IMAGE_URI, uri.toString())
             }
-            setResult(RESULT_OK, resultIntent)
+            startActivity(intent)
             finish()
         }
     }

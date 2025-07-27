@@ -110,8 +110,11 @@ class TaggingViewModel(
                 }
 
             } catch (e: Exception) {
+                val (errorType, isRetryable) = categorizeException(e)
                 _saveResult.value = SaveResult.Error(
-                    e.message ?: "不明なエラーが発生しました"
+                    message = e.message ?: "不明なエラーが発生しました",
+                    errorType = errorType,
+                    isRetryable = isRetryable
                 )
             } finally {
                 _isLoading.value = false
@@ -189,6 +192,25 @@ class TaggingViewModel(
         _tagData.value = updatedData
         validateCurrentData()
     }
+    
+    /**
+     * 例外をエラータイプに分類
+     * 
+     * @param exception 発生した例外
+     * @return エラータイプとリトライ可能性のペア
+     */
+    private fun categorizeException(exception: Exception): Pair<ErrorType, Boolean> {
+        return when {
+            exception is IllegalArgumentException -> ErrorType.VALIDATION to false
+            exception.message?.contains("database", ignoreCase = true) == true -> ErrorType.DATABASE to true
+            exception.message?.contains("network", ignoreCase = true) == true -> ErrorType.NETWORK to true
+            exception.message?.contains("file", ignoreCase = true) == true -> ErrorType.FILE_SYSTEM to true
+            exception is java.io.IOException -> ErrorType.FILE_SYSTEM to true
+            exception is java.net.UnknownHostException -> ErrorType.NETWORK to true
+            exception is java.sql.SQLException -> ErrorType.DATABASE to true
+            else -> ErrorType.UNKNOWN to true
+        }
+    }
 
     // ===== 結果クラス =====
 
@@ -207,7 +229,24 @@ class TaggingViewModel(
          * 保存失敗
          * 
          * @param message エラーメッセージ
+         * @param errorType エラータイプ
+         * @param isRetryable リトライ可能かどうか
          */
-        data class Error(val message: String) : SaveResult()
+        data class Error(
+            val message: String,
+            val errorType: ErrorType = ErrorType.UNKNOWN,
+            val isRetryable: Boolean = true
+        ) : SaveResult()
+    }
+    
+    /**
+     * エラータイプの分類
+     */
+    enum class ErrorType {
+        VALIDATION,    // バリデーションエラー
+        DATABASE,      // データベースエラー
+        NETWORK,       // ネットワークエラー
+        FILE_SYSTEM,   // ファイルシステムエラー
+        UNKNOWN        // 不明なエラー
     }
 }
