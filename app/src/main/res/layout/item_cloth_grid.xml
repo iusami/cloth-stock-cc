@@ -107,7 +107,7 @@
                 android:contentDescription="@string/favorite_indicator"
                 android:padding="4dp"
                 android:src="@drawable/ic_favorite_24"
-                android:tint="@color/material_dynamic_primary50"
+                app:tint="?attr/colorPrimary"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="@+id/imageViewCloth"
                 app:layout_constraintTop_toTopOf="@+id/imageViewCloth"

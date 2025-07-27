@@ -73,7 +73,7 @@
                         android:alpha="0.6"
                         android:contentDescription="@string/empty_gallery_icon"
                         android:src="@drawable/ic_photo_library_24"
-                        android:tint="?attr/colorOnSurfaceVariant" />
+                        app:tint="?attr/colorOnSurfaceVariant" />
 
                     <!-- Empty state message -->
                     <TextView

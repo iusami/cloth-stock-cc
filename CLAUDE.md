@@ -104,7 +104,7 @@
 **[CRITICAL]** コードを追加、変更した時には以下を順序立てて実行する：
 
 1. **ユニットテスト**: `./gradlew testDebugUnitTest --stacktrace` でテスト実行（CIと同一コマンド）
-2. **リンター**: `./gradlew lint` でコード品質チェック
+2. **リンター**: `./gradlew lintDebug --stacktrace` でコード品質チェック
 3. **ビルド**: `./gradlew build` で全体ビルド確認
 4. **コミット**: すべて通過後にのみgit commit実行
 
