@@ -45,6 +45,13 @@
     <string name="cloth_image_description">衣服の写真</string>
     <string name="favorite_indicator">お気に入り表示</string>
     
+    <!-- 詳細画面 -->
+    <string name="button_edit">編集</string>
+    <string name="loading_detail">詳細情報を読み込み中...</string>
+    <string name="error_icon">エラーアイコン</string>
+    <string name="error_cloth_item_not_found">アイテムが見つかりません</string>
+    <string name="button_retry">再試行</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
