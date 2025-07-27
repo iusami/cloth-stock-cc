@@ -47,6 +47,9 @@ class ClothItemAdapter(
             binding.clothItem = clothItem
             binding.executePendingBindings()
 
+            // ローディング状態の初期設定（Glideリクエスト前に表示）
+            binding.progressBarImage.visibility = android.view.View.VISIBLE
+
             // Glideで画像読み込み（最適化済み）
             Glide.with(binding.imageViewCloth.context)
                 .load(clothItem.imagePath)
@@ -79,9 +82,6 @@ class ClothItemAdapter(
                     }
                 })
                 .into(binding.imageViewCloth)
-            
-            // ローディング状態の初期設定
-            binding.progressBarImage.visibility = android.view.View.VISIBLE
 
             // クリックリスナー設定
             binding.root.setOnClickListener {
