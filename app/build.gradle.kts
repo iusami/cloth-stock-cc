@@ -44,6 +44,9 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.RequiresOptIn"
+        )
     }
 
     testOptions {
@@ -62,6 +65,14 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+// KAPT settings for better compatibility with Kotlin 2.x
+kapt {
+    correctErrorTypes = true
+    useBuildCache = true
+    includeCompileClasspath = false
+    // Room is not currently implemented - skip Room-specific settings for now
 }
 
 // Jacoco テストレポートタスクの設定
@@ -134,10 +145,10 @@ dependencies {
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
 
-    // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    // Room Database (temporarily disabled for Kotlin 2.x compatibility testing)
+    // implementation("androidx.room:room-runtime:2.6.1")
+    // implementation("androidx.room:room-ktx:2.6.1")
+    // kapt("androidx.room:room-compiler:2.6.1")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.3.1")
@@ -150,9 +161,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Image Loading (for displaying captured photos)
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    kapt("com.github.bumptech.glide:compiler:4.16.0")
+    // Image Loading (temporarily disabled for Kotlin 2.x compatibility testing)
+    // implementation("com.github.bumptech.glide:glide:4.16.0")
+    // kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     // Permissions handling (included in activity-ktx above)
 
@@ -162,12 +173,12 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("androidx.room:room-testing:2.6.1")
+    // testImplementation("androidx.room:room-testing:2.6.1")
 
     // Testing - Instrumented Tests
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
-    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    // androidTestImplementation("androidx.room:room-testing:2.6.1")
 }
