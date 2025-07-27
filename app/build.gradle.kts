@@ -1,7 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
+    id("kotlin-kapt") // データバインディング用に維持
     id("kotlin-parcelize")
     id("jacoco")
 }
@@ -67,16 +68,19 @@ android {
     }
 }
 
-// KAPT settings for better compatibility with Kotlin 2.x
+// KSP settings for Room and other annotation processors
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+    arg("room.expandProjection", "true")
+}
+
+// KAPT settings (only for Data Binding - KSP not yet supported)
 kapt {
     correctErrorTypes = true
     useBuildCache = true
     includeCompileClasspath = false
-    arguments {
-        arg("room.schemaLocation", "$projectDir/schemas")
-        arg("room.incremental", "true")
-        arg("room.expandProjection", "true")
-    }
+    // データバインディング専用設定
 }
 
 // Jacoco テストレポートタスクの設定
@@ -149,10 +153,10 @@ dependencies {
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
 
-    // Room Database - Kotlin 2.x compatible version
-    implementation("androidx.room:room-runtime:2.7.0-alpha13")
-    implementation("androidx.room:room-ktx:2.7.0-alpha13")
-    kapt("androidx.room:room-compiler:2.7.0-alpha13")
+    // Room Database - Latest stable with KSP support
+    implementation("androidx.room:room-runtime:2.7.2")
+    implementation("androidx.room:room-ktx:2.7.2")
+    ksp("androidx.room:room-compiler:2.7.2")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.3.1")
@@ -177,12 +181,12 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("androidx.room:room-testing:2.7.0-alpha13")
+    testImplementation("androidx.room:room-testing:2.7.2")
 
     // Testing - Instrumented Tests
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
-    androidTestImplementation("androidx.room:room-testing:2.7.0-alpha13")
+    androidTestImplementation("androidx.room:room-testing:2.7.2")
 }
