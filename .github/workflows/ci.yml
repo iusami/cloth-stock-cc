@@ -205,3 +205,106 @@ jobs:
         name: lint-results-${{ github.sha }}
         path: '**/build/reports/lint-results-*.html'
         retention-days: 30
+
+  # Android Studio相当のビルド検証（kaptタスク等の明示的テスト）
+  android-studio-build-verification:
+    name: Android Studio Build Verification
+    runs-on: ubuntu-latest
+    
+    # GitHub Token権限設定
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
+    
+    # タイムアウト設定
+    timeout-minutes: 45
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          .gradle
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Accept Android SDK licenses
+      run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      
+    # Android Studio相当のビルドプロセスを段階的に実行
+    - name: Clean project
+      run: ./gradlew clean --stacktrace
+      
+    - name: Generate data binding base classes (Debug)
+      run: ./gradlew dataBindingGenBaseClassesDebug --stacktrace
+      
+    - name: Generate data binding base classes (Release)  
+      run: ./gradlew dataBindingGenBaseClassesRelease --stacktrace
+      
+    - name: Generate KAPT stubs (Debug)
+      run: ./gradlew kaptGenerateStubsDebugKotlin --stacktrace
+      
+    - name: Generate KAPT stubs (Release)
+      run: ./gradlew kaptGenerateStubsReleaseKotlin --stacktrace
+      
+    - name: Process KAPT annotations (Debug) 
+      run: ./gradlew kaptDebugKotlin --stacktrace
+      
+    - name: Process KAPT annotations (Release)
+      run: ./gradlew kaptReleaseKotlin --stacktrace
+      
+    - name: Compile Kotlin (Debug)
+      run: ./gradlew compileDebugKotlin --stacktrace
+      
+    - name: Compile Kotlin (Release)
+      run: ./gradlew compileReleaseKotlin --stacktrace
+      
+    - name: Compile Java sources (Debug)
+      run: ./gradlew compileDebugJavaWithJavac --stacktrace
+      
+    - name: Compile Java sources (Release)
+      run: ./gradlew compileReleaseJavaWithJavac --stacktrace
+      
+    - name: Full build verification
+      run: ./gradlew build --stacktrace
+      
+    - name: Upload KAPT build logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: kapt-build-logs-${{ github.sha }}
+        path: |
+          **/build/reports/
+          **/build/tmp/kapt*/
+          **/*.log
+        retention-days: 7
+        
+    - name: Upload Kotlin compilation logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: kotlin-compilation-logs-${{ github.sha }}
+        path: |
+          **/build/tmp/kotlin-classes/
+          **/build/kotlin/
+        retention-days: 7
