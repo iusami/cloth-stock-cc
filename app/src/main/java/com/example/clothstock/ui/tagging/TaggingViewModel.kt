@@ -9,6 +9,7 @@ import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.model.ValidationResult
 import com.example.clothstock.data.repository.ClothRepository
 import kotlinx.coroutines.launch
+import java.util.Date
 
 /**
  * タグ編集画面のViewModel
@@ -152,10 +153,8 @@ class TaggingViewModel(
         return ClothItem(
             id = 0, // 新規作成時は0
             imagePath = imagePath,
-            size = tagData.size,
-            color = tagData.color,
-            category = tagData.category,
-            createdAt = System.currentTimeMillis()
+            tagData = tagData,
+            createdAt = Date()
         )
     }
 
