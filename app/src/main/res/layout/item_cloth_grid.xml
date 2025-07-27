@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="clothItem"
+            type="com.example.clothstock.data.model.ClothItem" />
+        <variable
+            name="clickListener"
+            type="android.view.View.OnClickListener" />
+    </data>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="@{clickListener}"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Cloth image -->
+            <ImageView
+                android:id="@+id/imageViewCloth"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/material_dynamic_neutral90"
+                android:contentDescription="@string/cloth_image_description"
+                android:scaleType="centerCrop"
+                app:layout_constraintBottom_toTopOf="@+id/layoutTagInfo"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:src="@tools:sample/backgrounds/scenic" />
+
+            <!-- Loading overlay for image -->
+            <ProgressBar
+                android:id="@+id/progressBarImage"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@+id/imageViewCloth"
+                app:layout_constraintEnd_toEndOf="@+id/imageViewCloth"
+                app:layout_constraintStart_toStartOf="@+id/imageViewCloth"
+                app:layout_constraintTop_toTopOf="@+id/imageViewCloth"
+                tools:visibility="visible" />
+
+            <!-- Tag information overlay -->
+            <LinearLayout
+                android:id="@+id/layoutTagInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/gradient_overlay"
+                android:orientation="vertical"
+                android:padding="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <!-- Tag info text -->
+                <TextView
+                    android:id="@+id/textTagInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@{clothItem.summary}"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    tools:text="サイズ: 100\n色: 赤 | カテゴリ: トップス" />
+
+                <!-- Creation date -->
+                <TextView
+                    android:id="@+id/textCreatedDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@{clothItem.formattedDate}"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                    android:textColor="@android:color/white"
+                    android:alpha="0.8"
+                    tools:text="2024/01/15" />
+
+            </LinearLayout>
+
+            <!-- Favorite indicator (future feature) -->
+            <ImageView
+                android:id="@+id/iconFavorite"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_margin="8dp"
+                android:alpha="0.8"
+                android:background="@drawable/circle_background_white"
+                android:contentDescription="@string/favorite_indicator"
+                android:padding="4dp"
+                android:src="@drawable/ic_favorite_24"
+                android:tint="@color/material_dynamic_primary50"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="@+id/imageViewCloth"
+                app:layout_constraintTop_toTopOf="@+id/imageViewCloth"
+                tools:visibility="visible" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</layout>
