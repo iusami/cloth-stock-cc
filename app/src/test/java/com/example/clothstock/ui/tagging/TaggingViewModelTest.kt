@@ -21,11 +21,11 @@ import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 /**
  * TaggingViewModelのユニットテスト
@@ -84,7 +84,7 @@ class TaggingViewModelTest {
         
         // Then: デフォルト値が設定されている
         assertNotNull(tagData)
-        assertEquals(TagData.DEFAULT_SIZE, tagData.size)
+        assertEquals(TagData.DEFAULT_SIZE, tagData!!.size)
         assertEquals(TagData.DEFAULT_COLOR, tagData.color)
         assertEquals(TagData.DEFAULT_CATEGORY, tagData.category)
     }
@@ -124,7 +124,7 @@ class TaggingViewModelTest {
         // Then: サイズが更新される
         val tagData = viewModel.tagData.value
         assertNotNull(tagData)
-        assertEquals(newSize, tagData.size)
+        assertEquals(newSize, tagData!!.size)
     }
 
     @Test
@@ -138,7 +138,7 @@ class TaggingViewModelTest {
         // Then: 色が更新される
         val tagData = viewModel.tagData.value
         assertNotNull(tagData)
-        assertEquals(newColor, tagData.color)
+        assertEquals(newColor, tagData!!.color)
     }
 
     @Test
@@ -152,7 +152,7 @@ class TaggingViewModelTest {
         // Then: カテゴリが更新される
         val tagData = viewModel.tagData.value
         assertNotNull(tagData)
-        assertEquals(newCategory, tagData.category)
+        assertEquals(newCategory, tagData!!.category)
     }
 
     // ===== バリデーションテスト =====
@@ -168,7 +168,7 @@ class TaggingViewModelTest {
         // Then: バリデーションエラーが表示される
         val validationError = viewModel.validationError.value
         assertNotNull(validationError)
-        assertTrue(validationError.contains("サイズは60～160"))
+        assertTrue(validationError!!.contains("サイズは60～160"))
     }
 
     @Test
@@ -182,7 +182,7 @@ class TaggingViewModelTest {
         // Then: バリデーションエラーが表示される
         val validationError = viewModel.validationError.value
         assertNotNull(validationError)
-        assertTrue(validationError.contains("サイズは60～160"))
+        assertTrue(validationError!!.contains("サイズは60～160"))
     }
 
     /**
@@ -197,7 +197,7 @@ class TaggingViewModelTest {
         // Then: 期待されるエラーメッセージが表示される
         val validationError = viewModel.validationError.value
         assertNotNull(validationError)
-        assertTrue(validationError.contains(expectedErrorText))
+        assertTrue(validationError!!.contains(expectedErrorText))
     }
 
     @Test
@@ -329,7 +329,7 @@ class TaggingViewModelTest {
         // Then: 最新の状態が保持される
         val tagData = viewModel.tagData.value
         assertNotNull(tagData)
-        assertEquals(130, tagData.size)
+        assertEquals(130, tagData!!.size)
         assertEquals("緑", tagData.color)
         assertEquals("アウター", tagData.category)
     }
@@ -347,7 +347,7 @@ class TaggingViewModelTest {
         // Then: デフォルト状態に戻る
         val tagData = viewModel.tagData.value
         assertNotNull(tagData)
-        assertEquals(TagData.DEFAULT_SIZE, tagData.size)
+        assertEquals(TagData.DEFAULT_SIZE, tagData!!.size)
         assertEquals(TagData.DEFAULT_COLOR, tagData.color)
         assertEquals(TagData.DEFAULT_CATEGORY, tagData.category)
     }
