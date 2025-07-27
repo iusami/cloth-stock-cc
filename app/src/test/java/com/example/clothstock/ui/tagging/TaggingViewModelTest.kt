@@ -20,7 +20,7 @@ import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when` as whenever
+import org.mockito.Mockito.`when`
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -243,7 +243,7 @@ class TaggingViewModelTest {
         viewModel.updateCategory(validTagData.category)
         
         // リポジトリが成功を返すようにモック
-        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
+        `when`(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
@@ -282,7 +282,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
+        `when`(clothRepository.insertItem(any(ClothItem::class.java))).thenReturn(1L)
         
         // When: 保存を開始
         viewModel.saveTaggedItem(imagePath)
@@ -302,7 +302,7 @@ class TaggingViewModelTest {
         viewModel.updateColor(validTagData.color)
         viewModel.updateCategory(validTagData.category)
         
-        whenever(clothRepository.insertItem(any(ClothItem::class.java))).thenThrow(RuntimeException("Database error"))
+        `when`(clothRepository.insertItem(any(ClothItem::class.java))).thenThrow(RuntimeException("Database error"))
         
         // When: 保存を実行
         viewModel.saveTaggedItem(imagePath)
