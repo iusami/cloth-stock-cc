@@ -13,6 +13,9 @@
     
     <!-- Android 13 (API 33) 以降の画像アクセス権限 -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
+    <!-- バイブレーション機能（UXフィードバック用） -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- カメラハードウェアの要求 -->
     <uses-feature 

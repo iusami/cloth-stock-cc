@@ -37,6 +37,14 @@
     <string name="error_invalid_size">サイズは60～160の範囲で入力してください</string>
     <string name="error_required_field">必須項目です</string>
     
+    <!-- ギャラリー画面 -->
+    <string name="empty_gallery_message">写真がありません</string>
+    <string name="empty_gallery_description">カメラで写真を撮影して衣服を管理しましょう</string>
+    <string name="empty_gallery_icon">空のギャラリーアイコン</string>
+    <string name="button_take_photo">写真を撮る</string>
+    <string name="cloth_image_description">衣服の写真</string>
+    <string name="favorite_indicator">お気に入り表示</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
