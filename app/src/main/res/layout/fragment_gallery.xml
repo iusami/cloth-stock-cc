@@ -145,7 +145,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
-            android:contentDescription="@string/button_camera"
+            android:contentDescription="@string/button_take_photo"
             app:srcCompat="@drawable/ic_camera_24" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
