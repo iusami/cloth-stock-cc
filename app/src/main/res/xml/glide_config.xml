@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glide設定ファイル - パフォーマンス最適化 -->
+<resources>
+    <!-- ディスクキャッシュサイズ: 100MB -->
+    <integer name="glide_disk_cache_size">104857600</integer>
+    
+    <!-- メモリキャッシュサイズ: デバイスメモリの1/4 -->
+    <fraction name="glide_memory_cache_size">0.25</fraction>
+    
+    <!-- ビットマッププールサイズ: デバイスメモリの1/8 -->
+    <fraction name="glide_bitmap_pool_size">0.125</fraction>
+    
+    <!-- デコード形式の設定 -->
+    <string name="glide_decode_format">PREFER_RGB_565</string>
+</resources>
