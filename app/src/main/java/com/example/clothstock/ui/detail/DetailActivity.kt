@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AnimationUtils
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -52,6 +53,9 @@ class DetailActivity : AppCompatActivity() {
         
         // ViewModelの監視設定
         observeViewModel()
+        
+        // バックプレス処理の設定
+        setupBackPressedCallback()
         
         // データ読み込み
         if (clothItemId != INVALID_CLOTH_ITEM_ID) {
@@ -268,10 +272,17 @@ class DetailActivity : AppCompatActivity() {
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
+    /**
+     * バックプレス処理の設定（最新Android推奨方式）
+     */
+    private fun setupBackPressedCallback() {
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // DetailActivityからの戻り処理
+                finish()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
     }
     
     override fun onDestroy() {
