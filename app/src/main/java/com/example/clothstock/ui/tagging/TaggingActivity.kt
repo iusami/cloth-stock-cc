@@ -300,6 +300,12 @@ class TaggingActivity : AppCompatActivity() {
                 showError(it)
             }
         }
+        
+        // 未保存変更の監視
+        viewModel.hasUnsavedChanges.observe(this) { hasChanges ->
+            // 必要に応じてUI状態を更新（例：保存ボタンの強調表示など）
+            // 現在は特に処理なし
+        }
     }
     
     /**
@@ -433,15 +439,67 @@ class TaggingActivity : AppCompatActivity() {
      * キャンセル確認ダイアログの表示
      */
     private fun showCancelConfirmationDialog() {
-        AlertDialog.Builder(this)
+        val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+        val hasUnsavedChanges = viewModel.hasUnsavedChanges()
+        
+        // 変更がない場合は確認なしで終了
+        if (!hasUnsavedChanges) {
+            setResult(RESULT_CANCELED)
+            finish()
+            return
+        }
+        
+        val message = if (isEditMode) "変更を破棄しますか？" else "入力を破棄しますか？"
+        val builder = AlertDialog.Builder(this)
             .setTitle("確認")
-            .setMessage("変更を破棄しますか？")
+            .setMessage(message)
             .setPositiveButton("破棄") { _, _ ->
                 setResult(RESULT_CANCELED)
                 finish()
             }
             .setNegativeButton("続行", null)
-            .show()
+        
+        // 編集モードの場合は「元に戻す」オプションを追加
+        if (isEditMode) {
+            builder.setNeutralButton("元に戻す") { _, _ ->
+                viewModel.revertToOriginal()
+            }
+        }
+        
+        builder.show()
+    }
+    
+    /**
+     * フィールド更新アニメーション
+     */
+    private fun animateFieldUpdate(editText: android.widget.EditText, newText: String) {
+        editText.apply {
+            // フェードアウト
+            animate()
+                .alpha(0.3f)
+                .setDuration(150)
+                .withEndAction {
+                    setText(newText)
+                    // フェードイン
+                    animate()
+                        .alpha(1.0f)
+                        .setDuration(150)
+                        .start()
+                }
+                .start()
+        }
+    }
+    
+    /**
+     * 編集モードでの初期フォーカス設定
+     */
+    private fun setEditModeFocus() {
+        // 最初の編集フィールド（色）にフォーカスを当てる
+        binding.editTextColor.requestFocus()
+        
+        // キーボードを表示
+        val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        inputMethodManager.showSoftInput(binding.editTextColor, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 }
 

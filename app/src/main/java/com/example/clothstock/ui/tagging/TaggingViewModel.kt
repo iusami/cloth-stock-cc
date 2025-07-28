@@ -45,6 +45,13 @@ class TaggingViewModel(
     // 編集モードフラグ
     private var isEditMode: Boolean = false
     private var editingItemId: Long = -1L
+    
+    // 変更追跡用のフラグ
+    private val _hasUnsavedChanges = MutableLiveData<Boolean>(false)
+    val hasUnsavedChanges: LiveData<Boolean> = _hasUnsavedChanges
+    
+    // 元のデータの保持（編集モード時）
+    private var originalTagData: TagData? = null
 
     // ===== 初期化 =====
 
@@ -90,6 +97,18 @@ class TaggingViewModel(
     fun resetToDefault() {
         _tagData.value = TagData.createDefault()
         _validationError.value = null
+        _hasUnsavedChanges.value = false
+    }
+    
+    /**
+     * 元のデータに戻す（編集モード時のリセット）
+     */
+    fun revertToOriginal() {
+        if (isEditMode && originalTagData != null) {
+            _tagData.value = originalTagData
+            _hasUnsavedChanges.value = false
+            _validationError.value = null
+        }
     }
 
     /**
@@ -100,6 +119,7 @@ class TaggingViewModel(
     fun setEditMode(clothItemId: Long) {
         isEditMode = true
         editingItemId = clothItemId
+        _hasUnsavedChanges.value = false
         loadClothItem(clothItemId)
     }
     
@@ -117,6 +137,8 @@ class TaggingViewModel(
                 if (item != null) {
                     _clothItem.value = item
                     _tagData.value = item.tagData
+                    originalTagData = item.tagData // 元データを保存
+                    _hasUnsavedChanges.value = false
                     _errorMessage.value = null
                 } else {
                     _errorMessage.value = "アイテムが見つかりません"
@@ -287,6 +309,35 @@ class TaggingViewModel(
         val updatedData = updateFunction(currentData)
         _tagData.value = updatedData
         validateCurrentData()
+        
+        // 編集モードの場合、変更を検出
+        if (isEditMode) {
+            checkForChanges(updatedData)
+        }
+    }
+    
+    /**
+     * データの変更を検出してダーティフラグを更新
+     * 
+     * @param currentData 現在のタグデータ
+     */
+    private fun checkForChanges(currentData: TagData) {
+        val hasChanges = originalTagData?.let { original ->
+            original.size != currentData.size ||
+            original.color != currentData.color ||
+            original.category != currentData.category
+        } ?: false
+        
+        _hasUnsavedChanges.value = hasChanges
+    }
+    
+    /**
+     * 変更があるかどうかを確認
+     * 
+     * @return 未保存の変更がある場合true
+     */
+    fun hasUnsavedChanges(): Boolean {
+        return _hasUnsavedChanges.value ?: false
     }
     
     /**
