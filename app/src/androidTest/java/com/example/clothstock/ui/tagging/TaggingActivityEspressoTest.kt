@@ -11,6 +11,7 @@ import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import com.example.clothstock.R
+import org.hamcrest.Matchers.containsString
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -223,11 +224,182 @@ class TaggingActivityEspressoTest {
         }
     }
 
+    // ===== 編集モードテスト（Task 7.2）=====
+
+    @Test
+    fun 編集モード_既存データでフィールドが事前入力される() {
+        // Given: 編集モード用のIntent（既存アイテムID付き）
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: アクティビティを起動
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            // Then: 既存データでフィールドが事前入力される
+            onView(withId(R.id.editTextColor))
+                .check(matches(withText("青"))) // テストデータの想定値
+            
+            onView(withId(R.id.editTextCategory))
+                .check(matches(withText("トップス"))) // テストデータの想定値
+            
+            // NumberPickerの値確認（実装後に詳細化）
+            onView(withId(R.id.numberPickerSize))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun 編集モード_画面タイトルが編集モードになる() {
+        // Given: 編集モード用のIntent
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: アクティビティを起動
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            // Then: タイトルが編集モードを示す
+            onView(withText("タグを編集"))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun 編集モード_保存ボタンで更新処理が実行される() {
+        // Given: 編集モード用のIntent
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: データを変更して保存ボタンを押す
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            onView(withId(R.id.editTextColor))
+                .perform(clearText())
+                .perform(typeText("赤"))
+                .perform(closeSoftKeyboard())
+            
+            onView(withId(R.id.buttonSave))
+                .perform(click())
+
+            // Then: 更新成功メッセージが表示される
+            onView(withText("更新しました"))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun 編集モード_キャンセル時に元データが保持される() {
+        // Given: 編集モード用のIntent
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: データを変更してキャンセルする
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            onView(withId(R.id.editTextColor))
+                .perform(clearText())
+                .perform(typeText("黄色"))
+                .perform(closeSoftKeyboard())
+            
+            onView(withId(R.id.buttonCancel))
+                .perform(click())
+            
+            // 確認ダイアログで「破棄」を選択
+            onView(withText("破棄"))
+                .perform(click())
+
+            // Then: アクティビティが終了される（元データは変更されない）
+            // 実際の確認は別の画面で行う
+        }
+    }
+
+    @Test
+    fun 編集モード_無効なClothItemIDでエラー処理される() {
+        // Given: 無効なClothItemID
+        val intent = createEditModeIntent(clothItemId = -1L)
+
+        // When: アクティビティを起動
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            // Then: エラーメッセージが表示される
+            onView(withText("アイテムが見つかりません"))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun 編集モード_存在しないClothItemIDでエラー処理される() {
+        // Given: 存在しないClothItemID
+        val intent = createEditModeIntent(clothItemId = 999L)
+
+        // When: アクティビティを起動
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            // Then: エラーメッセージが表示される
+            onView(withText("アイテムが見つかりません"))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun 編集モード_バリデーションエラー時に適切なメッセージ表示() {
+        // Given: 編集モード用のIntent
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: 無効なデータで保存を試行
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            onView(withId(R.id.editTextColor))
+                .perform(clearText())
+                .perform(closeSoftKeyboard())
+            
+            onView(withId(R.id.buttonSave))
+                .perform(click())
+
+            // Then: バリデーションエラーが表示される
+            onView(withId(R.id.textViewError))
+                .check(matches(isDisplayed()))
+                .check(matches(withText(containsString("色を入力してください"))))
+        }
+    }
+
+    @Test
+    fun 編集モード_変更なしでも保存可能() {
+        // Given: 編集モード用のIntent
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: データを変更せずに保存ボタンを押す
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            onView(withId(R.id.buttonSave))
+                .perform(click())
+
+            // Then: 保存成功メッセージが表示される
+            onView(withText("更新しました"))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    // ===== DetailActivity統合テスト =====
+
+    @Test
+    fun DetailActivityからの編集遷移_正常に画面遷移する() {
+        // Given: DetailActivityから編集ボタンをタップした状態をシミュレート
+        val intent = createEditModeIntent(clothItemId = 1L)
+
+        // When: TaggingActivityが編集モードで起動
+        ActivityScenario.launch<TaggingActivity>(intent).use {
+            // Then: 編集モードの画面が正常に表示される
+            onView(withText("タグを編集"))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.imageViewCaptured))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.editTextColor))
+                .check(matches(isDisplayed()))
+        }
+    }
+
     // ===== ヘルパーメソッド =====
 
     private fun createValidIntent(): Intent {
         return Intent(ApplicationProvider.getApplicationContext(), TaggingActivity::class.java).apply {
             putExtra(TaggingActivity.EXTRA_IMAGE_URI, testImageUri.toString())
+        }
+    }
+
+    private fun createEditModeIntent(clothItemId: Long): Intent {
+        return Intent(ApplicationProvider.getApplicationContext(), TaggingActivity::class.java).apply {
+            putExtra(TaggingActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
+            putExtra(TaggingActivity.EXTRA_EDIT_MODE, true)
         }
     }
 }

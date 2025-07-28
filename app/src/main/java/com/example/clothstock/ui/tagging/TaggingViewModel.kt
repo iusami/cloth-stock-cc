@@ -34,6 +34,17 @@ class TaggingViewModel(
 
     private val _saveResult = MutableLiveData<SaveResult>()
     val saveResult: LiveData<SaveResult> = _saveResult
+    
+    // 編集モード用のLiveData
+    private val _clothItem = MutableLiveData<ClothItem?>()
+    val clothItem: LiveData<ClothItem?> = _clothItem
+    
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
+    
+    // 編集モードフラグ
+    private var isEditMode: Boolean = false
+    private var editingItemId: Long = -1L
 
     // ===== 初期化 =====
 
@@ -82,6 +93,43 @@ class TaggingViewModel(
     }
 
     /**
+     * 編集モードを設定
+     * 
+     * @param clothItemId 編集するアイテムのID
+     */
+    fun setEditMode(clothItemId: Long) {
+        isEditMode = true
+        editingItemId = clothItemId
+        loadClothItem(clothItemId)
+    }
+    
+    /**
+     * 既存のアイテムを読み込み
+     * 
+     * @param clothItemId 読み込むアイテムのID
+     */
+    private fun loadClothItem(clothItemId: Long) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                val item = clothRepository.getItemById(clothItemId)
+                
+                if (item != null) {
+                    _clothItem.value = item
+                    _tagData.value = item.tagData
+                    _errorMessage.value = null
+                } else {
+                    _errorMessage.value = "アイテムが見つかりません"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "データの読み込みに失敗しました: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
      * タグ付きアイテムを保存
      * 
      * @param imagePath 画像ファイルのパス
@@ -91,22 +139,12 @@ class TaggingViewModel(
             try {
                 _isLoading.value = true
 
-                // 事前バリデーション
-                val validationError = validateSaveRequest(imagePath)
-                if (validationError != null) {
-                    _saveResult.value = SaveResult.Error(validationError)
-                    return@launch
-                }
-
-                // 保存処理実行
-                val currentTagData = _tagData.value ?: TagData.createDefault()
-                val clothItem = createClothItem(imagePath!!, currentTagData)
-                val insertedId = clothRepository.insertItem(clothItem)
-                
-                _saveResult.value = if (insertedId > 0) {
-                    SaveResult.Success(insertedId)
+                if (isEditMode) {
+                    // 編集モード: 既存アイテムを更新
+                    updateExistingItem()
                 } else {
-                    SaveResult.Error("保存に失敗しました")
+                    // 新規作成モード: 新しいアイテムを保存
+                    saveNewItem(imagePath)
                 }
 
             } catch (e: Exception) {
@@ -121,6 +159,61 @@ class TaggingViewModel(
             }
         }
     }
+    
+    /**
+     * 新しいアイテムを保存
+     * 
+     * @param imagePath 画像ファイルのパス
+     */
+    private suspend fun saveNewItem(imagePath: String?) {
+        // 事前バリデーション
+        val validationError = validateSaveRequest(imagePath)
+        if (validationError != null) {
+            _saveResult.value = SaveResult.Error(validationError)
+            return
+        }
+
+        // 保存処理実行
+        val currentTagData = _tagData.value ?: TagData.createDefault()
+        val clothItem = createClothItem(imagePath!!, currentTagData)
+        val insertedId = clothRepository.insertItem(clothItem)
+        
+        _saveResult.value = if (insertedId > 0) {
+            SaveResult.Success(insertedId)
+        } else {
+            SaveResult.Error("保存に失敗しました")
+        }
+    }
+    
+    /**
+     * 既存アイテムを更新
+     */
+    private suspend fun updateExistingItem() {
+        val currentItem = _clothItem.value
+        if (currentItem == null) {
+            _saveResult.value = SaveResult.Error("更新対象のアイテムが見つかりません")
+            return
+        }
+        
+        val currentTagData = _tagData.value ?: TagData.createDefault()
+        val validationResult = currentTagData.validate()
+        if (validationResult.isError()) {
+            _saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: "バリデーションエラー")
+            return
+        }
+        
+        // 更新用のClothItemを作成
+        val updatedItem = currentItem.copy(
+            tagData = currentTagData
+        )
+        
+        val updateResult = clothRepository.updateItem(updatedItem)
+        _saveResult.value = if (updateResult) {
+            SaveResult.Success(editingItemId)
+        } else {
+            SaveResult.Error("更新に失敗しました")
+        }
+    }
 
     /**
      * 保存リクエストのバリデーション
@@ -129,9 +222,12 @@ class TaggingViewModel(
      * @return エラーメッセージ（成功時はnull）
      */
     private fun validateSaveRequest(imagePath: String?): String? {
-        // 画像パスの検証
-        if (imagePath.isNullOrBlank()) {
-            return "画像パスが必要です"
+        // 編集モードでは画像パスの検証をスキップ
+        if (!isEditMode) {
+            // 画像パスの検証
+            if (imagePath.isNullOrBlank()) {
+                return "画像パスが必要です"
+            }
         }
 
         // タグデータの検証
