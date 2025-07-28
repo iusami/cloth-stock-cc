@@ -104,10 +104,12 @@ class TaggingViewModel(
      * 元のデータに戻す（編集モード時のリセット）
      */
     fun revertToOriginal() {
-        if (isEditMode && originalTagData != null) {
-            _tagData.value = originalTagData
-            _hasUnsavedChanges.value = false
-            _validationError.value = null
+        if (isEditMode) {
+            originalTagData?.let { original ->
+                _tagData.value = original
+                _hasUnsavedChanges.value = false
+                _validationError.value = null
+            }
         }
     }
 
