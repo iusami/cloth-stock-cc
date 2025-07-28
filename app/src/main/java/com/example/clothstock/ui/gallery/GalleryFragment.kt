@@ -15,6 +15,7 @@ import com.example.clothstock.R
 import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.example.clothstock.ui.camera.CameraActivity
+import com.example.clothstock.ui.detail.DetailActivity
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -91,8 +92,8 @@ class GalleryFragment : Fragment() {
 
         // Adapterを設定
         adapter = ClothItemAdapter { clothItem ->
-            // アニメーション付きでアイテム詳細表示
-            showItemDetailsWithAnimation(clothItem)
+            // DetailActivityに遷移
+            navigateToDetailActivity(clothItem.id)
         }
         binding.recyclerViewGallery.adapter = adapter
     }
@@ -180,19 +181,13 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * アニメーション付きアイテム詳細表示（改善版）
+     * DetailActivityに遷移
      */
-    private fun showItemDetailsWithAnimation(clothItem: com.example.clothstock.data.model.ClothItem) {
-        // バイブレーション付きフィードバック（API 26+）
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
-            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+    private fun navigateToDetailActivity(clothItemId: Long) {
+        val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+            putExtra(DetailActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
         }
-        
-        val message = "アイテム詳細: ${clothItem.tagData.category} - ${clothItem.tagData.color}"
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT)
-            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
-            .show()
+        startActivity(intent)
     }
 
     /**
