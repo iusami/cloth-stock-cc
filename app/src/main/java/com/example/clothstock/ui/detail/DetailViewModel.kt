@@ -9,6 +9,7 @@ import com.example.clothstock.data.repository.ClothRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlin.math.pow
 
 /**
  * DetailActivity用ViewModel
@@ -84,12 +85,15 @@ class DetailViewModel(
 
     /**
      * パフォーマンス最適化: エラーハンドリングとリトライ機能
+     * 指数バックオフによる負荷制御（1秒→2秒→4秒）
      */
     private suspend fun handleLoadingError(exception: Exception, clothItemId: Long) {
         when {
             retryCount < maxRetryCount -> {
                 retryCount++
-                delay(1000L * retryCount) // 指数バックオフ
+                // 真の指数バックオフ: 1秒, 2秒, 4秒の遅延
+                val delayMs = (1000L * (2.0.pow(retryCount - 1))).toLong()
+                delay(delayMs)
                 try {
                     val item = repository.getItemById(clothItemId)
                     if (item != null) {
