@@ -5,6 +5,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.Registry
 import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.engine.cache.LruResourceCache
 import com.bumptech.glide.load.engine.cache.MemorySizeCalculator
 import com.bumptech.glide.module.AppGlideModule
@@ -19,6 +20,13 @@ import com.bumptech.glide.request.RequestOptions
 @GlideModule
 class ClothStockGlideModule : AppGlideModule() {
 
+    companion object {
+        // キャッシュサイズ定数（可読性重視）
+        private const val DISK_CACHE_SIZE_MB = 100
+        private const val BYTES_PER_MB = 1024 * 1024
+        private const val DISK_CACHE_SIZE_BYTES = DISK_CACHE_SIZE_MB * BYTES_PER_MB
+    }
+
     override fun applyOptions(context: Context, builder: com.bumptech.glide.GlideBuilder) {
         // メモリキャッシュサイズ計算 - デバイスメモリの20%
         val calculator = MemorySizeCalculator.Builder(context)
@@ -28,6 +36,9 @@ class ClothStockGlideModule : AppGlideModule() {
         
         // メモリキャッシュ設定
         builder.setMemoryCache(LruResourceCache(calculator.memoryCacheSize.toLong()))
+        
+        // ディスクキャッシュ設定（定数使用で可読性向上）
+        builder.setDiskCache(InternalCacheDiskCacheFactory(context, DISK_CACHE_SIZE_BYTES.toLong()))
         
         // デフォルトリクエストオプション設定（パフォーマンス重視）
         val requestOptions = RequestOptions()
