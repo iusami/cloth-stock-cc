@@ -10,6 +10,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.databinding.ItemClothGridBinding
+import com.example.clothstock.util.GlideUtils
 
 /**
  * 衣服アイテムグリッド表示用RecyclerView.Adapter
@@ -50,14 +51,12 @@ class ClothItemAdapter(
             // ローディング状態の初期設定（Glideリクエスト前に表示）
             binding.progressBarImage.visibility = android.view.View.VISIBLE
 
-            // Glideで画像読み込み（最適化済み）
+            // Glideで画像読み込み（パフォーマンス最適化済み）
             Glide.with(binding.imageViewCloth.context)
                 .load(clothItem.imagePath)
+                .apply(GlideUtils.getThumbnailOptions(300)) // サムネイル用最適化設定
                 .placeholder(R.drawable.ic_photo_placeholder) 
                 .error(R.drawable.ic_error_photo)
-                .centerCrop()
-                .override(300, 300) // メモリ効率のためのリサイズ
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
                 .transition(DrawableTransitionOptions.withCrossFade(150))
                 .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
                     override fun onLoadFailed(

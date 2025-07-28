@@ -16,6 +16,7 @@ import com.example.clothstock.R
 import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.ActivityDetailBinding
 import com.example.clothstock.ui.tagging.TaggingActivity
+import com.example.clothstock.util.GlideUtils
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -147,10 +148,8 @@ class DetailActivity : AppCompatActivity() {
         // パフォーマンス最適化されたGlide設定
         viewModel.onImageLoadStart()
         
-        val requestOptions = RequestOptions()
-            .diskCacheStrategy(DiskCacheStrategy.ALL) // ディスクキャッシュ最適化
-            .override(1080, 1920) // メモリ使用量最適化
-            .centerCrop()
+        // フルサイズ表示用の最適化設定（ハードウェアビットマップ有効）
+        val requestOptions = GlideUtils.getFullSizeDisplayOptions()
         
         Glide.with(this)
             .load(clothItem.imagePath)

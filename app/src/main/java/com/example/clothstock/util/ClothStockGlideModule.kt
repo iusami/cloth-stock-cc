@@ -29,10 +29,11 @@ class ClothStockGlideModule : AppGlideModule() {
         // メモリキャッシュ設定
         builder.setMemoryCache(LruResourceCache(calculator.memoryCacheSize.toLong()))
         
-        // デフォルトリクエストオプション設定
+        // デフォルトリクエストオプション設定（パフォーマンス重視）
         val requestOptions = RequestOptions()
             .format(DecodeFormat.PREFER_RGB_565) // メモリ使用量削減
-            .disallowHardwareConfig() // ハードウェアビットマップ無効化（編集可能性確保）
+            // ハードウェアビットマップはデフォルトで有効（パフォーマンス向上）
+            // 編集が必要な場合は個別にdisallowHardwareConfig()を指定
         
         builder.setDefaultRequestOptions(requestOptions)
     }
