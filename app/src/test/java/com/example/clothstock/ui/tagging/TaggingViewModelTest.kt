@@ -1,7 +1,9 @@
 package com.example.clothstock.ui.tagging
 
+import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.model.ValidationResult
@@ -43,6 +45,9 @@ class TaggingViewModelTest {
 
     @Mock
     private lateinit var clothRepository: ClothRepository
+    
+    @Mock
+    private lateinit var application: Application
 
     @Mock
     private lateinit var tagDataObserver: Observer<TagData>
@@ -64,8 +69,10 @@ class TaggingViewModelTest {
         MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
         
+        // Applicationのmock設定は必要に応じて各テストで行う
+        
         // テスト開始時にViewModelを初期化
-        viewModel = TaggingViewModel(clothRepository)
+        viewModel = TaggingViewModel(application, clothRepository)
         
         // Observerを登録
         viewModel.tagData.observeForever(tagDataObserver)

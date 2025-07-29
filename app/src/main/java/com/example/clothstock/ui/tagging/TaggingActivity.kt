@@ -46,7 +46,7 @@ class TaggingActivity : AppCompatActivity() {
         
         // ViewModelの初期化（簡易的なDI）
         val repository = ClothRepositoryImpl.getInstance(this)
-        val viewModelFactory = TaggingViewModelFactory(repository)
+        val viewModelFactory = TaggingViewModelFactory(application, repository)
         viewModel = ViewModelProvider(this, viewModelFactory)[TaggingViewModel::class.java]
         binding.viewModel = viewModel
         
@@ -84,13 +84,13 @@ class TaggingActivity : AppCompatActivity() {
      */
     private fun setupEditMode(clothItemId: Long) {
         if (clothItemId <= 0) {
-            showError("アイテムが見つかりません")
+            showError(getString(R.string.error_item_not_found))
             finish()
             return
         }
         
         // タイトルを編集モードに変更
-        title = "タグを編集"
+        title = getString(R.string.title_edit_tags)
         
         // ViewModelに編集モードを設定
         viewModel.setEditMode(clothItemId)
@@ -101,7 +101,7 @@ class TaggingActivity : AppCompatActivity() {
      */
     private fun setupNewEntryMode() {
         // タイトルはデフォルトのまま
-        title = "タグを追加"
+        title = getString(R.string.title_add_tags)
     }
     
     /**
@@ -113,7 +113,7 @@ class TaggingActivity : AppCompatActivity() {
         
         if (imageUriString.isNullOrEmpty() && !isEditMode) {
             // 新規作成モードでは画像URIが必須
-            showError("画像が見つかりません")
+            showError(getString(R.string.error_image_not_found))
             finish()
             return
         } else if (!imageUriString.isNullOrEmpty()) {
@@ -143,7 +143,7 @@ class TaggingActivity : AppCompatActivity() {
                     target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
                     isFirstResource: Boolean
                 ): Boolean {
-                    showError("画像の読み込みに失敗しました")
+                    showError(getString(R.string.error_image_load_failed))
                     return false
                 }
                 
@@ -237,7 +237,7 @@ class TaggingActivity : AppCompatActivity() {
             if (imageUriString != null) {
                 viewModel.saveTaggedItem(imageUriString)
             } else {
-                showError("画像の保存に失敗しました")
+                showError(getString(R.string.error_image_save_failed))
             }
         }
         
@@ -267,7 +267,8 @@ class TaggingActivity : AppCompatActivity() {
         viewModel.saveResult.observe(this) { result ->
             when (result) {
                 is TaggingViewModel.SaveResult.Success -> {
-                    val message = if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) "更新しました" else "保存しました"
+                    val message = if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) 
+                        getString(R.string.message_updated) else getString(R.string.message_saved)
                     showSuccessMessage(message)
                     setResult(RESULT_OK)
                     finish()
@@ -411,7 +412,7 @@ class TaggingActivity : AppCompatActivity() {
                 if (imageUriString != null) {
                     viewModel.saveTaggedItem(imageUriString)
                 } else {
-                    showError("画像の保存に失敗しました")
+                    showError(getString(R.string.error_image_save_failed))
                 }
             }
             .setNegativeButton("キャンセル", null)
@@ -449,19 +450,20 @@ class TaggingActivity : AppCompatActivity() {
             return
         }
         
-        val message = if (isEditMode) "変更を破棄しますか？" else "入力を破棄しますか？"
+        val message = if (isEditMode) 
+            getString(R.string.confirm_discard_changes) else getString(R.string.confirm_discard_input)
         val builder = AlertDialog.Builder(this)
-            .setTitle("確認")
+            .setTitle(getString(R.string.cancel))
             .setMessage(message)
-            .setPositiveButton("破棄") { _, _ ->
+            .setPositiveButton(getString(R.string.button_discard)) { _, _ ->
                 setResult(RESULT_CANCELED)
                 finish()
             }
-            .setNegativeButton("続行", null)
+            .setNegativeButton(getString(R.string.button_continue), null)
         
         // 編集モードの場合は「元に戻す」オプションを追加
         if (isEditMode) {
-            builder.setNeutralButton("元に戻す") { _, _ ->
+            builder.setNeutralButton(getString(R.string.button_revert)) { _, _ ->
                 viewModel.revertToOriginal()
             }
         }
@@ -507,13 +509,14 @@ class TaggingActivity : AppCompatActivity() {
  * TaggingViewModel用のViewModelFactory
  */
 class TaggingViewModelFactory(
+    private val application: android.app.Application,
     private val repository: com.example.clothstock.data.repository.ClothRepository
 ) : ViewModelProvider.Factory {
     
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TaggingViewModel::class.java)) {
-            return TaggingViewModel(repository) as T
+            return TaggingViewModel(application, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

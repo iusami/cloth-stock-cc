@@ -37,6 +37,31 @@
     <string name="error_invalid_size">サイズは60～160の範囲で入力してください</string>
     <string name="error_required_field">必須項目です</string>
     
+    <!-- タグ編集エラーメッセージ -->
+    <string name="error_item_not_found">アイテムが見つかりません</string>
+    <string name="error_image_not_found">画像が見つかりません</string>
+    <string name="error_image_load_failed">画像の読み込みに失敗しました</string>
+    <string name="error_image_save_failed">画像の保存に失敗しました</string>
+    <string name="error_data_load_failed">データの読み込みに失敗しました: %1$s</string>
+    <string name="error_save_failed">保存に失敗しました</string>
+    <string name="error_update_failed">更新に失敗しました</string>
+    <string name="error_update_target_not_found">更新対象のアイテムが見つかりません</string>
+    <string name="error_unknown">不明なエラーが発生しました</string>
+    
+    <!-- 成功・確認メッセージ -->
+    <string name="message_saved">保存しました</string>
+    <string name="message_updated">更新しました</string>
+    <string name="confirm_discard_changes">変更を破棄しますか？</string>
+    <string name="confirm_discard_input">入力を破棄しますか？</string>
+    <string name="button_discard">破棄</string>
+    <string name="button_continue">続行</string>
+    <string name="button_revert">元に戻す</string>
+    
+    <!-- タグ編集画面タイトル -->
+    <string name="title_add_tags">タグを追加</string>
+    <string name="title_edit_tags">タグを編集</string>
+    <string name="button_update">更新</string>
+    
     <!-- ギャラリー画面 -->
     <string name="empty_gallery_message">写真がありません</string>
     <string name="empty_gallery_description">カメラで写真を撮影して衣服を管理しましょう</string>

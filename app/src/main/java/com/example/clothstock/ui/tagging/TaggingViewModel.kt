@@ -1,9 +1,11 @@
 package com.example.clothstock.ui.tagging
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.model.ValidationResult
@@ -18,8 +20,9 @@ import java.util.Date
  * TDDアプローチに従って実装され、テストカバレッジの高い設計
  */
 class TaggingViewModel(
+    application: Application,
     private val clothRepository: ClothRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     // ===== LiveData定義 =====
 
@@ -143,10 +146,10 @@ class TaggingViewModel(
                     _hasUnsavedChanges.value = false
                     _errorMessage.value = null
                 } else {
-                    _errorMessage.value = "アイテムが見つかりません"
+                    _errorMessage.value = getApplication<Application>().getString(R.string.error_item_not_found)
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "データの読み込みに失敗しました: ${e.message}"
+                _errorMessage.value = getApplication<Application>().getString(R.string.error_data_load_failed, e.message ?: "")
             } finally {
                 _isLoading.value = false
             }
@@ -174,7 +177,7 @@ class TaggingViewModel(
             } catch (e: Exception) {
                 val (errorType, isRetryable) = categorizeException(e)
                 _saveResult.value = SaveResult.Error(
-                    message = e.message ?: "不明なエラーが発生しました",
+                    message = e.message ?: getApplication<Application>().getString(R.string.error_unknown),
                     errorType = errorType,
                     isRetryable = isRetryable
                 )
@@ -205,7 +208,7 @@ class TaggingViewModel(
         _saveResult.value = if (insertedId > 0) {
             SaveResult.Success(insertedId)
         } else {
-            SaveResult.Error("保存に失敗しました")
+            SaveResult.Error(getApplication<Application>().getString(R.string.error_save_failed))
         }
     }
     
@@ -215,7 +218,7 @@ class TaggingViewModel(
     private suspend fun updateExistingItem() {
         val currentItem = _clothItem.value
         if (currentItem == null) {
-            _saveResult.value = SaveResult.Error("更新対象のアイテムが見つかりません")
+            _saveResult.value = SaveResult.Error(getApplication<Application>().getString(R.string.error_update_target_not_found))
             return
         }
         
@@ -235,7 +238,7 @@ class TaggingViewModel(
         _saveResult.value = if (updateResult) {
             SaveResult.Success(editingItemId)
         } else {
-            SaveResult.Error("更新に失敗しました")
+            SaveResult.Error(getApplication<Application>().getString(R.string.error_update_failed))
         }
     }
 
