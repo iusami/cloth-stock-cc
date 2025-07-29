@@ -1,6 +1,7 @@
 package com.example.clothstock.ui.tagging
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -23,6 +24,10 @@ class TaggingViewModel(
     application: Application,
     private val clothRepository: ClothRepository
 ) : AndroidViewModel(application) {
+
+    companion object {
+        private const val TAG = "TaggingViewModel"
+    }
 
     // ===== LiveData定義 =====
 
@@ -193,22 +198,38 @@ class TaggingViewModel(
      * @param imagePath 画像ファイルのパス
      */
     private suspend fun saveNewItem(imagePath: String?) {
+        Log.d(TAG, "saveNewItem started - imagePath: $imagePath")
+        
         // 事前バリデーション
         val validationError = validateSaveRequest(imagePath)
         if (validationError != null) {
+            Log.e(TAG, "Validation error: $validationError")
             _saveResult.value = SaveResult.Error(validationError)
             return
         }
 
         // 保存処理実行
         val currentTagData = _tagData.value ?: TagData.createDefault()
-        val clothItem = createClothItem(imagePath!!, currentTagData)
-        val insertedId = clothRepository.insertItem(clothItem)
+        Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}'")
         
-        _saveResult.value = if (insertedId > 0) {
-            SaveResult.Success(insertedId)
-        } else {
-            SaveResult.Error(getApplication<Application>().getString(R.string.error_save_failed))
+        try {
+            val clothItem = createClothItem(imagePath!!, currentTagData)
+            Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}")
+            
+            Log.d(TAG, "Calling repository.insertItem...")
+            val insertedId = clothRepository.insertItem(clothItem)
+            Log.d(TAG, "Repository.insertItem returned: $insertedId")
+            
+            _saveResult.value = if (insertedId > 0) {
+                SaveResult.Success(insertedId)
+            } else {
+                SaveResult.Error(getApplication<Application>().getString(R.string.error_save_failed))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in saveNewItem: ${e.message}", e)
+            Log.e(TAG, "Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "Stack trace: ${e.stackTraceToString()}")
+            throw e // Re-throw to be caught by parent try-catch
         }
     }
     
