@@ -1,7 +1,9 @@
 package com.example.clothstock.ui.tagging
 
+import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.model.ValidationResult
@@ -43,6 +45,9 @@ class TaggingViewModelTest {
 
     @Mock
     private lateinit var clothRepository: ClothRepository
+    
+    @Mock
+    private lateinit var application: Application
 
     @Mock
     private lateinit var tagDataObserver: Observer<TagData>
@@ -64,8 +69,10 @@ class TaggingViewModelTest {
         MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
         
+        // Applicationのmock設定は必要に応じて各テストで行う
+        
         // テスト開始時にViewModelを初期化
-        viewModel = TaggingViewModel(clothRepository)
+        viewModel = TaggingViewModel(application, clothRepository)
         
         // Observerを登録
         viewModel.tagData.observeForever(tagDataObserver)
@@ -255,6 +262,10 @@ class TaggingViewModelTest {
 
     @Test
     fun 保存_null画像パスで失敗する() = runTest {
+        // Given: ApplicationのgetString()をmock
+        `when`(application.getString(R.string.error_image_path_required))
+            .thenReturn("画像パスが必要です")
+            
         // Given: 有効なタグデータだがnull画像パス
         val validTagData = TagData(120, "赤", "トップス")
         viewModel.updateSize(validTagData.size)
@@ -274,6 +285,10 @@ class TaggingViewModelTest {
 
     @Test
     fun 保存_空画像パスで失敗する() = runTest {
+        // Given: ApplicationのgetString()をmock
+        `when`(application.getString(R.string.error_image_path_required))
+            .thenReturn("画像パスが必要です")
+            
         // Given: 有効なタグデータだが空画像パス
         val validTagData = TagData(120, "赤", "トップス")
         viewModel.updateSize(validTagData.size)

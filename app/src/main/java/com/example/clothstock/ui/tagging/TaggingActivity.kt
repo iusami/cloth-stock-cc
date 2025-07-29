@@ -29,6 +29,8 @@ class TaggingActivity : AppCompatActivity() {
     
     companion object {
         const val EXTRA_IMAGE_URI = "extra_image_uri"
+        const val EXTRA_CLOTH_ITEM_ID = "extra_cloth_item_id"
+        const val EXTRA_EDIT_MODE = "extra_edit_mode"
     }
     
     private lateinit var binding: ActivityTaggingBinding
@@ -44,9 +46,19 @@ class TaggingActivity : AppCompatActivity() {
         
         // ViewModelの初期化（簡易的なDI）
         val repository = ClothRepositoryImpl.getInstance(this)
-        val viewModelFactory = TaggingViewModelFactory(repository)
+        val viewModelFactory = TaggingViewModelFactory(application, repository)
         viewModel = ViewModelProvider(this, viewModelFactory)[TaggingViewModel::class.java]
         binding.viewModel = viewModel
+        
+        // 編集モードの検出と初期化
+        val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+        val clothItemId = intent.getLongExtra(EXTRA_CLOTH_ITEM_ID, -1L)
+        
+        if (isEditMode) {
+            setupEditMode(clothItemId)
+        } else {
+            setupNewEntryMode()
+        }
         
         // 画像URIの取得と表示
         setupImageDisplay()
@@ -68,23 +80,58 @@ class TaggingActivity : AppCompatActivity() {
     }
     
     /**
-     * 画像表示の設定
+     * 編集モードの初期化
      */
-    private fun setupImageDisplay() {
-        val imageUriString = intent.getStringExtra(EXTRA_IMAGE_URI)
-        
-        if (imageUriString.isNullOrEmpty()) {
-            // 画像URIがない場合のエラー処理
-            showError("画像が見つかりません")
+    private fun setupEditMode(clothItemId: Long) {
+        if (clothItemId <= 0) {
+            showError(getString(R.string.error_item_not_found))
             finish()
             return
         }
         
-        imageUri = Uri.parse(imageUriString)
+        // タイトルを編集モードに変更
+        title = getString(R.string.title_edit_tags)
+        
+        // ViewModelに編集モードを設定
+        viewModel.setEditMode(clothItemId)
+    }
+    
+    /**
+     * 新規作成モードの初期化
+     */
+    private fun setupNewEntryMode() {
+        // タイトルはデフォルトのまま
+        title = getString(R.string.title_add_tags)
+    }
+    
+    /**
+     * 画像表示の設定
+     */
+    private fun setupImageDisplay() {
+        val imageUriString = intent.getStringExtra(EXTRA_IMAGE_URI)
+        val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+        
+        if (imageUriString.isNullOrEmpty() && !isEditMode) {
+            // 新規作成モードでは画像URIが必須
+            showError(getString(R.string.error_image_not_found))
+            finish()
+            return
+        } else if (!imageUriString.isNullOrEmpty()) {
+            // 画像URIがある場合は表示
+            imageUri = Uri.parse(imageUriString)
+            displayImage(imageUri)
+        }
+        // 編集モードで画像URIがない場合は既存データから読み込み（ViewModelで処理）
+    }
+    
+    /**
+     * 画像を表示する
+     */
+    private fun displayImage(uri: Uri?) {
         
         // Glideを使用して画像を表示（エラーハンドリング・最適化付き）
         Glide.with(this)
-            .load(imageUri)
+            .load(uri)
             .centerCrop()
             .placeholder(R.drawable.ic_launcher_foreground)
             .error(R.drawable.ic_launcher_foreground)
@@ -96,7 +143,7 @@ class TaggingActivity : AppCompatActivity() {
                     target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
                     isFirstResource: Boolean
                 ): Boolean {
-                    showError("画像の読み込みに失敗しました")
+                    showError(getString(R.string.error_image_load_failed))
                     return false
                 }
                 
@@ -190,7 +237,7 @@ class TaggingActivity : AppCompatActivity() {
             if (imageUriString != null) {
                 viewModel.saveTaggedItem(imageUriString)
             } else {
-                showError("画像の保存に失敗しました")
+                showError(getString(R.string.error_image_save_failed))
             }
         }
         
@@ -220,7 +267,9 @@ class TaggingActivity : AppCompatActivity() {
         viewModel.saveResult.observe(this) { result ->
             when (result) {
                 is TaggingViewModel.SaveResult.Success -> {
-                    showSuccessMessage("保存しました")
+                    val message = if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) 
+                        getString(R.string.message_updated) else getString(R.string.message_saved)
+                    showSuccessMessage(message)
                     setResult(RESULT_OK)
                     finish()
                 }
@@ -228,6 +277,35 @@ class TaggingActivity : AppCompatActivity() {
                     handleSaveError(result)
                 }
             }
+        }
+        
+        // 編集モード用のデータ読み込み監視
+        viewModel.clothItem.observe(this) { clothItem ->
+            clothItem?.let {
+                // フィールドを既存データで事前入力
+                binding.editTextColor.setText(it.tagData.color)
+                binding.editTextCategory.setText(it.tagData.category)
+                binding.numberPickerSize.value = it.tagData.size
+                
+                // 画像を表示（編集モードで画像URIがない場合）
+                if (imageUri == null && !it.imagePath.isNullOrEmpty()) {
+                    imageUri = Uri.parse(it.imagePath)
+                    displayImage(imageUri)
+                }
+            }
+        }
+        
+        // エラー処理の監視
+        viewModel.errorMessage.observe(this) { errorMessage ->
+            errorMessage?.let {
+                showError(it)
+            }
+        }
+        
+        // 未保存変更の監視
+        viewModel.hasUnsavedChanges.observe(this) { hasChanges ->
+            // 必要に応じてUI状態を更新（例：保存ボタンの強調表示など）
+            // 現在は特に処理なし
         }
     }
     
@@ -334,7 +412,7 @@ class TaggingActivity : AppCompatActivity() {
                 if (imageUriString != null) {
                     viewModel.saveTaggedItem(imageUriString)
                 } else {
-                    showError("画像の保存に失敗しました")
+                    showError(getString(R.string.error_image_save_failed))
                 }
             }
             .setNegativeButton("キャンセル", null)
@@ -362,15 +440,68 @@ class TaggingActivity : AppCompatActivity() {
      * キャンセル確認ダイアログの表示
      */
     private fun showCancelConfirmationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("確認")
-            .setMessage("変更を破棄しますか？")
-            .setPositiveButton("破棄") { _, _ ->
+        val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+        val hasUnsavedChanges = viewModel.hasUnsavedChanges()
+        
+        // 変更がない場合は確認なしで終了
+        if (!hasUnsavedChanges) {
+            setResult(RESULT_CANCELED)
+            finish()
+            return
+        }
+        
+        val message = if (isEditMode) 
+            getString(R.string.confirm_discard_changes) else getString(R.string.confirm_discard_input)
+        val builder = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.cancel))
+            .setMessage(message)
+            .setPositiveButton(getString(R.string.button_discard)) { _, _ ->
                 setResult(RESULT_CANCELED)
                 finish()
             }
-            .setNegativeButton("続行", null)
-            .show()
+            .setNegativeButton(getString(R.string.button_continue), null)
+        
+        // 編集モードの場合は「元に戻す」オプションを追加
+        if (isEditMode) {
+            builder.setNeutralButton(getString(R.string.button_revert)) { _, _ ->
+                viewModel.revertToOriginal()
+            }
+        }
+        
+        builder.show()
+    }
+    
+    /**
+     * フィールド更新アニメーション
+     */
+    private fun animateFieldUpdate(editText: android.widget.EditText, newText: String) {
+        editText.apply {
+            // フェードアウト
+            animate()
+                .alpha(0.3f)
+                .setDuration(150)
+                .withEndAction {
+                    setText(newText)
+                    // フェードイン
+                    animate()
+                        .alpha(1.0f)
+                        .setDuration(150)
+                        .start()
+                }
+                .start()
+        }
+    }
+    
+    /**
+     * 編集モードでの初期フォーカス設定
+     */
+    private fun setEditModeFocus() {
+        // 最初の編集フィールド（色）にフォーカスを当てる
+        binding.editTextColor.requestFocus()
+        
+        // キーボードを表示
+        val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        inputMethodManager.showSoftInput(binding.editTextColor, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 }
 
@@ -378,13 +509,14 @@ class TaggingActivity : AppCompatActivity() {
  * TaggingViewModel用のViewModelFactory
  */
 class TaggingViewModelFactory(
+    private val application: android.app.Application,
     private val repository: com.example.clothstock.data.repository.ClothRepository
 ) : ViewModelProvider.Factory {
     
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TaggingViewModel::class.java)) {
-            return TaggingViewModel(repository) as T
+            return TaggingViewModel(application, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
