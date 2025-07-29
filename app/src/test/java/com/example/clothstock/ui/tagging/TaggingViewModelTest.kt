@@ -262,6 +262,10 @@ class TaggingViewModelTest {
 
     @Test
     fun 保存_null画像パスで失敗する() = runTest {
+        // Given: ApplicationのgetString()をmock
+        `when`(application.getString(R.string.error_image_path_required))
+            .thenReturn("画像パスが必要です")
+            
         // Given: 有効なタグデータだがnull画像パス
         val validTagData = TagData(120, "赤", "トップス")
         viewModel.updateSize(validTagData.size)
@@ -281,6 +285,10 @@ class TaggingViewModelTest {
 
     @Test
     fun 保存_空画像パスで失敗する() = runTest {
+        // Given: ApplicationのgetString()をmock
+        `when`(application.getString(R.string.error_image_path_required))
+            .thenReturn("画像パスが必要です")
+            
         // Given: 有効なタグデータだが空画像パス
         val validTagData = TagData(120, "赤", "トップス")
         viewModel.updateSize(validTagData.size)

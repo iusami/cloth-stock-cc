@@ -225,7 +225,7 @@ class TaggingViewModel(
         val currentTagData = _tagData.value ?: TagData.createDefault()
         val validationResult = currentTagData.validate()
         if (validationResult.isError()) {
-            _saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: "バリデーションエラー")
+            _saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: getApplication<Application>().getString(R.string.error_validation))
             return
         }
         
@@ -253,7 +253,7 @@ class TaggingViewModel(
         if (!isEditMode) {
             // 画像パスの検証
             if (imagePath.isNullOrBlank()) {
-                return "画像パスが必要です"
+                return getApplication<Application>().getString(R.string.error_image_path_required)
             }
         }
 
@@ -262,7 +262,7 @@ class TaggingViewModel(
         val validationResult = currentTagData.validate()
         
         return if (validationResult.isError()) {
-            validationResult.getErrorMessage() ?: "バリデーションエラー"
+            validationResult.getErrorMessage() ?: getApplication<Application>().getString(R.string.error_validation)
         } else {
             null
         }
