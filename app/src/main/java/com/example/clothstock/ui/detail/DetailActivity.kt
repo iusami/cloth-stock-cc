@@ -286,7 +286,9 @@ class DetailActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
-        // メモリリーク防止: Glideのクリア
-        Glide.with(this).clear(binding.imageViewClothDetail)
+        // Glideは自動的にActivityのライフサイクルを管理するため、
+        // 手動でのクリアは不要（むしろクラッシュの原因になる）
+        // Glide.with(this)はActivityのライフサイクルに自動的にバインドされているため、
+        // Activityがdestroyされると自動的にリクエストもキャンセルされる
     }
 }

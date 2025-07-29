@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
+import android.util.Log
 import com.example.clothstock.data.model.ClothItem
 
 /**
@@ -26,6 +27,7 @@ abstract class ClothDatabase : RoomDatabase() {
     abstract fun clothDao(): ClothDao
 
     companion object {
+        private const val TAG = "ClothDatabase"
         
         /**
          * データベース名定数
@@ -114,16 +116,41 @@ abstract class ClothDatabase : RoomDatabase() {
 
         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
             super.onOpen(db)
+            Log.d(TAG, "DatabaseCallback.onOpen called - setting PRAGMA options")
             
-            // データベースオープン時の処理
-            // WAL モードを有効化（読み書きパフォーマンス向上）
-            db.execSQL("PRAGMA journal_mode=WAL")
-            
-            // 同期モード設定（パフォーマンス重視）
-            db.execSQL("PRAGMA synchronous=NORMAL")
-            
-            // 外部キー制約を有効化
-            db.execSQL("PRAGMA foreign_keys=ON")
+            try {
+                // データベースオープン時の処理
+                // PRAGMA文はqueryメソッドを使用する必要がある
+                
+                // WAL モードを有効化（読み書きパフォーマンス向上）
+                Log.d(TAG, "Setting PRAGMA journal_mode=WAL")
+                db.query("PRAGMA journal_mode=WAL").use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        Log.d(TAG, "journal_mode set to: ${cursor.getString(0)}")
+                    }
+                }
+                
+                // 同期モード設定（パフォーマンス重視）
+                Log.d(TAG, "Setting PRAGMA synchronous=NORMAL")
+                db.query("PRAGMA synchronous=NORMAL").use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        Log.d(TAG, "synchronous set to: ${cursor.getString(0)}")
+                    }
+                }
+                
+                // 外部キー制約を有効化
+                Log.d(TAG, "Setting PRAGMA foreign_keys=ON")
+                db.query("PRAGMA foreign_keys=ON").use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        Log.d(TAG, "foreign_keys set to: ${cursor.getString(0)}")
+                    }
+                }
+                
+                Log.d(TAG, "Database onOpen completed successfully")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in DatabaseCallback.onOpen: ${e.message}", e)
+                // PRAGMA設定エラーは致命的ではないので、ログに記録して続行
+            }
         }
     }
 
