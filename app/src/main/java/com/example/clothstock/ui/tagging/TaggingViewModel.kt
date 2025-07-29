@@ -198,27 +198,27 @@ class TaggingViewModel(
      * @param imagePath 画像ファイルのパス
      */
     private suspend fun saveNewItem(imagePath: String?) {
-        Log.d(TAG, "saveNewItem started - imagePath: $imagePath")
+        safeLog { Log.d(TAG, "saveNewItem started - imagePath: $imagePath") }
         
         // 事前バリデーション
         val validationError = validateSaveRequest(imagePath)
         if (validationError != null) {
-            Log.e(TAG, "Validation error: $validationError")
+            safeLog { Log.e(TAG, "Validation error: $validationError") }
             _saveResult.value = SaveResult.Error(validationError)
             return
         }
 
         // 保存処理実行
         val currentTagData = _tagData.value ?: TagData.createDefault()
-        Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}'")
+        safeLog { Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}") }
         
         try {
             val clothItem = createClothItem(imagePath!!, currentTagData)
-            Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}")
+            safeLog { Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}") }
             
-            Log.d(TAG, "Calling repository.insertItem...")
+            safeLog { Log.d(TAG, "Calling repository.insertItem...") }
             val insertedId = clothRepository.insertItem(clothItem)
-            Log.d(TAG, "Repository.insertItem returned: $insertedId")
+            safeLog { Log.d(TAG, "Repository.insertItem returned: $insertedId") }
             
             _saveResult.value = if (insertedId > 0) {
                 SaveResult.Success(insertedId)
@@ -226,10 +226,17 @@ class TaggingViewModel(
                 SaveResult.Error(getApplication<Application>().getString(R.string.error_save_failed))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in saveNewItem: ${e.message}", e)
-            Log.e(TAG, "Exception type: ${e.javaClass.simpleName}")
-            Log.e(TAG, "Stack trace: ${e.stackTraceToString()}")
-            throw e // Re-throw to be caught by parent try-catch
+            safeLog { Log.e(TAG, "Error in saveNewItem: ${e.message}", e) }
+            safeLog { Log.e(TAG, "Exception type: ${e.javaClass.simpleName}") }
+            safeLog { Log.e(TAG, "Stack trace: ${e.stackTraceToString()}") }
+            
+            // 上位のsaveTaggedItem()でcatch済みなので、エラー結果を設定して終了
+            val (errorType, isRetryable) = categorizeException(e)
+            _saveResult.value = SaveResult.Error(
+                message = e.message ?: getApplication<Application>().getString(R.string.error_unknown),
+                errorType = errorType,
+                isRetryable = isRetryable
+            )
         }
     }
     
@@ -421,5 +428,18 @@ class TaggingViewModel(
         NETWORK,       // ネットワークエラー
         FILE_SYSTEM,   // ファイルシステムエラー
         UNKNOWN        // 不明なエラー
+    }
+    
+    /**
+     * テスト環境でのログ安全実行
+     * ユニットテストでandroid.util.Logがモックされていない場合のエラーを回避
+     */
+    private fun safeLog(logAction: () -> Unit) {
+        try {
+            logAction()
+        } catch (e: RuntimeException) {
+            // テスト環境でのログエラーを無視
+            // プロダクション環境では正常にログが出力される
+        }
     }
 }
