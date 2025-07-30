@@ -243,6 +243,8 @@ class CameraViewModel : ViewModel() {
      */
     private suspend fun captureImageInternal(context: Context, imageCapture: ImageCapture): CaptureResult {
         return suspendCancellableCoroutine { continuation ->
+            var outputFile: File? = null
+            
             try {
                 // ストレージ容量チェック
                 if (!FileUtils.hasEnoughStorage(context)) {
@@ -251,7 +253,7 @@ class CameraViewModel : ViewModel() {
                 }
 
                 // 保存先ファイルを作成
-                val outputFile = FileUtils.createImageFile(context)
+                outputFile = FileUtils.createImageFile(context)
                 val outputFileOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
 
                 // 画像キャプチャ実行
@@ -270,6 +272,8 @@ class CameraViewModel : ViewModel() {
                         }
 
                         override fun onError(exception: ImageCaptureException) {
+                            // エラー時に作成済みファイルをクリーンアップ
+                            outputFile?.let { cleanupOutputFile(it) }
                             continuation.resumeWithException(exception)
                         }
                     }
@@ -278,11 +282,38 @@ class CameraViewModel : ViewModel() {
                 // キャンセル時の処理
                 continuation.invokeOnCancellation {
                     Log.w(TAG, "画像キャプチャがキャンセルされました")
+                    // キャンセル時に作成済みファイルをクリーンアップ
+                    outputFile?.let { cleanupOutputFile(it) }
                 }
 
             } catch (e: Exception) {
+                // 例外発生時に作成済みファイルをクリーンアップ
+                outputFile?.let { cleanupOutputFile(it) }
                 continuation.resumeWithException(e)
             }
+        }
+    }
+
+    /**
+     * 出力ファイルの安全なクリーンアップ
+     * 
+     * キャンセルやエラー時に部分的に作成されたファイルを削除して
+     * ストレージリークを防ぐ
+     * 
+     * @param outputFile クリーンアップ対象のファイル
+     */
+    private fun cleanupOutputFile(outputFile: File) {
+        try {
+            if (outputFile.exists()) {
+                val deleted = outputFile.delete()
+                if (deleted) {
+                    Log.d(TAG, "出力ファイルをクリーンアップしました: ${outputFile.absolutePath}")
+                } else {
+                    Log.w(TAG, "出力ファイルの削除に失敗しました: ${outputFile.absolutePath}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "出力ファイルクリーンアップ中にエラーが発生しました", e)
         }
     }
 
