@@ -38,6 +38,14 @@ class LoadingStateManager {
     }
 
     /**
+     * コンテンツビューの表示モード
+     */
+    enum class ContentVisibilityMode {
+        INVISIBLE,  // View.INVISIBLE（レイアウト空間を保持、推奨）
+        GONE        // View.GONE（レイアウト空間を解放、レイアウトシフトが発生）
+    }
+
+    /**
      * ローディング管理のビルダークラス
      */
     class Builder {
@@ -45,6 +53,7 @@ class LoadingStateManager {
         private var overlayView: View? = null
         private var contentView: View? = null
         private var loadingTextView: android.widget.TextView? = null
+        private var contentVisibilityMode: ContentVisibilityMode = ContentVisibilityMode.INVISIBLE
 
         fun withProgressBar(progressBar: ProgressBar): Builder {
             this.progressBar = progressBar
@@ -66,12 +75,18 @@ class LoadingStateManager {
             return this
         }
 
+        fun withContentVisibilityMode(mode: ContentVisibilityMode): Builder {
+            this.contentVisibilityMode = mode
+            return this
+        }
+
         fun build(): LoadingStateManager {
             return LoadingStateManager(
                 progressBar = progressBar,
                 overlayView = overlayView,
                 contentView = contentView,
-                loadingTextView = loadingTextView
+                loadingTextView = loadingTextView,
+                contentVisibilityMode = contentVisibilityMode
             )
         }
     }
@@ -80,17 +95,20 @@ class LoadingStateManager {
     private val overlayView: View?
     private val contentView: View?
     private val loadingTextView: android.widget.TextView?
+    private val contentVisibilityMode: ContentVisibilityMode
 
     private constructor(
         progressBar: ProgressBar?,
         overlayView: View?,
         contentView: View?,
-        loadingTextView: android.widget.TextView?
+        loadingTextView: android.widget.TextView?,
+        contentVisibilityMode: ContentVisibilityMode
     ) {
         this.progressBar = progressBar
         this.overlayView = overlayView
         this.contentView = contentView
         this.loadingTextView = loadingTextView
+        this.contentVisibilityMode = contentVisibilityMode
     }
 
     /**
@@ -146,8 +164,11 @@ class LoadingStateManager {
         // オーバーレイを表示（ユーザー操作を無効化）
         overlayView?.visibility = View.VISIBLE
         
-        // コンテンツビューを非表示（任意）
-        contentView?.visibility = View.GONE
+        // コンテンツビューの表示制御（レイアウトシフト対応）
+        contentView?.visibility = when (contentVisibilityMode) {
+            ContentVisibilityMode.INVISIBLE -> View.INVISIBLE  // 推奨：レイアウト空間を保持
+            ContentVisibilityMode.GONE -> View.GONE           // レイアウト空間を解放（シフトあり）
+        }
         
         // ローディングメッセージを設定
         message?.let { msg ->
@@ -247,6 +268,48 @@ class LoadingStateManager {
                 .withOverlay(overlayView)
                 .withContentView(contentView)
                 .withLoadingText(loadingTextView)
+                .build()
+        }
+
+        /**
+         * レイアウトシフト防止付きローディング管理
+         * 
+         * @param progressBar プログレスバー
+         * @param overlayView オーバーレイビュー
+         * @param contentView コンテンツビュー（INVISIBLE使용）
+         * @return LoadingStateManagerインスタンス
+         */
+        fun withLayoutStable(
+            progressBar: ProgressBar,
+            overlayView: View,
+            contentView: View
+        ): LoadingStateManager {
+            return builder()
+                .withProgressBar(progressBar)
+                .withOverlay(overlayView)
+                .withContentView(contentView)
+                .withContentVisibilityMode(ContentVisibilityMode.INVISIBLE)
+                .build()
+        }
+
+        /**
+         * レイアウト最適化付きローディング管理
+         * 
+         * @param progressBar プログレスバー
+         * @param overlayView オーバーレイビュー
+         * @param contentView コンテンツビュー（GONE使用）
+         * @return LoadingStateManagerインスタンス
+         */
+        fun withLayoutOptimized(
+            progressBar: ProgressBar,
+            overlayView: View,
+            contentView: View
+        ): LoadingStateManager {
+            return builder()
+                .withProgressBar(progressBar)
+                .withOverlay(overlayView)
+                .withContentView(contentView)
+                .withContentVisibilityMode(ContentVisibilityMode.GONE)
                 .build()
         }
     }

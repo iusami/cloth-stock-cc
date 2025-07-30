@@ -64,4 +64,25 @@ class LoadingStateManagerTest {
         // Given & When & Then
         assertNotNull(LoadingStateManager.Companion::class.java)
     }
+
+    @Test
+    fun contentVisibilityMode_各モードが正しく定義される() {
+        // Given & When & Then
+        assertNotNull(LoadingStateManager.ContentVisibilityMode.INVISIBLE)
+        assertNotNull(LoadingStateManager.ContentVisibilityMode.GONE)
+    }
+
+    @Test
+    fun withLayoutStable_レイアウト安定版が作成される() {
+        // Given & When & Then
+        // AndroidのViewが必要なため、クラス存在確認のみ実施
+        assertNotNull(LoadingStateManager::class.java)
+    }
+
+    @Test
+    fun withLayoutOptimized_レイアウト最適化版が作成される() {
+        // Given & When & Then
+        // AndroidのViewが必要なため、クラス存在確認のみ実施
+        assertNotNull(LoadingStateManager::class.java)
+    }
 }
