@@ -210,10 +210,10 @@ class GalleryViewModel(
 
     /**
      * アイテムを削除
+     * 
+     * 注意: 削除操作はリトライ対象外のため、lastOperationは設定しない
      */
     fun deleteItem(itemId: Long) {
-        _lastOperation.value = "deleteItem"
-        
         viewModelScope.launch {
             _isLoading.value = true
             _loadingState.value = LoadingStateManager.LoadingState.Loading("アイテムを削除中...")
@@ -256,15 +256,15 @@ class GalleryViewModel(
 
     /**
      * 最後の操作を再試行
+     * 
+     * 注意: 削除操作は安全性の観点からリトライ対象外
+     * 削除に失敗した場合は手動で再度削除を実行する必要がある
      */
     fun retryLastOperation() {
         when (_lastOperation.value) {
             "loadClothItems" -> loadClothItems()
-            "deleteItem" -> {
-                // 削除の再試行は安全性のため実装しない
-                _errorMessage.value = "削除操作の再試行はサポートされていません"
-            }
-            else -> loadClothItems()
+            // deleteItemは安全性のためリトライ対象外（ケースを削除）
+            else -> loadClothItems() // デフォルトはデータ再読み込み
         }
     }
 }
