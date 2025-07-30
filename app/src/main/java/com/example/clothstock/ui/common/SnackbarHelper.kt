@@ -2,6 +2,7 @@ package com.example.clothstock.ui.common
 
 import android.view.View
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.example.clothstock.R
 
@@ -222,24 +223,25 @@ object SnackbarHelper {
             snackbar.setAction(actionText) { action() }
         }
 
-        // タイプに応じた色設定
+        // タイプに応じた色設定（アプリテーマカラーを使用）
         val context = view.context
         when (type) {
             Type.SUCCESS -> {
-                snackbar.setBackgroundTint(context.getColor(android.R.color.holo_green_dark))
-                snackbar.setTextColor(context.getColor(android.R.color.white))
+                snackbar.setBackgroundTint(ContextCompat.getColor(context, R.color.snackbar_success_background))
+                snackbar.setTextColor(ContextCompat.getColor(context, R.color.snackbar_success_text))
             }
             Type.ERROR -> {
-                snackbar.setBackgroundTint(context.getColor(android.R.color.holo_red_dark))
-                snackbar.setTextColor(context.getColor(android.R.color.white))
-                snackbar.setActionTextColor(context.getColor(android.R.color.white))
+                snackbar.setBackgroundTint(ContextCompat.getColor(context, R.color.snackbar_error_background))
+                snackbar.setTextColor(ContextCompat.getColor(context, R.color.snackbar_error_text))
+                snackbar.setActionTextColor(ContextCompat.getColor(context, R.color.snackbar_error_text))
             }
             Type.WARNING -> {
-                snackbar.setBackgroundTint(context.getColor(android.R.color.holo_orange_dark))
-                snackbar.setTextColor(context.getColor(android.R.color.white))
+                snackbar.setBackgroundTint(ContextCompat.getColor(context, R.color.snackbar_warning_background))
+                snackbar.setTextColor(ContextCompat.getColor(context, R.color.snackbar_warning_text))
             }
             Type.INFO -> {
-                // デフォルトの色を使用
+                snackbar.setBackgroundTint(ContextCompat.getColor(context, R.color.snackbar_info_background))
+                snackbar.setTextColor(ContextCompat.getColor(context, R.color.snackbar_info_text))
             }
         }
 
