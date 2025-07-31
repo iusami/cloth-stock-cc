@@ -155,7 +155,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false  # カバレッジ失敗でもCIは継続
 
-  # 静的解析（将来の拡張用）
+  # 静的解析（Detekt + Android Lint）
   static-analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
@@ -164,6 +164,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      security-events: write  # SARIF upload用
     
     steps:
     - name: Checkout repository
@@ -198,6 +199,9 @@ jobs:
     - name: Run lint analysis
       run: ./gradlew lintDebug --stacktrace
       
+    - name: Run Detekt static analysis
+      run: ./gradlew detekt --stacktrace
+      
     - name: Upload lint results
       uses: actions/upload-artifact@v4
       if: always()
@@ -205,6 +209,23 @@ jobs:
         name: lint-results-${{ github.sha }}
         path: '**/build/reports/lint-results-*.html'
         retention-days: 30
+        
+    - name: Upload Detekt results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: detekt-results-${{ github.sha }}
+        path: |
+          **/build/reports/detekt/
+          app/config/detekt/baseline.xml
+        retention-days: 30
+        
+    - name: Upload Detekt SARIF to GitHub
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: '**/build/reports/detekt/detekt.sarif'
+        category: detekt
 
   # Android Studio相当のビルド検証（kaptタスク等の明示的テスト）
   android-studio-build-verification:
