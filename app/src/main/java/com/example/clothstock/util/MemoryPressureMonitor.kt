@@ -39,29 +39,47 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
     }
 
     /**
-     * 監視開始（最小実装）
+     * 監視開始（Phase 2 REFACTOR - 改善実装）
      */
     fun startMonitoring(): Boolean {
         isMonitoring = true
         
-        // 現在のプレッシャーレベルをチェックして必要に応じて対応
-        val currentLevel = getCurrentPressureLevel()
-        when (currentLevel) {
-            PressureLevel.HIGH -> {
-                triggerAutoCleanup()
-                pressureCallback?.onLowMemoryWarning()
+        // バックグラウンドでの継続監視を開始
+        Thread {
+            while (isMonitoring) {
+                try {
+                    val currentLevel = getCurrentPressureLevel()
+                    
+                    // レベル変更のコールバック
+                    pressureCallback?.onPressureLevelChanged(currentLevel)
+                    
+                    // レベル別の対応処理
+                    when (currentLevel) {
+                        PressureLevel.HIGH -> {
+                            triggerAutoCleanup()
+                            pressureCallback?.onLowMemoryWarning()
+                        }
+                        PressureLevel.CRITICAL -> {
+                            triggerAutoCleanup()
+                            triggerGarbageCollection()
+                            pressureCallback?.onCriticalMemoryError()
+                        }
+                        else -> {
+                            // LOW, MODERATEは特別な処理なし
+                        }
+                    }
+                    
+                    // 監視間隔（100ms）
+                    Thread.sleep(100)
+                    
+                } catch (e: InterruptedException) {
+                    break
+                } catch (e: Exception) {
+                    // エラーが発生しても監視は継続
+                }
             }
-            PressureLevel.CRITICAL -> {
-                triggerAutoCleanup()
-                triggerGarbageCollection()
-                pressureCallback?.onCriticalMemoryError()
-            }
-            else -> {
-                // LOW, MODERATEは特別な処理なし
-            }
-        }
+        }.start()
         
-        pressureCallback?.onPressureLevelChanged(currentLevel)
         return true
     }
 
