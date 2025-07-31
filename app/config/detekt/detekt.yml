@@ -1,0 +1,161 @@
+# Detekt設定ファイル
+# cloth-stock プロジェクト用: 未使用コード検出に特化
+# 
+# ドキュメント: https://detekt.dev/docs/rules/
+# バージョン: 1.23.4
+
+# ビルド設定 - 未使用コード検出に最適化
+build:
+  maxIssues: 5 # 軽微な問題は許容し、重要な問題にフォーカス
+  excludeCorrectable: false
+
+# 検査対象設定 - 未使用コード検出を重視
+config:
+  validation: true
+  warningsAsErrors: false # 警告をエラーにしない（開発効率重視）
+  checkExhaustiveness: false
+
+# スタイル関連ルール（未使用コード検出の中心）
+style:
+  active: true
+  
+  # ★ 未使用import検出（最重要）
+  UnusedImports:
+    active: true
+  
+  # ★ 未使用プライベートメンバー検出（重要）
+  UnusedPrivateMember:
+    active: true
+    allowedNames: "(_|ignored|expected|serialVersionUID|testDispatcher)"
+  
+  # ★ 未使用パラメータ検出
+  UnusedParameter:
+    active: true
+    allowedNames: "_|ignored|expected"
+  
+  # ★ 未使用プライベートクラス検出
+  UnusedPrivateClass:
+    active: true
+  
+  # ワイルドカードimport制限（コード整理）
+  WildcardImport:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
+    excludeImports: ['java.util.*', 'kotlinx.android.synthetic.*']
+  
+  # 不要な括弧の除去（コードクリーンアップ）
+  UnnecessaryParentheses:
+    active: true
+  
+  # 式よりも関数呼び出しが適切な場合
+  UseCheckOrError:
+    active: true
+  
+  # ファイル末尾の改行
+  NewLineAtEndOfFile:
+    active: true
+
+# 複雑さ関連ルール（必要最小限）
+complexity:
+  active: true
+  
+  # 複雑なメソッドの検出
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 15
+  
+  # 長いパラメータリスト
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 7
+    ignoreDefaultParameters: false
+    ignoreDataClasses: true
+  
+  # 大きなクラス
+  LargeClass:
+    active: true
+    threshold: 600
+
+# バグの可能性があるコード（基本的なもののみ）
+potential-bugs:
+  active: true
+  
+  # equals実装の問題
+  EqualsAlwaysReturnsTrueOrFalse:
+    active: true
+  
+  # 明示的なガベージコレクション呼び出し
+  ExplicitGarbageCollectionCall:
+    active: true
+  
+  # ロケール依存の文字列フォーマット
+  ImplicitDefaultLocale:
+    active: true
+  
+  # Lateinitの使用
+  LateinitUsage:
+    active: false # Android開発では一般的なため無効化
+
+# パフォーマンス関連（必要最小限）
+performance:
+  active: true
+  
+  # ArrayPrimitive
+  ArrayPrimitive:
+    active: true
+  
+  # for-each vs indices
+  ForEachOnRange:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
+  
+  # SpreadOperator
+  SpreadOperator:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
+
+# 空ブロック関連
+empty-blocks:
+  active: true
+  
+  # 空のキャッチブロック
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: "^(_|(ignore|expected).*)"
+  
+  # 空のクラスブロック
+  EmptyClassBlock:
+    active: true
+  
+  # 空の関数ブロック
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: false
+
+# 例外処理（基本的なもののみ）
+exceptions:
+  active: true
+  
+  # 汎用的な例外のキャッチ
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - ArrayIndexOutOfBoundsException
+      - Error
+      - Exception
+      - IllegalMonitorStateException
+      - NullPointerException
+      - IndexOutOfBoundsException
+      - RuntimeException
+      - Throwable
+    allowedExceptionNameRegex: "^(_|(ignore|expected).*)"
+  
+  # 汎用的な例外のスロー
+  TooGenericExceptionThrown:
+    active: true
+    exceptionNames:
+      - Error
+      - Exception
+      - Throwable
+      - RuntimeException
