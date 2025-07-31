@@ -2,8 +2,6 @@ package com.example.clothstock.util
 
 import android.content.Context
 import android.graphics.Bitmap
-import java.io.File
-import java.io.FileOutputStream
 
 /**
  * 画像圧縮管理クラス（TDD GREEN段階 - 最小実装）
