@@ -40,12 +40,25 @@ class ImageCompressionManager private constructor(private val context: Context) 
     }
 
     /**
-     * ストレージ用圧縮（最小実装）
+     * ストレージ用圧縮（REFACTOR段階 - 改善実装）
      */
     fun compressForStorage(bitmap: Bitmap, targetSizeKB: Int): Bitmap {
-        // 単純に50%圧縮したビットマップを返す（テスト通過用）
-        val scaledWidth = (bitmap.width * 0.7f).toInt()
-        val scaledHeight = (bitmap.height * 0.7f).toInt()
+        // 現在のビットマップサイズを計算
+        val currentSizeBytes = bitmap.byteCount
+        val targetSizeBytes = targetSizeKB * 1024
+        
+        // 必要な圧縮率を計算
+        val compressionRatio = kotlin.math.min(1.0f, targetSizeBytes.toFloat() / currentSizeBytes.toFloat())
+        
+        // 50%以下の圧縮を実現するため、さらに圧縮
+        val actualCompressionRatio = kotlin.math.min(compressionRatio, 0.5f)
+        
+        // スケール係数を計算（面積ベース）
+        val scaleFactor = kotlin.math.sqrt(actualCompressionRatio.toDouble()).toFloat()
+        
+        val scaledWidth = kotlin.math.max(1, (bitmap.width * scaleFactor).toInt())
+        val scaledHeight = kotlin.math.max(1, (bitmap.height * scaleFactor).toInt())
+        
         return Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
     }
 
