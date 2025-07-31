@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.repository.ClothRepository
+import com.example.clothstock.ui.common.LoadingStateManager
+import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -33,6 +35,12 @@ class GalleryViewModel(
     private val _isEmpty = MutableLiveData<Boolean>()
     val isEmpty: LiveData<Boolean> = _isEmpty
 
+    private val _loadingState = MutableLiveData<LoadingStateManager.LoadingState>(LoadingStateManager.LoadingState.Idle)
+    val loadingState: LiveData<LoadingStateManager.LoadingState> = _loadingState
+
+    private val _lastOperation = MutableLiveData<String>()
+    val lastOperation: LiveData<String> = _lastOperation
+
     // ===== 初期化 =====
 
     init {
@@ -52,26 +60,51 @@ class GalleryViewModel(
      * 衣服アイテムを読み込み
      */
     fun loadClothItems() {
+        _lastOperation.value = "loadClothItems"
+        
         viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _errorMessage.value = null
+            _isLoading.value = true
+            _loadingState.value = LoadingStateManager.LoadingState.Loading("アイテムを読み込み中...")
+            _errorMessage.value = null
 
-                clothRepository.getAllItems()
-                    .catch { exception ->
-                        throw exception
-                    }
-                    .collect { items ->
-                        _clothItems.value = items
-                        _isEmpty.value = items.isEmpty()
-                        _isLoading.value = false
-                    }
-
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "不明なエラーが発生しました"
-                _isLoading.value = false
+            // リトライ機能付きでデータベースアクセス
+            val retryResult = RetryMechanism.executeForDatabase {
+                loadClothItemsInternal()
             }
+
+            when (retryResult) {
+                is RetryMechanism.RetryResult.Success -> {
+                    _clothItems.value = retryResult.result
+                    _isEmpty.value = retryResult.result.isEmpty()
+                    _loadingState.value = LoadingStateManager.LoadingState.Success
+                }
+                is RetryMechanism.RetryResult.Failure -> {
+                    _errorMessage.value = retryResult.lastException.message ?: "アイテムの読み込みに失敗しました"
+                    _loadingState.value = LoadingStateManager.LoadingState.Error(
+                        "アイテムの読み込みに失敗しました",
+                        retryResult.lastException
+                    )
+                }
+            }
+            
+            _isLoading.value = false
         }
+    }
+
+    /**
+     * アイテム読み込みの内部実装（リトライ対応）
+     */
+    private suspend fun loadClothItemsInternal(): List<ClothItem> {
+        val items = mutableListOf<ClothItem>()
+        clothRepository.getAllItems()
+            .catch { exception ->
+                throw exception
+            }
+            .collect { itemList ->
+                items.clear()
+                items.addAll(itemList)
+            }
+        return items.toList()
     }
 
     /**
@@ -177,27 +210,61 @@ class GalleryViewModel(
 
     /**
      * アイテムを削除
+     * 
+     * 注意: 削除操作はリトライ対象外のため、lastOperationは設定しない
      */
     fun deleteItem(itemId: Long) {
         viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _errorMessage.value = null
+            _isLoading.value = true
+            _loadingState.value = LoadingStateManager.LoadingState.Loading("アイテムを削除中...")
+            _errorMessage.value = null
 
+            // リトライ機能付きで削除実行
+            val retryResult = RetryMechanism.executeForDatabase {
                 val isDeleted = clothRepository.deleteItemById(itemId)
-                
-                if (isDeleted) {
+                if (!isDeleted) {
+                    throw Exception("アイテムの削除に失敗しました")
+                }
+                isDeleted
+            }
+
+            when (retryResult) {
+                is RetryMechanism.RetryResult.Success -> {
+                    _loadingState.value = LoadingStateManager.LoadingState.Success
                     // 削除成功時はデータを再読み込み
                     loadClothItems()
-                } else {
-                    _errorMessage.value = "アイテムの削除に失敗しました"
+                }
+                is RetryMechanism.RetryResult.Failure -> {
+                    _errorMessage.value = retryResult.lastException.message ?: "削除エラーが発生しました"
+                    _loadingState.value = LoadingStateManager.LoadingState.Error(
+                        "削除に失敗しました",
+                        retryResult.lastException
+                    )
                     _isLoading.value = false
                 }
-
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "削除エラーが発生しました"
-                _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * エラー状態をクリア
+     */
+    fun clearError() {
+        _errorMessage.value = null
+        _loadingState.value = LoadingStateManager.LoadingState.Idle
+    }
+
+    /**
+     * 最後の操作を再試行
+     * 
+     * 注意: 削除操作は安全性の観点からリトライ対象外
+     * 削除に失敗した場合は手動で再度削除を実行する必要がある
+     */
+    fun retryLastOperation() {
+        when (_lastOperation.value) {
+            "loadClothItems" -> loadClothItems()
+            // deleteItemは安全性のためリトライ対象外（ケースを削除）
+            else -> loadClothItems() // デフォルトはデータ再読み込み
         }
     }
 }

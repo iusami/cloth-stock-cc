@@ -20,6 +20,9 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.clearInvocations
+import org.mockito.Mockito.times
+import androidx.lifecycle.MutableLiveData
 import java.util.Date
 
 /**
@@ -238,5 +241,50 @@ class GalleryViewModelTest {
         
         // Then: エラーメッセージが設定される
         assertEquals("アイテムの削除に失敗しました", viewModel.errorMessage.value)
+    }
+
+    @Test
+    fun `retryLastOperation_loadClothItems操作の場合は再読み込みされる`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // リセット（初期化時のgetAllItems呼び出しをクリア）
+        clearInvocations(clothRepository)
+        
+        // When: リトライ実行
+        viewModel.retryLastOperation()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: データ読み込みが再実行される
+        verify(clothRepository, times(1)).getAllItems()
+    }
+
+    @Test
+    fun `retryLastOperation_未知の操作の場合はデフォルトで再読み込みされる`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        
+        // lastOperationを未知の値に設定（reflectionを使用）
+        val lastOperationField = viewModel.javaClass.getDeclaredField("_lastOperation")
+        lastOperationField.isAccessible = true
+        val lastOperationLiveData = lastOperationField.get(viewModel) as MutableLiveData<String>
+        lastOperationLiveData.value = "unknownOperation"
+        
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // リセット（初期化時の呼び出しをクリア）
+        clearInvocations(clothRepository)
+        
+        // When: リトライ実行
+        viewModel.retryLastOperation()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: デフォルトでデータ読み込みが実行される
+        verify(clothRepository, times(1)).getAllItems()
     }
 }

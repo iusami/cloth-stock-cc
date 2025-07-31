@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ダークテーマ用のSnackbarカラー -->
+<resources>
+    <!-- Snackbar colors for dark theme -->
+    <color name="snackbar_success_background">#388E3C</color>
+    <color name="snackbar_success_text">#FFFFFF</color>
+    <color name="snackbar_error_background">@color/md_theme_dark_error</color>
+    <color name="snackbar_error_text">@color/md_theme_dark_onError</color>
+    <color name="snackbar_warning_background">#F57C00</color>
+    <color name="snackbar_warning_text">#FFFFFF</color>
+    <color name="snackbar_info_background">@color/md_theme_dark_surfaceVariant</color>
+    <color name="snackbar_info_text">@color/md_theme_dark_onSurfaceVariant</color>
+</resources>

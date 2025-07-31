@@ -56,4 +56,14 @@
     
     <!-- Launcher icon colors -->
     <color name="ic_launcher_background">#6750A4</color>
+    
+    <!-- Snackbar colors -->
+    <color name="snackbar_success_background">#4CAF50</color>
+    <color name="snackbar_success_text">#FFFFFF</color>
+    <color name="snackbar_error_background">@color/md_theme_light_error</color>
+    <color name="snackbar_error_text">@color/md_theme_light_onError</color>
+    <color name="snackbar_warning_background">#FF9800</color>
+    <color name="snackbar_warning_text">#FFFFFF</color>
+    <color name="snackbar_info_background">@color/md_theme_light_surfaceVariant</color>
+    <color name="snackbar_info_text">@color/md_theme_light_onSurfaceVariant</color>
 </resources>

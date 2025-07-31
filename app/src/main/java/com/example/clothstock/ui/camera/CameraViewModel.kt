@@ -11,6 +11,8 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.example.clothstock.util.FileUtils
+import com.example.clothstock.ui.common.LoadingStateManager
+import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,6 +46,12 @@ class CameraViewModel : ViewModel() {
     private val _cameraError = MutableLiveData<CameraError?>()
     val cameraError: LiveData<CameraError?> = _cameraError
 
+    private val _loadingState = MutableLiveData<LoadingStateManager.LoadingState>(LoadingStateManager.LoadingState.Idle)
+    val loadingState: LiveData<LoadingStateManager.LoadingState> = _loadingState
+
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     // ===== CameraX関連 =====
     
     private var cameraProvider: ProcessCameraProvider? = null
@@ -70,23 +78,46 @@ class CameraViewModel : ViewModel() {
 
         currentContext = context
         _cameraState.value = CameraState.INITIALIZING
+        _isLoading.value = true
+        _loadingState.value = LoadingStateManager.LoadingState.Loading("カメラを初期化中...")
 
         viewModelScope.launch {
-            try {
-                cameraProvider = getCameraProviderAsync(context)
-                
-                setupCamera()
-                
-                _cameraState.value = CameraState.READY
-                isInitialized = true
-                
-                Log.d(TAG, "カメラの初期化が完了しました")
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "カメラの初期化中にエラーが発生しました", e)
-                handleCameraError(CameraError.INITIALIZATION_FAILED)
+            // リトライ機能付きで初期化を実行
+            val retryResult = RetryMechanism.execute(
+                config = RetryMechanism.RetryConfig.FILE_IO_DEFAULT
+            ) {
+                initializeCameraInternal(context)
             }
+
+            when (retryResult) {
+                is RetryMechanism.RetryResult.Success -> {
+                    _cameraState.value = CameraState.READY
+                    _loadingState.value = LoadingStateManager.LoadingState.Success
+                    isInitialized = true
+                    Log.d(TAG, "カメラの初期化が完了しました（${retryResult.attemptCount}回目の試行で成功）")
+                }
+                is RetryMechanism.RetryResult.Failure -> {
+                    Log.e(TAG, "カメラの初期化に失敗しました（${retryResult.attemptCount}回試行）", retryResult.lastException)
+                    _loadingState.value = LoadingStateManager.LoadingState.Error(
+                        "カメラの初期化に失敗しました",
+                        retryResult.lastException
+                    )
+                    handleCameraError(CameraError.INITIALIZATION_FAILED)
+                }
+            }
+            
+            _isLoading.value = false
         }
+    }
+
+    /**
+     * カメラ初期化の内部実装（リトライ対応）
+     * 
+     * @param context アプリケーションコンテキスト
+     */
+    private suspend fun initializeCameraInternal(context: Context) {
+        cameraProvider = getCameraProviderAsync(context)
+        setupCamera()
     }
 
     /**
@@ -162,16 +193,67 @@ class CameraViewModel : ViewModel() {
         val context = currentContext ?: return false
 
         _cameraState.value = CameraState.CAPTURING
+        _isLoading.value = true
+        _loadingState.value = LoadingStateManager.LoadingState.Loading("写真を撮影中...")
 
         viewModelScope.launch {
+            // リトライ機能付きで画像キャプチャを実行
+            val retryResult = RetryMechanism.executeForFileIO {
+                captureImageInternal(context, imageCapture)
+            }
+
+            when (retryResult) {
+                is RetryMechanism.RetryResult.Success -> {
+                    _captureResult.value = retryResult.result
+                    _cameraState.value = CameraState.READY
+                    _loadingState.value = LoadingStateManager.LoadingState.Success
+                    Log.d(TAG, "画像キャプチャが完了しました（${retryResult.attemptCount}回目の試行で成功）")
+                    
+                    // 古いファイルをクリーンアップ（バックグラウンドで実行）
+                    withContext(Dispatchers.IO) {
+                        try {
+                            FileUtils.cleanupOldFiles(context)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "古いファイルのクリーンアップ中にエラーが発生しました", e)
+                        }
+                    }
+                }
+                is RetryMechanism.RetryResult.Failure -> {
+                    Log.e(TAG, "画像キャプチャに失敗しました（${retryResult.attemptCount}回試行）", retryResult.lastException)
+                    _loadingState.value = LoadingStateManager.LoadingState.Error(
+                        "画像キャプチャに失敗しました",
+                        retryResult.lastException
+                    )
+                    handleCaptureError(retryResult.lastException)
+                }
+            }
+            
+            _isLoading.value = false
+        }
+
+        return true
+    }
+
+    /**
+     * 画像キャプチャの内部実装（リトライ対応）
+     * 
+     * @param context コンテキスト
+     * @param imageCapture ImageCaptureオブジェクト
+     * @return キャプチャ結果
+     */
+    private suspend fun captureImageInternal(context: Context, imageCapture: ImageCapture): CaptureResult {
+        return suspendCancellableCoroutine { continuation ->
+            var outputFile: File? = null
+            
             try {
                 // ストレージ容量チェック
                 if (!FileUtils.hasEnoughStorage(context)) {
-                    throw Exception("ストレージ容量が不足しています")
+                    continuation.resumeWithException(Exception("ストレージ容量が不足しています"))
+                    return@suspendCancellableCoroutine
                 }
 
                 // 保存先ファイルを作成
-                val outputFile = FileUtils.createImageFile(context)
+                outputFile = FileUtils.createImageFile(context)
                 val outputFileOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
 
                 // 画像キャプチャ実行
@@ -180,38 +262,59 @@ class CameraViewModel : ViewModel() {
                     cameraExecutor,
                     object : ImageCapture.OnImageSavedCallback {
                         override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                            viewModelScope.launch(Dispatchers.Main) {
-                                try {
-                                    val uri = FileUtils.getUriForFile(context, outputFile)
-                                    val result = CaptureResult.Success(uri, outputFile.absolutePath)
-                                    _captureResult.value = result
-                                    _cameraState.value = CameraState.READY
-                                    
-                                    // 古いファイルをクリーンアップ（バックグラウンドで実行）
-                                    withContext(Dispatchers.IO) {
-                                        FileUtils.cleanupOldFiles(context)
-                                    }
-                                    
-                                } catch (e: Exception) {
-                                    handleCaptureError(e)
-                                }
+                            try {
+                                val uri = FileUtils.getUriForFile(context, outputFile)
+                                val result = CaptureResult.Success(uri, outputFile.absolutePath)
+                                continuation.resume(result)
+                            } catch (e: Exception) {
+                                continuation.resumeWithException(e)
                             }
                         }
 
                         override fun onError(exception: ImageCaptureException) {
-                            viewModelScope.launch(Dispatchers.Main) {
-                                handleCaptureError(exception)
-                            }
+                            // エラー時に作成済みファイルをクリーンアップ
+                            outputFile?.let { cleanupOutputFile(it) }
+                            continuation.resumeWithException(exception)
                         }
                     }
                 )
 
+                // キャンセル時の処理
+                continuation.invokeOnCancellation {
+                    Log.w(TAG, "画像キャプチャがキャンセルされました")
+                    // キャンセル時に作成済みファイルをクリーンアップ
+                    outputFile?.let { cleanupOutputFile(it) }
+                }
+
             } catch (e: Exception) {
-                handleCaptureError(e)
+                // 例外発生時に作成済みファイルをクリーンアップ
+                outputFile?.let { cleanupOutputFile(it) }
+                continuation.resumeWithException(e)
             }
         }
+    }
 
-        return true
+    /**
+     * 出力ファイルの安全なクリーンアップ
+     * 
+     * キャンセルやエラー時に部分的に作成されたファイルを削除して
+     * ストレージリークを防ぐ
+     * 
+     * @param outputFile クリーンアップ対象のファイル
+     */
+    private fun cleanupOutputFile(outputFile: File) {
+        try {
+            if (outputFile.exists()) {
+                val deleted = outputFile.delete()
+                if (deleted) {
+                    Log.d(TAG, "出力ファイルをクリーンアップしました: ${outputFile.absolutePath}")
+                } else {
+                    Log.w(TAG, "出力ファイルの削除に失敗しました: ${outputFile.absolutePath}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "出力ファイルクリーンアップ中にエラーが発生しました", e)
+        }
     }
 
     /**
@@ -241,8 +344,21 @@ class CameraViewModel : ViewModel() {
      */
     fun clearError() {
         _cameraError.value = null
+        _loadingState.value = LoadingStateManager.LoadingState.Idle
         if (_cameraState.value == CameraState.ERROR) {
             _cameraState.value = if (isInitialized) CameraState.READY else CameraState.IDLE
+        }
+    }
+
+    /**
+     * カメラ初期化を再試行
+     */
+    fun retryInitialization() {
+        val context = currentContext
+        if (context != null) {
+            clearError()
+            isInitialized = false
+            initializeCamera(context)
         }
     }
 
