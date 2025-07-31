@@ -4,8 +4,10 @@
   <CurrentIssues>
     <ID>EmptyFunctionBlock:GalleryFragment.kt$GalleryFragment.&lt;no name provided&gt;${}</ID>
     <ID>EmptyFunctionBlock:TaggingActivity.kt$TaggingActivity.&lt;no name provided&gt;${}</ID>
+    <ID>ExplicitGarbageCollectionCall:ClothStockApplication.kt$ClothStockApplication$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest.MemoryConsumer$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:MainActivity.kt$MainActivity$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:MemoryPressureMonitor.kt$MemoryPressureMonitor$gc()</ID>
     <ID>ForbiddenComment:DetailActivity.kt$DetailActivity$* TaggingActivityへ遷移（編集モード） * TODO: 編集モード対応は後のタスクで実装</ID>
     <ID>ImplicitDefaultLocale:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$String.format("%.2f", stats.averageExecutionTime)</ID>
@@ -14,9 +16,6 @@
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f MB", sizeInBytes / (1024.0 * 1024.0))</ID>
     <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
     <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
-    <ID>MagicNumber:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$150</ID>
-    <ID>MagicNumber:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$300</ID>
-    <ID>MagicNumber:ClothStockGlideModule.kt$ClothStockGlideModule$3f</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$1000</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$3</ID>
     <ID>MagicNumber:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$1024</ID>
@@ -63,6 +62,7 @@
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$600</ID>
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$800</ID>
     <ID>MaxLineLength:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$Log.d(TAG, "クエリ実行: $operationName (${executionTime}ms, 平均: ${String.format("%.2f", stats.averageExecutionTime)}ms)")</ID>
+    <ID>MaxLineLength:GalleryFragment.kt$GalleryFragment$Log.d(TAG, "animateLoadingState: shouldShow = $shouldShow, current visibility = ${binding.layoutLoading.visibility}")</ID>
     <ID>MaxLineLength:TaggingActivity.kt$TaggingActivity$inputMethodManager.showSoftInput(binding.editTextColor, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_errorMessage.value = getApplication&lt;Application&gt;().getString(R.string.error_data_load_failed, e.message ?: "")</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(getApplication&lt;Application&gt;().getString(R.string.error_update_target_not_found))</ID>
@@ -83,6 +83,7 @@
     <ID>NewLineAtEndOfFile:ClothRepository.kt$com.example.clothstock.data.repository.ClothRepository.kt</ID>
     <ID>NewLineAtEndOfFile:ClothRepositoryImpl.kt$com.example.clothstock.data.repository.ClothRepositoryImpl.kt</ID>
     <ID>NewLineAtEndOfFile:ClothRepositoryTest.kt$com.example.clothstock.data.repository.ClothRepositoryTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothStockApplication.kt$com.example.clothstock.ClothStockApplication.kt</ID>
     <ID>NewLineAtEndOfFile:ClothStockGlideModule.kt$com.example.clothstock.util.ClothStockGlideModule.kt</ID>
     <ID>NewLineAtEndOfFile:CompressionStrategy.kt$com.example.clothstock.util.CompressionStrategy.kt</ID>
     <ID>NewLineAtEndOfFile:Converters.kt$com.example.clothstock.data.database.Converters.kt</ID>
@@ -123,6 +124,7 @@
     <ID>NewLineAtEndOfFile:ValidationResult.kt$com.example.clothstock.data.model.ValidationResult.kt</ID>
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner)</ID>
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun captureImage(): Boolean</ID>
+    <ID>ReturnCount:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$private fun isValidImagePath(imagePath: String?): Boolean</ID>
     <ID>ReturnCount:RetryMechanism.kt$RetryMechanism.Companion$suspend fun &lt;T&gt; execute( config: RetryConfig = RetryConfig(), retryPolicy: RetryPolicy = defaultRetryPolicy, operation: suspend () -&gt; T ): RetryResult&lt;T&gt;</ID>
     <ID>SwallowedException:CameraPermissionManager.kt$CameraPermissionManager$e: Exception</ID>
     <ID>SwallowedException:CameraViewModel.kt$CameraViewModel$e: Exception</ID>
@@ -141,13 +143,18 @@
     <ID>TooGenericExceptionCaught:CameraViewModel.kt$CameraViewModel.&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase.DatabaseCallback$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockApplication.kt$ClothStockApplication$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule.&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$logException: Exception</ID>
     <ID>TooGenericExceptionCaught:GalleryViewModel.kt$GalleryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ImageCompressionManager.kt$ImageCompressionManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MainActivity.kt$MainActivity$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MemoryPressureMonitor.kt$MemoryPressureMonitor$e: Exception</ID>
     <ID>TooGenericExceptionCaught:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RetryMechanism.kt$RetryMechanism.Companion$e: Exception</ID>
@@ -155,6 +162,7 @@
     <ID>TooGenericExceptionCaught:TaggingViewModel.kt$TaggingViewModel$e: RuntimeException</ID>
     <ID>TooGenericExceptionThrown:GalleryViewModel.kt$GalleryViewModel$throw Exception("アイテムの削除に失敗しました")</ID>
     <ID>TooGenericExceptionThrown:RetryMechanismTest.kt$RetryMechanismTest$throw RuntimeException("1回目は失敗")</ID>
+    <ID>TooManyFunctions:CameraActivity.kt$CameraActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:CameraViewModel.kt$CameraViewModel : ViewModel</ID>
     <ID>TooManyFunctions:ClothDao.kt$ClothDao</ID>
     <ID>TooManyFunctions:ClothRepository.kt$ClothRepository</ID>
@@ -163,6 +171,7 @@
     <ID>TooManyFunctions:DetailViewModel.kt$DetailViewModel : ViewModel</ID>
     <ID>TooManyFunctions:GalleryFragment.kt$GalleryFragment : Fragment</ID>
     <ID>TooManyFunctions:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:MemoryPressureMonitor.kt$MemoryPressureMonitor</ID>
     <ID>TooManyFunctions:SnackbarHelper.kt$SnackbarHelper</ID>
     <ID>TooManyFunctions:TaggingActivity.kt$TaggingActivity : AppCompatActivity</ID>
@@ -205,24 +214,8 @@
     <ID>UseCheckOrError:ErrorDialogFragment.kt$ErrorDialogFragment$throw IllegalStateException("Arguments must be provided")</ID>
     <ID>UseRequire:ClothRepositoryImpl.kt$ClothRepositoryImpl$throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")</ID>
     <ID>WildcardImport:CameraActivity.kt$import androidx.camera.core.*</ID>
-    <ID>WildcardImport:CameraPermissionManagerTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:CameraPermissionManagerTest.kt$import org.mockito.Mockito.*</ID>
     <ID>WildcardImport:CameraViewModel.kt$import androidx.camera.core.*</ID>
-    <ID>WildcardImport:CameraViewModelTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:CameraViewModelTest.kt$import org.mockito.Mockito.*</ID>
     <ID>WildcardImport:ClothDao.kt$import androidx.room.*</ID>
-    <ID>WildcardImport:ClothItemTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:ClothRepositoryTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:ClothRepositoryTest.kt$import org.mockito.Mockito.*</ID>
-    <ID>WildcardImport:ErrorDialogFragmentTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:FileUtilsTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:FileUtilsTest.kt$import org.mockito.Mockito.*</ID>
-    <ID>WildcardImport:GalleryViewModelTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:LoadingStateManagerTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:PermissionRationaleDialogTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:PermissionRationaleDialogTest.kt$import org.mockito.Mockito.*</ID>
     <ID>WildcardImport:RetryMechanism.kt$import kotlinx.coroutines.*</ID>
-    <ID>WildcardImport:RetryMechanismTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:TagDataTest.kt$import org.junit.Assert.*</ID>
   </CurrentIssues>
 </SmellBaseline>

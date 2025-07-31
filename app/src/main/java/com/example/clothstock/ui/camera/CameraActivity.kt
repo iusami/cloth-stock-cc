@@ -41,6 +41,7 @@ class CameraActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private var capturedImageUri: Uri? = null
+    private var cameraProvider: ProcessCameraProvider? = null
     
     // カメラ権限リクエスト
     private val requestPermissionLauncher = registerForActivityResult(
@@ -108,7 +109,24 @@ class CameraActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            try {
+                cameraProvider = cameraProviderFuture.get()
+                bindCameraUseCases()
+            } catch (exc: Exception) {
+                Log.e(TAG, "Camera provider initialization failed", exc)
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+    
+    /**
+     * カメラユースケースのバインド
+     */
+    private fun bindCameraUseCases() {
+        val provider = cameraProvider ?: return
+        
+        try {
+            // 既存のバインドをクリア
+            provider.unbindAll()
             
             // プレビューの設定
             val preview = Preview.Builder()
@@ -124,20 +142,29 @@ class CameraActivity : AppCompatActivity() {
             // 背面カメラを選択
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             
-            try {
-                // カメラプロバイダをクリア
-                cameraProvider.unbindAll()
-                
-                // カメラをライフサイクルにバインド
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture
-                )
-                
-            } catch (exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
+            // カメラをライフサイクルにバインド
+            provider.bindToLifecycle(
+                this, cameraSelector, preview, imageCapture
+            )
             
-        }, ContextCompat.getMainExecutor(this))
+            Log.d(TAG, "Camera use cases bound successfully")
+            
+        } catch (exc: Exception) {
+            Log.e(TAG, "Use case binding failed", exc)
+        }
+    }
+    
+    /**
+     * カメラユースケースのアンバインド
+     */
+    private fun unbindCameraUseCases() {
+        try {
+            cameraProvider?.unbindAll()
+            imageCapture = null
+            Log.d(TAG, "Camera use cases unbound successfully")
+        } catch (exc: Exception) {
+            Log.e(TAG, "Use case unbinding failed", exc)
+        }
     }
     
     /**
@@ -224,8 +251,24 @@ class CameraActivity : AppCompatActivity() {
         this, Manifest.permission.CAMERA
     ) == PackageManager.PERMISSION_GRANTED
     
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause - unbinding camera use cases")
+        unbindCameraUseCases()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "onResume - rebinding camera use cases")
+        if (allPermissionsGranted() && cameraProvider != null) {
+            bindCameraUseCases()
+        }
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy - shutting down camera executor")
+        unbindCameraUseCases()
         cameraExecutor.shutdown()
     }
 }

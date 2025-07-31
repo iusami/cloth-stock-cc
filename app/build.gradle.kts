@@ -54,6 +54,7 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            isReturnDefaultValues = true // android.util.Logなどのモック自動化
         }
     }
 

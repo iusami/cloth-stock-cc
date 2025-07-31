@@ -9,7 +9,9 @@ import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.ui.common.LoadingStateManager
 import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import android.util.Log
 
 /**
  * ギャラリー画面のViewModel
@@ -20,6 +22,10 @@ import kotlinx.coroutines.launch
 class GalleryViewModel(
     private val clothRepository: ClothRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "GalleryViewModel"
+    }
 
     // ===== LiveData定義 =====
 
@@ -44,6 +50,8 @@ class GalleryViewModel(
     // ===== 初期化 =====
 
     init {
+        Log.d(TAG, "GalleryViewModel initialized")
+        
         // デフォルト値で初期化
         _clothItems.value = emptyList()
         _isLoading.value = false
@@ -51,6 +59,7 @@ class GalleryViewModel(
         _isEmpty.value = true // 初期状態は空
 
         // 初期データ読み込み
+        Log.d(TAG, "Starting initial data load")
         loadClothItems()
     }
 
@@ -61,25 +70,40 @@ class GalleryViewModel(
      */
     fun loadClothItems() {
         _lastOperation.value = "loadClothItems"
+        Log.d(TAG, "Starting loadClothItems")
         
         viewModelScope.launch {
+            Log.d(TAG, "Setting loading state to true")
             _isLoading.value = true
             _loadingState.value = LoadingStateManager.LoadingState.Loading("アイテムを読み込み中...")
             _errorMessage.value = null
 
             // リトライ機能付きでデータベースアクセス
+            Log.d(TAG, "Executing database access with retry mechanism")
             val retryResult = RetryMechanism.executeForDatabase {
                 loadClothItemsInternal()
             }
 
+            Log.d(TAG, "RetryMechanism result type: ${retryResult.javaClass.simpleName}")
             when (retryResult) {
                 is RetryMechanism.RetryResult.Success -> {
-                    _clothItems.value = retryResult.result
-                    _isEmpty.value = retryResult.result.isEmpty()
+                    val items = retryResult.result
+                    Log.d(TAG, "SUCCESS: Successfully loaded ${items.size} items")
+                    logItemDetails(items)
+                    
+                    _clothItems.value = items
+                    _isEmpty.value = items.isEmpty()
                     _loadingState.value = LoadingStateManager.LoadingState.Success
+                    
+                    Log.d(TAG, "isEmpty set to: ${items.isEmpty()}")
                 }
                 is RetryMechanism.RetryResult.Failure -> {
-                    _errorMessage.value = retryResult.lastException.message ?: "アイテムの読み込みに失敗しました"
+                    val errorMsg = retryResult.lastException.message ?: "アイテムの読み込みに失敗しました"
+                    Log.e(TAG, "FAILURE: Failed to load items: $errorMsg", retryResult.lastException)
+                    Log.e(TAG, "FAILURE: Retry attempts: ${retryResult.attemptCount}")
+                    Log.e(TAG, "FAILURE: Last exception type: ${retryResult.lastException.javaClass.simpleName}")
+                    
+                    _errorMessage.value = errorMsg
                     _loadingState.value = LoadingStateManager.LoadingState.Error(
                         "アイテムの読み込みに失敗しました",
                         retryResult.lastException
@@ -87,6 +111,7 @@ class GalleryViewModel(
                 }
             }
             
+            Log.d(TAG, "Setting loading state to false")
             _isLoading.value = false
         }
     }
@@ -95,16 +120,19 @@ class GalleryViewModel(
      * アイテム読み込みの内部実装（リトライ対応）
      */
     private suspend fun loadClothItemsInternal(): List<ClothItem> {
-        val items = mutableListOf<ClothItem>()
-        clothRepository.getAllItems()
+        Log.d(TAG, "loadClothItemsInternal: Starting database query")
+        
+        // Flowの最初の値を取得（一度だけ）
+        val items = clothRepository.getAllItems()
             .catch { exception ->
+                Log.e(TAG, "loadClothItemsInternal: Database error", exception)
                 throw exception
             }
-            .collect { itemList ->
-                items.clear()
-                items.addAll(itemList)
-            }
-        return items.toList()
+            .first() // 最初の値のみを取得
+        
+        Log.d(TAG, "loadClothItemsInternal: Retrieved ${items.size} items from repository")
+        Log.d(TAG, "loadClothItemsInternal: Returning ${items.size} items")
+        return items
     }
 
     /**
@@ -261,10 +289,42 @@ class GalleryViewModel(
      * 削除に失敗した場合は手動で再度削除を実行する必要がある
      */
     fun retryLastOperation() {
+        Log.d(TAG, "Retrying last operation: ${_lastOperation.value}")
         when (_lastOperation.value) {
             "loadClothItems" -> loadClothItems()
             // deleteItemは安全性のためリトライ対象外（ケースを削除）
             else -> loadClothItems() // デフォルトはデータ再読み込み
         }
+    }
+    
+    /**
+     * アイテム詳細のログ出力（詳細デバッグ版）
+     */
+    private fun logItemDetails(items: List<ClothItem>) {
+        Log.d(TAG, "=== DATABASE ITEMS DEBUG ===")
+        Log.d(TAG, "Total items count: ${items.size}")
+        
+        if (items.isEmpty()) {
+            Log.d(TAG, "No items found in database")
+            return
+        }
+        
+        items.forEachIndexed { index, item ->
+            Log.d(TAG, "--- Item $index ---")
+            Log.d(TAG, "  ID: ${item.id}")
+            Log.d(TAG, "  ImagePath: '${item.imagePath}'")
+            Log.d(TAG, "  ImagePath length: ${item.imagePath?.length ?: 0}")
+            Log.d(TAG, "  Path starts with content://: ${item.imagePath?.startsWith("content://") ?: false}")
+            Log.d(TAG, "  Path starts with file://: ${item.imagePath?.startsWith("file://") ?: false}")
+            Log.d(TAG, "  CreatedAt: ${item.createdAt}")
+            Log.d(TAG, "  TagData: ${item.tagData}")
+            
+            if (item.imagePath.isNullOrBlank()) {
+                Log.w(TAG, "  WARNING: Item ${item.id} has null/blank image path")
+            } else if (!item.imagePath.startsWith("content://") && !item.imagePath.startsWith("file://")) {
+                Log.w(TAG, "  WARNING: Item ${item.id} has suspicious image path format")
+            }
+        }
+        Log.d(TAG, "=== END DATABASE ITEMS DEBUG ===")
     }
 }

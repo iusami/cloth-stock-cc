@@ -17,6 +17,7 @@ import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.example.clothstock.ui.camera.CameraActivity
 import com.example.clothstock.ui.detail.DetailActivity
 import com.google.android.material.snackbar.Snackbar
+import android.util.Log
 
 /**
  * ギャラリー画面Fragment
@@ -55,7 +56,63 @@ class GalleryFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        Log.d(TAG, "onDestroyView called")
+        
+        // Android Q+ pinning非推奨対応: メモリリークの防止
+        try {
+            // Glideの関連付けをクリア（pinning回避）
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                // RecyclerViewとAdapterの関連付けをクリア
+                binding.recyclerViewGallery.adapter = null
+                Log.d(TAG, "RecyclerView adapter cleared for Android Q+")
+            }
+            
+            // bindingの解放
+            _binding = null
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during onDestroyView cleanup", e)
+            _binding = null
+        } catch (e: android.view.InflateException) {
+            Log.e(TAG, "InflateException during onDestroyView cleanup", e)
+            _binding = null
+        }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause called")
+        
+        // Android Q+ pinning非推奨対応: 一時的なメモリクリーンアップ
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                // Glideの一時的なメモリクリア（pinning回避）
+                com.bumptech.glide.Glide.with(this).pauseRequests()
+                Log.d(TAG, "Glide requests paused for Android Q+")
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during onPause cleanup", e)
+        } catch (e: android.view.InflateException) {
+            Log.e(TAG, "InflateException during onPause cleanup", e)
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "onResume called")
+        
+        // Android Q+ pinning非推奨対応: リクエスト再開
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                // Glideリクエストの再開
+                com.bumptech.glide.Glide.with(this).resumeRequests()
+                Log.d(TAG, "Glide requests resumed for Android Q+")
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during onResume cleanup", e)
+        } catch (e: android.view.InflateException) {
+            Log.e(TAG, "InflateException during onResume cleanup", e)
+        }
     }
 
     /**
@@ -129,11 +186,16 @@ class GalleryFragment : Fragment() {
      * ViewModelの監視設定
      */
     private fun observeViewModel() {
+        Log.d(TAG, "Setting up ViewModel observers")
+        
         // 衣服アイテムの監視（アニメーション付き）
         viewModel.clothItems.observe(viewLifecycleOwner) { items ->
+            Log.d(TAG, "clothItems observer: Received ${items.size} items")
             adapter.submitList(items) {
+                Log.d(TAG, "clothItems observer: List submitted to adapter")
                 // リスト更新完了後のコールバック
                 if (items.isNotEmpty() && binding.recyclerViewGallery.visibility == View.GONE) {
+                    Log.d(TAG, "clothItems observer: Animating RecyclerView entry")
                     animateRecyclerViewEntry()
                 }
             }
@@ -141,23 +203,34 @@ class GalleryFragment : Fragment() {
 
         // 空状態の監視（アニメーション付き）
         viewModel.isEmpty.observe(viewLifecycleOwner) { isEmpty ->
+            Log.d(TAG, "isEmpty observer: isEmpty = $isEmpty")
             animateStateChange(isEmpty)
         }
 
         // ローディング状態の監視（改善版）
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.swipeRefreshLayout.isRefreshing = isLoading
+            Log.d(TAG, "isLoading observer: isLoading = $isLoading, adapter.itemCount = ${adapter.itemCount}")
+            
+            // SwipeRefreshLayoutの状態更新
+            if (binding.swipeRefreshLayout.isRefreshing != isLoading) {
+                binding.swipeRefreshLayout.isRefreshing = isLoading
+                Log.d(TAG, "isLoading observer: Updated SwipeRefreshLayout to $isLoading")
+            }
             
             // 初回ローディング時のみフルスクリーンローディング表示
             val shouldShowFullLoading = isLoading && adapter.itemCount == 0
+            Log.d(TAG, "isLoading observer: shouldShowFullLoading = $shouldShowFullLoading")
             animateLoadingState(shouldShowFullLoading)
         }
 
         // エラーメッセージの監視（改善版）
         viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
-            errorMessage?.let { message ->
-                showEnhancedErrorMessage(message)
+            if (errorMessage != null) {
+                Log.e(TAG, "errorMessage observer: Error received - $errorMessage")
+                showEnhancedErrorMessage(errorMessage)
                 viewModel.clearErrorMessage()
+            } else {
+                Log.d(TAG, "errorMessage observer: Error cleared")
             }
         }
     }
@@ -244,26 +317,43 @@ class GalleryFragment : Fragment() {
      * ローディング状態アニメーション
      */
     private fun animateLoadingState(shouldShow: Boolean) {
+        Log.d(TAG, "animateLoadingState: shouldShow = $shouldShow, current visibility = ${binding.layoutLoading.visibility}")
+        
         if (shouldShow) {
-            binding.layoutLoading.visibility = View.VISIBLE
-            val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
-            fadeIn.duration = 200
-            binding.layoutLoading.startAnimation(fadeIn)
+            if (binding.layoutLoading.visibility != View.VISIBLE) {
+                Log.d(TAG, "animateLoadingState: Showing loading layout")
+                binding.layoutLoading.visibility = View.VISIBLE
+                val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+                fadeIn.duration = 200
+                binding.layoutLoading.startAnimation(fadeIn)
+            } else {
+                Log.d(TAG, "animateLoadingState: Loading layout already visible")
+            }
         } else {
-            val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
-            fadeOut.duration = 200
-            fadeOut.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
-                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
-                    binding.layoutLoading.visibility = View.GONE
-                }
-            })
-            binding.layoutLoading.startAnimation(fadeOut)
+            if (binding.layoutLoading.visibility == View.VISIBLE) {
+                Log.d(TAG, "animateLoadingState: Hiding loading layout")
+                val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+                fadeOut.duration = 200
+                fadeOut.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                    override fun onAnimationStart(animation: android.view.animation.Animation?) {
+                        Log.d(TAG, "animateLoadingState: Fade out animation started")
+                    }
+                    override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                    override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                        Log.d(TAG, "animateLoadingState: Fade out animation ended, hiding layout")
+                        binding.layoutLoading.visibility = View.GONE
+                    }
+                })
+                binding.layoutLoading.startAnimation(fadeOut)
+            } else {
+                Log.d(TAG, "animateLoadingState: Loading layout already hidden")
+            }
         }
     }
 
     companion object {
+        private const val TAG = "GalleryFragment"
+        
         /**
          * GalleryFragmentの新しいインスタンスを作成
          */
