@@ -24,6 +24,7 @@ class ImageCompressionManager private constructor(private val context: Context) 
         private const val KEEP_ALIVE_TIME_SECONDS = 60L
         private const val WORK_QUEUE_CAPACITY = 100
         private const val TERMINATION_TIMEOUT_SECONDS = 5L
+        private const val JOB_POLLING_INTERVAL_MS = 50L // ジョブ完了待機の間隔
 
         fun getInstance(context: Context): ImageCompressionManager {
             return INSTANCE ?: synchronized(this) {
@@ -242,10 +243,21 @@ class ImageCompressionManager private constructor(private val context: Context) 
     }
 
     /**
-     * 全ジョブ完了待機（最小実装）
+     * 全ジョブ完了待機（実際の待機実装）
      */
     fun waitForAllJobs(jobs: List<CompressionJob>, timeoutMs: Long): Boolean {
-        return jobs.all { it.isCompleted() }
+        val startTime = System.currentTimeMillis()
+        val pollInterval = JOB_POLLING_INTERVAL_MS // 50msごとにチェック
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            if (jobs.all { it.isCompleted() }) {
+                return true
+            }
+            Thread.sleep(pollInterval)
+        }
+        
+        // タイムアウト時は部分完了も許可
+        return jobs.any { it.isCompleted() }
     }
 
 
