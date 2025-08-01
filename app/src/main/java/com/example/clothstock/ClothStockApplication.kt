@@ -18,6 +18,20 @@ class ClothStockApplication : Application() {
 
     companion object {
         private const val TAG = "ClothStockApplication"
+        
+        /**
+         * Android Q+かどうかをチェック
+         */
+        private fun isAndroidQPlus(): Boolean {
+            return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+        }
+        
+        /**
+         * API 34 (UPSIDE_DOWN_CAKE) 未満かどうかをチェック
+         */
+        private fun isBeforeUpsideDownCake(): Boolean {
+            return android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        }
     }
 
     private lateinit var memoryPressureMonitor: MemoryPressureMonitor
@@ -63,7 +77,7 @@ class ClothStockApplication : Application() {
             
             // API 34で非推奨だが、Q+では条件付きで使用可能
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (isBeforeUpsideDownCake()) {
                     Log.d(TAG, "TRIM_MEMORY_MODERATE - 中程度のメモリクリーンアップ")
                     performAntiPinningMemoryCleanup("moderate")
                 } else {
@@ -76,7 +90,7 @@ class ClothStockApplication : Application() {
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (isBeforeUpsideDownCake()) {
                     Log.d(TAG, "Running trim memory level $level - 実行中クリーンアップ")
                     performAntiPinningMemoryCleanup("running")
                 } else {
@@ -169,7 +183,7 @@ class ClothStockApplication : Application() {
             memoryPressureMonitor.getCacheManager().clearCache()
             
             // pinning非推奨対応: native heap管理
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            if (isAndroidQPlus()) {
                 // Android Q+でのnative heap最適化
                 System.gc() // 保守的なGC実行
             }
@@ -229,7 +243,7 @@ class ClothStockApplication : Application() {
             memoryPressureMonitor.enableSystemIntegration()
             
             // 緊急時のGC（Android Q+対応）
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            if (isAndroidQPlus()) {
                 System.gc()
                 Log.d(TAG, "Android Q+ GC completed")
             }
