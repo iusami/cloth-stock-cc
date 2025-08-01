@@ -18,10 +18,6 @@ class ClothStockApplication : Application() {
 
     companion object {
         private const val TAG = "ClothStockApplication"
-        
-        // メモリ管理定数（Android Q+対応）
-        private const val MEMORY_TRIM_RATIO_LIGHT = 0.7f     // 軽度クリーンアップ（30%削減）
-        private const val MEMORY_TRIM_RATIO_MODERATE = 0.5f  // 中程度クリーンアップ（50%削減）
     }
 
     private lateinit var memoryPressureMonitor: MemoryPressureMonitor
