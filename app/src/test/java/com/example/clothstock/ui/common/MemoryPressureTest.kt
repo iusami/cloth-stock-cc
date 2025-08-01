@@ -215,6 +215,29 @@ class MemoryPressureTest {
         memoryPressureMonitor.stopMonitoring()
     }
 
+    @Test
+    fun `監視スレッドの割り込み処理が適切に動作すること`() {
+        // Arrange: 監視開始
+        memoryPressureMonitor.simulateMemoryState(100) // 正常なメモリ状態
+        memoryPressureMonitor.startMonitoring()
+        
+        // 監視スレッドが開始されるまで少し待つ
+        Thread.sleep(50)
+        assertTrue(memoryPressureMonitor.isMonitoring(), "監視が開始されていません")
+        
+        // Act: 監視停止（内部的にスレッド終了処理される）
+        memoryPressureMonitor.stopMonitoring()
+        
+        // 停止処理が完了するまで待つ
+        Thread.sleep(200)
+        
+        // Assert: 監視が停止していること
+        assertFalse(memoryPressureMonitor.isMonitoring(), "監視が停止していません")
+        
+        // スレッドが適切に終了していることを確認（間接的に）
+        // InterruptedException処理により正常終了していることを期待
+    }
+
     // ===== ヘルパーメソッド =====
 
     /**

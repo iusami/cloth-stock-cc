@@ -85,9 +85,18 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
                     Thread.sleep(100)
                     
                 } catch (e: InterruptedException) {
+                    // スレッド割り込みを適切に処理
+                    Thread.currentThread().interrupt()
+                    Log.d(TAG, "Memory monitoring thread interrupted")
                     break
-                } catch (e: Exception) {
-                    // エラーが発生しても監視は継続
+                } catch (e: SecurityException) {
+                    // ActivityManagerへのアクセスが拒否された場合
+                    Log.w(TAG, "Security exception in memory monitoring", e)
+                    pressureCallback?.onCriticalMemoryError()
+                    break
+                } catch (e: RuntimeException) {
+                    // ランタイム例外は継続可能なものとして扱う
+                    Log.w(TAG, "Runtime exception in memory monitoring, continuing", e)
                 }
             }
         }.start()
