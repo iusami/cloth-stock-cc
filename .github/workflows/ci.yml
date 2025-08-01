@@ -59,6 +59,9 @@ jobs:
       
     - name: Run unit tests
       run: ./gradlew testDebugUnitTest --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+        CI: "true"
       
     - name: Generate test report
       uses: dorny/test-reporter@v1
@@ -72,6 +75,8 @@ jobs:
         
     - name: Build debug APK
       run: ./gradlew assembleDebug --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m"
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
@@ -145,6 +150,9 @@ jobs:
       
     - name: Generate code coverage report
       run: ./gradlew jacocoTestReport --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+        CI: "true"
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
@@ -155,7 +163,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false  # カバレッジ失敗でもCIは継続
 
-  # 静的解析（将来の拡張用）
+  # 静的解析（Detekt + Android Lint）
   static-analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
@@ -197,6 +205,13 @@ jobs:
       
     - name: Run lint analysis
       run: ./gradlew lintDebug --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m"
+      
+    - name: Run Detekt static analysis
+      run: ./gradlew detekt --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m"
       
     - name: Upload lint results
       uses: actions/upload-artifact@v4
@@ -204,6 +219,16 @@ jobs:
       with:
         name: lint-results-${{ github.sha }}
         path: '**/build/reports/lint-results-*.html'
+        retention-days: 30
+        
+    - name: Upload Detekt results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: detekt-results-${{ github.sha }}
+        path: |
+          **/build/reports/detekt/
+          app/config/detekt/baseline.xml
         retention-days: 30
 
   # Android Studio相当のビルド検証（kaptタスク等の明示的テスト）

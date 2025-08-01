@@ -1,0 +1,221 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>EmptyFunctionBlock:GalleryFragment.kt$GalleryFragment.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:TaggingActivity.kt$TaggingActivity.&lt;no name provided&gt;${}</ID>
+    <ID>ExplicitGarbageCollectionCall:ClothStockApplication.kt$ClothStockApplication$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest.MemoryConsumer$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:MainActivity.kt$MainActivity$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:MemoryPressureMonitor.kt$MemoryPressureMonitor$gc()</ID>
+    <ID>ForbiddenComment:DetailActivity.kt$DetailActivity$* TaggingActivityへ遷移（編集モード） * TODO: 編集モード対応は後のタスクで実装</ID>
+    <ID>ImplicitDefaultLocale:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$String.format("%.2f", stats.averageExecutionTime)</ID>
+    <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f GB", sizeInBytes / (1024.0 * 1024.0 * 1024.0))</ID>
+    <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f KB", sizeInBytes / 1024.0)</ID>
+    <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f MB", sizeInBytes / (1024.0 * 1024.0))</ID>
+    <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
+    <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
+    <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$1000</ID>
+    <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$3</ID>
+    <ID>MagicNumber:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$1024</ID>
+    <ID>MagicNumber:DetailActivity.kt$DetailActivity$150</ID>
+    <ID>MagicNumber:DetailActivity.kt$DetailActivity$300</ID>
+    <ID>MagicNumber:DetailViewModel.kt$DetailViewModel$1000L</ID>
+    <ID>MagicNumber:DetailViewModel.kt$DetailViewModel$3</ID>
+    <ID>MagicNumber:DeviceMemoryAnalyzer.kt$DeviceMemoryAnalyzer$1024</ID>
+    <ID>MagicNumber:DeviceMemoryAnalyzer.kt$DeviceMemoryAnalyzer$16</ID>
+    <ID>MagicNumber:FileUtils.kt$FileUtils$10</ID>
+    <ID>MagicNumber:FileUtils.kt$FileUtils$1024</ID>
+    <ID>MagicNumber:FileUtils.kt$FileUtils$1024.0</ID>
+    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$150</ID>
+    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$200</ID>
+    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$3</ID>
+    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$300</ID>
+    <ID>MagicNumber:GlideUtils.kt$GlideUtils$1080</ID>
+    <ID>MagicNumber:GlideUtils.kt$GlideUtils$1920</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.2f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.3f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.4f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.5f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.6f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.7f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.8f</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$10</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$100</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$1024</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$12</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$4</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$50</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$512</ID>
+    <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$8</ID>
+    <ID>MagicNumber:MainActivity.kt$MainActivity$200</ID>
+    <ID>MagicNumber:MainActivity.kt$MainActivity$250</ID>
+    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$100</ID>
+    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$1024</ID>
+    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$150</ID>
+    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$30</ID>
+    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$400</ID>
+    <ID>MagicNumber:RetryMechanism.kt$RetryMechanism.DefaultRetryPolicy$3</ID>
+    <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$0.3f</ID>
+    <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$150</ID>
+    <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$600</ID>
+    <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$800</ID>
+    <ID>MaxLineLength:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$Log.d(TAG, "クエリ実行: $operationName (${executionTime}ms, 平均: ${String.format("%.2f", stats.averageExecutionTime)}ms)")</ID>
+    <ID>MaxLineLength:GalleryFragment.kt$GalleryFragment$Log.d(TAG, "animateLoadingState: shouldShow = $shouldShow, current visibility = ${binding.layoutLoading.visibility}")</ID>
+    <ID>MaxLineLength:TaggingActivity.kt$TaggingActivity$inputMethodManager.showSoftInput(binding.editTextColor, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)</ID>
+    <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_errorMessage.value = getApplication&lt;Application&gt;().getString(R.string.error_data_load_failed, e.message ?: "")</ID>
+    <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(getApplication&lt;Application&gt;().getString(R.string.error_update_target_not_found))</ID>
+    <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: getApplication&lt;Application&gt;().getString(R.string.error_validation))</ID>
+    <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}") }</ID>
+    <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}") }</ID>
+    <ID>NewLineAtEndOfFile:CameraActivity.kt$com.example.clothstock.ui.camera.CameraActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:CameraPermissionManager.kt$com.example.clothstock.ui.camera.CameraPermissionManager.kt</ID>
+    <ID>NewLineAtEndOfFile:CameraPermissionManagerTest.kt$com.example.clothstock.ui.camera.CameraPermissionManagerTest.kt</ID>
+    <ID>NewLineAtEndOfFile:CameraState.kt$com.example.clothstock.ui.camera.CameraState.kt</ID>
+    <ID>NewLineAtEndOfFile:CameraViewModel.kt$com.example.clothstock.ui.camera.CameraViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:CameraViewModelTest.kt$com.example.clothstock.ui.camera.CameraViewModelTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothDao.kt$com.example.clothstock.data.database.ClothDao.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothDatabase.kt$com.example.clothstock.data.database.ClothDatabase.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothItem.kt$com.example.clothstock.data.model.ClothItem.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothItemAdapter.kt$com.example.clothstock.ui.gallery.ClothItemAdapter.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothItemTest.kt$com.example.clothstock.data.model.ClothItemTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothRepository.kt$com.example.clothstock.data.repository.ClothRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothRepositoryImpl.kt$com.example.clothstock.data.repository.ClothRepositoryImpl.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothRepositoryTest.kt$com.example.clothstock.data.repository.ClothRepositoryTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothStockApplication.kt$com.example.clothstock.ClothStockApplication.kt</ID>
+    <ID>NewLineAtEndOfFile:ClothStockGlideModule.kt$com.example.clothstock.util.ClothStockGlideModule.kt</ID>
+    <ID>NewLineAtEndOfFile:CompressionStrategy.kt$com.example.clothstock.util.CompressionStrategy.kt</ID>
+    <ID>NewLineAtEndOfFile:Converters.kt$com.example.clothstock.data.database.Converters.kt</ID>
+    <ID>NewLineAtEndOfFile:CountResult.kt$com.example.clothstock.data.model.CountResult.kt</ID>
+    <ID>NewLineAtEndOfFile:DatabaseMigrations.kt$com.example.clothstock.data.database.DatabaseMigrations.kt</ID>
+    <ID>NewLineAtEndOfFile:DatabasePerformanceMonitor.kt$com.example.clothstock.data.database.DatabasePerformanceMonitor.kt</ID>
+    <ID>NewLineAtEndOfFile:DetailActivity.kt$com.example.clothstock.ui.detail.DetailActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:DetailViewModel.kt$com.example.clothstock.ui.detail.DetailViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:DetailViewModelFactory.kt$com.example.clothstock.ui.detail.DetailViewModelFactory.kt</ID>
+    <ID>NewLineAtEndOfFile:DeviceMemoryAnalyzer.kt$com.example.clothstock.util.DeviceMemoryAnalyzer.kt</ID>
+    <ID>NewLineAtEndOfFile:ErrorDialogFragment.kt$com.example.clothstock.ui.common.ErrorDialogFragment.kt</ID>
+    <ID>NewLineAtEndOfFile:ErrorDialogFragmentTest.kt$com.example.clothstock.ui.common.ErrorDialogFragmentTest.kt</ID>
+    <ID>NewLineAtEndOfFile:FileUtils.kt$com.example.clothstock.util.FileUtils.kt</ID>
+    <ID>NewLineAtEndOfFile:FileUtilsTest.kt$com.example.clothstock.util.FileUtilsTest.kt</ID>
+    <ID>NewLineAtEndOfFile:GalleryFragment.kt$com.example.clothstock.ui.gallery.GalleryFragment.kt</ID>
+    <ID>NewLineAtEndOfFile:GalleryViewModel.kt$com.example.clothstock.ui.gallery.GalleryViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:GalleryViewModelTest.kt$com.example.clothstock.ui.gallery.GalleryViewModelTest.kt</ID>
+    <ID>NewLineAtEndOfFile:GlideUtils.kt$com.example.clothstock.util.GlideUtils.kt</ID>
+    <ID>NewLineAtEndOfFile:ImageCompressionManager.kt$com.example.clothstock.util.ImageCompressionManager.kt</ID>
+    <ID>NewLineAtEndOfFile:ImageCompressionTest.kt$com.example.clothstock.ui.common.ImageCompressionTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ImageMemoryUsageTest.kt$com.example.clothstock.ui.common.ImageMemoryUsageTest.kt</ID>
+    <ID>NewLineAtEndOfFile:LoadingStateManager.kt$com.example.clothstock.ui.common.LoadingStateManager.kt</ID>
+    <ID>NewLineAtEndOfFile:LoadingStateManagerTest.kt$com.example.clothstock.ui.common.LoadingStateManagerTest.kt</ID>
+    <ID>NewLineAtEndOfFile:MainActivity.kt$com.example.clothstock.MainActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:MemoryPressureMonitor.kt$com.example.clothstock.util.MemoryPressureMonitor.kt</ID>
+    <ID>NewLineAtEndOfFile:MemoryPressureTest.kt$com.example.clothstock.ui.common.MemoryPressureTest.kt</ID>
+    <ID>NewLineAtEndOfFile:PermissionRationaleDialog.kt$com.example.clothstock.ui.camera.PermissionRationaleDialog.kt</ID>
+    <ID>NewLineAtEndOfFile:PermissionRationaleDialogTest.kt$com.example.clothstock.ui.camera.PermissionRationaleDialogTest.kt</ID>
+    <ID>NewLineAtEndOfFile:RetryMechanism.kt$com.example.clothstock.ui.common.RetryMechanism.kt</ID>
+    <ID>NewLineAtEndOfFile:RetryMechanismTest.kt$com.example.clothstock.ui.common.RetryMechanismTest.kt</ID>
+    <ID>NewLineAtEndOfFile:SnackbarHelper.kt$com.example.clothstock.ui.common.SnackbarHelper.kt</ID>
+    <ID>NewLineAtEndOfFile:TagData.kt$com.example.clothstock.data.model.TagData.kt</ID>
+    <ID>NewLineAtEndOfFile:TagDataTest.kt$com.example.clothstock.data.model.TagDataTest.kt</ID>
+    <ID>NewLineAtEndOfFile:TaggingActivity.kt$com.example.clothstock.ui.tagging.TaggingActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:TaggingViewModel.kt$com.example.clothstock.ui.tagging.TaggingViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:TaggingViewModelTest.kt$com.example.clothstock.ui.tagging.TaggingViewModelTest.kt</ID>
+    <ID>NewLineAtEndOfFile:Validatable.kt$com.example.clothstock.data.model.Validatable.kt</ID>
+    <ID>NewLineAtEndOfFile:ValidationResult.kt$com.example.clothstock.data.model.ValidationResult.kt</ID>
+    <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner)</ID>
+    <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun captureImage(): Boolean</ID>
+    <ID>ReturnCount:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$private fun isValidImagePath(imagePath: String?): Boolean</ID>
+    <ID>ReturnCount:RetryMechanism.kt$RetryMechanism.Companion$suspend fun &lt;T&gt; execute( config: RetryConfig = RetryConfig(), retryPolicy: RetryPolicy = defaultRetryPolicy, operation: suspend () -&gt; T ): RetryResult&lt;T&gt;</ID>
+    <ID>SwallowedException:CameraPermissionManager.kt$CameraPermissionManager$e: Exception</ID>
+    <ID>SwallowedException:CameraViewModel.kt$CameraViewModel$e: Exception</ID>
+    <ID>SwallowedException:CameraViewModelTest.kt$CameraViewModelTest$e: Exception</ID>
+    <ID>SwallowedException:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
+    <ID>SwallowedException:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
+    <ID>SwallowedException:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
+    <ID>SwallowedException:ErrorDialogFragment.kt$ErrorDialogFragment$e: IllegalArgumentException</ID>
+    <ID>SwallowedException:FileUtils.kt$FileUtils$logException: Exception</ID>
+    <ID>SwallowedException:MemoryPressureMonitor.kt$MemoryPressureMonitor$e: Exception</ID>
+    <ID>SwallowedException:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
+    <ID>SwallowedException:TaggingViewModel.kt$TaggingViewModel$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:CameraActivity.kt$CameraActivity$exc: Exception</ID>
+    <ID>TooGenericExceptionCaught:CameraPermissionManager.kt$CameraPermissionManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CameraViewModel.kt$CameraViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CameraViewModel.kt$CameraViewModel.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase.DatabaseCallback$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockApplication.kt$ClothStockApplication$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
+    <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$logException: Exception</ID>
+    <ID>TooGenericExceptionCaught:GalleryViewModel.kt$GalleryViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImageCompressionManager.kt$ImageCompressionManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MainActivity.kt$MainActivity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MemoryPressureMonitor.kt$MemoryPressureMonitor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RetryMechanism.kt$RetryMechanism.Companion$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:TaggingViewModel.kt$TaggingViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:TaggingViewModel.kt$TaggingViewModel$e: RuntimeException</ID>
+    <ID>TooGenericExceptionThrown:GalleryViewModel.kt$GalleryViewModel$throw Exception("アイテムの削除に失敗しました")</ID>
+    <ID>TooGenericExceptionThrown:RetryMechanismTest.kt$RetryMechanismTest$throw RuntimeException("1回目は失敗")</ID>
+    <ID>TooManyFunctions:CameraActivity.kt$CameraActivity : AppCompatActivity</ID>
+    <ID>TooManyFunctions:CameraViewModel.kt$CameraViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ClothDao.kt$ClothDao</ID>
+    <ID>TooManyFunctions:ClothRepository.kt$ClothRepository</ID>
+    <ID>TooManyFunctions:ClothRepositoryImpl.kt$ClothRepositoryImpl : ClothRepository</ID>
+    <ID>TooManyFunctions:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>
+    <ID>TooManyFunctions:DetailViewModel.kt$DetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:GalleryFragment.kt$GalleryFragment : Fragment</ID>
+    <ID>TooManyFunctions:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
+    <ID>TooManyFunctions:MemoryPressureMonitor.kt$MemoryPressureMonitor</ID>
+    <ID>TooManyFunctions:SnackbarHelper.kt$SnackbarHelper</ID>
+    <ID>TooManyFunctions:TaggingActivity.kt$TaggingActivity : AppCompatActivity</ID>
+    <ID>TooManyFunctions:TaggingViewModel.kt$TaggingViewModel : AndroidViewModel</ID>
+    <ID>UnnecessaryParentheses:DetailViewModel.kt$DetailViewModel$(2.0.pow(retryCount - 1))</ID>
+    <ID>UnnecessaryParentheses:ImageCompressionTest.kt$ImageCompressionTest$(resolutionRatio * 0.6f)</ID>
+    <ID>UnnecessaryParentheses:ImageCompressionTest.kt$ImageCompressionTest$(sizeRatio * 0.4f)</ID>
+    <ID>UnusedImports:CameraActivity.kt$import com.example.clothstock.R</ID>
+    <ID>UnusedImports:CameraActivity.kt$import java.io.File</ID>
+    <ID>UnusedImports:CameraPermissionManagerTest.kt$import android.content.pm.PackageManager</ID>
+    <ID>UnusedImports:CameraViewModel.kt$import androidx.core.content.ContextCompat</ID>
+    <ID>UnusedImports:CameraViewModelTest.kt$import kotlinx.coroutines.test.runTest</ID>
+    <ID>UnusedImports:DetailActivity.kt$import android.content.Intent</ID>
+    <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.load.engine.DiskCacheStrategy</ID>
+    <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.request.RequestOptions</ID>
+    <ID>UnusedImports:DetailActivity.kt$import com.example.clothstock.ui.tagging.TaggingActivity</ID>
+    <ID>UnusedImports:FileUtilsTest.kt$import android.net.Uri</ID>
+    <ID>UnusedImports:GalleryFragment.kt$import androidx.recyclerview.widget.RecyclerView</ID>
+    <ID>UnusedImports:MainActivity.kt$import androidx.fragment.app.Fragment</ID>
+    <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.ViewModelProvider</ID>
+    <ID>UnusedImports:MemoryPressureMonitor.kt$import kotlin.math.max</ID>
+    <ID>UnusedImports:TaggingActivity.kt$import android.content.DialogInterface</ID>
+    <ID>UnusedImports:TaggingActivity.kt$import android.widget.NumberPicker</ID>
+    <ID>UnusedImports:TaggingViewModel.kt$import com.example.clothstock.data.model.ValidationResult</ID>
+    <ID>UnusedImports:TaggingViewModelTest.kt$import com.example.clothstock.data.model.ClothItem</ID>
+    <ID>UnusedImports:TaggingViewModelTest.kt$import com.example.clothstock.data.model.ValidationResult</ID>
+    <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers</ID>
+    <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers.any</ID>
+    <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.Mockito.verify</ID>
+    <ID>UnusedParameter:DetailActivity.kt$DetailActivity$clothItemId: Long</ID>
+    <ID>UnusedParameter:ImageCompressionManager.kt$ImageCompressionManager$timeoutMs: Long</ID>
+    <ID>UnusedParameter:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$exception: Exception</ID>
+    <ID>UnusedPrivateMember:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$private fun consumeMemoryUntilThreshold(thresholdMB: Long): MemoryConsumer</ID>
+    <ID>UnusedPrivateMember:TaggingActivity.kt$TaggingActivity$private fun animateFieldUpdate(editText: android.widget.EditText, newText: String)</ID>
+    <ID>UnusedPrivateMember:TaggingActivity.kt$TaggingActivity$private fun setEditModeFocus()</ID>
+    <ID>UnusedPrivateProperty:CameraPermissionManager.kt$CameraPermissionManager$private val onPermissionRationaleNeeded: () -&gt; Unit</ID>
+    <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$@Mock private lateinit var mockContext: Context</ID>
+    <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$@Mock private lateinit var mockFile: File</ID>
+    <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$private val testDispatcher = TestCoroutineDispatcher()</ID>
+    <ID>UseCheckOrError:ErrorDialogFragment.kt$ErrorDialogFragment$throw IllegalStateException("Arguments must be provided")</ID>
+    <ID>UseRequire:ClothRepositoryImpl.kt$ClothRepositoryImpl$throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")</ID>
+    <ID>WildcardImport:CameraActivity.kt$import androidx.camera.core.*</ID>
+    <ID>WildcardImport:CameraViewModel.kt$import androidx.camera.core.*</ID>
+    <ID>WildcardImport:ClothDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:RetryMechanism.kt$import kotlinx.coroutines.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -58,6 +58,9 @@
 # リンター実行
 ./gradlew lint
 
+# 静的解析実行（未使用コード検出）
+./gradlew detekt
+
 # インストルメンテーションテスト実行
 ./gradlew connectedAndroidTest
 
@@ -105,10 +108,43 @@
 
 1. **ユニットテスト**: `./gradlew testDebugUnitTest --stacktrace` でテスト実行（CIと同一コマンド）
 2. **リンター**: `./gradlew lintDebug --stacktrace` でコード品質チェック
-3. **ビルド**: `./gradlew build --stacktrace` で全体ビルド確認
-4. **コミット**: すべて通過後にのみgit commit実行
+3. **静的解析**: `./gradlew detekt` で未使用コードと品質問題を検出
+4. **ビルド**: `./gradlew build --stacktrace` で全体ビルド確認
+5. **コミット**: すべて通過後にのみgit commit実行
 
 CI失敗を防ぐため、CIと同じコマンドでローカル事前確認を徹底すること
+
+## 静的解析（Detekt）について
+
+プロジェクトでは**Detekt**を使用して静的コード解析を行い、特に**未使用コード検出**に特化した設定を行っています。
+
+### Detekt設定
+- 設定ファイル: `app/config/detekt/detekt.yml`
+- ベースラインファイル: `app/config/detekt/baseline.xml`（既存問題を一時的に除外）
+
+### 主要検出項目
+- **UnusedImports**: 未使用import文の検出
+- **UnusedPrivateMember**: 未使用プライベートメンバー関数・プロパティの検出
+- **UnusedParameter**: 未使用パラメータの検出  
+- **UnusedPrivateClass**: 未使用プライベートクラスの検出
+- **WildcardImport**: ワイルドカードimportの制限
+
+### Detektコマンド
+```bash
+# 静的解析実行
+./gradlew detekt
+
+# ベースライン更新（既存問題を新たに除外）
+./gradlew detektBaseline
+
+# レポート生成（HTML、XMLフォーマット）
+./gradlew detekt --continue
+```
+
+### 重要事項
+- 新しく作成・変更したコードでは、必ずDetektチェックをパスすること
+- 未使用importや関数が検出された場合は、削除または適切に使用すること
+- ベースラインファイルにより既存コードの問題は一時的に除外されているが、新規コードでは検出される
 
 ## Playwright MCPについて
 Playwright MCP（Multi-Context Protocol）は、Playwrightを使用してブラウザの操作を自動化するためのプロトコルです。

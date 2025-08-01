@@ -5,6 +5,7 @@ plugins {
     id("kotlin-kapt") // データバインディング用に維持
     id("kotlin-parcelize")
     id("jacoco")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 android {
@@ -53,6 +54,7 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            isReturnDefaultValues = true // android.util.Logなどのモック自動化
         }
     }
 
@@ -183,6 +185,13 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("androidx.room:room-testing:2.7.2")
+    
+    // Robolectric for Android unit testing
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.test.ext:junit:1.1.5")
+    testImplementation("androidx.test.ext:truth:1.5.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
 
     // Testing - Instrumented Tests
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -191,4 +200,36 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.room:room-testing:2.7.2")
+}
+
+// Detekt設定: Kotlin静的解析ツール
+detekt {
+    // 設定ファイルのパス
+    config.setFrom(files("$projectDir/config/detekt/detekt.yml"))
+    
+    // デフォルト設定を基盤として使用
+    buildUponDefaultConfig = true
+    
+    // 全ルールを有効化せず、設定ファイルで制御
+    allRules = false
+    
+    // ベースラインファイル（既存コードの問題を一時的に除外）
+    baseline = file("$projectDir/config/detekt/baseline.xml")
+    
+    // 並列実行で高速化
+    parallel = true
+    
+    // 自動修正可能な問題を修正
+    autoCorrect = false // 手動確認のため初期はfalse
+}
+
+// Detektタスクの設定
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    // レポート出力設定
+    reports {
+        html.required.set(true) // HTMLレポート生成
+        xml.required.set(true)  // XMLレポート生成（CI用）
+        sarif.required.set(true) // SARIFレポート生成（GitHub用）
+        md.required.set(false)   // Markdownレポートは無効
+    }
 }
