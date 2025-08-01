@@ -172,7 +172,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-      security-events: write  # SARIF upload用
     
     steps:
     - name: Checkout repository
@@ -231,19 +230,6 @@ jobs:
           **/build/reports/detekt/
           app/config/detekt/baseline.xml
         retention-days: 30
-        
-    - name: Check SARIF file exists
-      run: |
-        echo "Checking for SARIF files..."
-        find . -name "*.sarif" -type f || echo "No SARIF files found"
-        ls -la app/build/reports/detekt/ || echo "Detekt reports directory not found"
-        
-    - name: Upload Detekt SARIF to GitHub
-      uses: github/codeql-action/upload-sarif@v3
-      if: success() || failure()
-      with:
-        sarif_file: app/build/reports/detekt/detekt.sarif
-        category: detekt
 
   # Android Studio相当のビルド検証（kaptタスク等の明示的テスト）
   android-studio-build-verification:
