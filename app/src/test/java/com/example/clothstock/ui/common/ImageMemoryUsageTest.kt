@@ -159,7 +159,7 @@ class ImageMemoryUsageTest {
         val testBitmap = createLargeTestBitmap(512, 512) // サイズを縮小
 
         // Act: メモリ状況に関係なく、フォールバック処理をテスト
-        val result = imageCompressionManager.processImageWithFallback(testBitmap)
+        val result = imageCompressionManager.processImageWithMemoryHandling(testBitmap)
 
         // Assert: フォールバック処理の基本動作をチェック
         assertNotNull(result, "処理結果がnullです")

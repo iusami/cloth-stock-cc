@@ -17,6 +17,13 @@ class ImageCompressionManager private constructor(private val context: Context) 
     companion object {
         @Volatile
         private var INSTANCE: ImageCompressionManager? = null
+        
+        // ThreadPoolExecutor設定定数
+        private const val CORE_POOL_SIZE = 2
+        private const val MAX_POOL_SIZE = 4
+        private const val KEEP_ALIVE_TIME_SECONDS = 60L
+        private const val WORK_QUEUE_CAPACITY = 100
+        private const val TERMINATION_TIMEOUT_SECONDS = 5L
 
         fun getInstance(context: Context): ImageCompressionManager {
             return INSTANCE ?: synchronized(this) {
@@ -27,10 +34,10 @@ class ImageCompressionManager private constructor(private val context: Context) 
 
     // ThreadPoolExecutor for background compression tasks
     private val compressionExecutor = ThreadPoolExecutor(
-        2, // corePoolSize: 最低2スレッド保持
-        4, // maximumPoolSize: 最大4スレッド
-        60L, TimeUnit.SECONDS, // keepAliveTime: アイドルスレッド60秒で終了
-        LinkedBlockingQueue<Runnable>(100) // workQueue: 最大100タスクをキュー
+        CORE_POOL_SIZE, // corePoolSize: 最低2スレッド保持
+        MAX_POOL_SIZE, // maximumPoolSize: 最大4スレッド
+        KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS, // keepAliveTime: アイドルスレッド60秒で終了
+        LinkedBlockingQueue<Runnable>(WORK_QUEUE_CAPACITY) // workQueue: 最大100タスクをキュー
     ).apply {
         // スレッド名とデーモン設定
         threadFactory = java.util.concurrent.ThreadFactory { runnable ->
@@ -81,10 +88,10 @@ class ImageCompressionManager private constructor(private val context: Context) 
     }
 
     /**
-     * フォールバック処理付き画像処理（最小実装）
+     * メモリ状況に応じた画像処理（統合版）
+     * フォールバック処理とメモリプレッシャー対応を統合
      */
-    fun processImageWithFallback(bitmap: Bitmap): ProcessingResult {
-        // メモリ不足の場合は小さなビットマップを返す
+    fun processImageWithMemoryHandling(bitmap: Bitmap): ProcessingResult {
         val availableMemory = getAvailableMemoryMB()
         val isLowMemory = availableMemory < 50
         
@@ -95,6 +102,7 @@ class ImageCompressionManager private constructor(private val context: Context) 
             ProcessingResult(bitmap, isUsingFallback = false)
         }
     }
+
 
     /**
      * 戦略別圧縮（最小実装）
@@ -121,12 +129,27 @@ class ImageCompressionManager private constructor(private val context: Context) 
     }
 
     /**
-     * 目標サイズ圧縮（最小実装）
+     * 柔軟な圧縮処理（統合版）
+     * 目標サイズまたは品質比率による圧縮を統合
      */
-    fun compressToTargetSize(bitmap: Bitmap, targetSizeBytes: Int): CompressionResult {
-        val originalSize = bitmap.byteCount
-        val compressionRatio = targetSizeBytes.toFloat() / originalSize.toFloat()
-        val jpegQuality = kotlin.math.max(10, (compressionRatio * 100).toInt())
+    fun compressWithTarget(
+        bitmap: Bitmap, 
+        targetSizeBytes: Int? = null, 
+        qualityRatio: Float? = null
+    ): CompressionResult {
+        val (compressionRatio, jpegQuality) = when {
+            targetSizeBytes != null -> {
+                val originalSize = bitmap.byteCount
+                val ratio = targetSizeBytes.toFloat() / originalSize.toFloat()
+                val quality = kotlin.math.max(10, (ratio * 100).toInt())
+                ratio to quality
+            }
+            qualityRatio != null -> {
+                val quality = (qualityRatio * 100).toInt()
+                qualityRatio to quality
+            }
+            else -> 0.5f to 50 // デフォルト値
+        }
         
         val scaleFactor = kotlin.math.sqrt(compressionRatio.toDouble()).toFloat()
         val scaledBitmap = Bitmap.createScaledBitmap(
@@ -139,28 +162,23 @@ class ImageCompressionManager private constructor(private val context: Context) 
         return CompressionResult(
             bitmap = scaledBitmap,
             compressionRatio = compressionRatio,
-            fileSizeBytes = targetSizeBytes,
+            fileSizeBytes = targetSizeBytes ?: (bitmap.byteCount * compressionRatio).toInt(),
             jpegQuality = jpegQuality
         )
     }
 
     /**
-     * 品質比率圧縮（最小実装）
+     * 目標サイズ圧縮（互換性維持）
+     */
+    fun compressToTargetSize(bitmap: Bitmap, targetSizeBytes: Int): CompressionResult {
+        return compressWithTarget(bitmap, targetSizeBytes = targetSizeBytes)
+    }
+
+    /**
+     * 品質比率圧縮（互換性維持）
      */
     fun compressWithQualityRatio(bitmap: Bitmap, ratio: Float): CompressionResult {
-        val scaledBitmap = Bitmap.createScaledBitmap(
-            bitmap,
-            (bitmap.width * ratio).toInt(),
-            (bitmap.height * ratio).toInt(),
-            true
-        )
-        
-        return CompressionResult(
-            bitmap = scaledBitmap,
-            compressionRatio = ratio,
-            fileSizeBytes = (bitmap.byteCount * ratio).toInt(),
-            jpegQuality = (ratio * 100).toInt()
-        )
+        return compressWithTarget(bitmap, qualityRatio = ratio)
     }
 
     /**
@@ -230,18 +248,6 @@ class ImageCompressionManager private constructor(private val context: Context) 
         return jobs.all { it.isCompleted() }
     }
 
-    /**
-     * メモリプレッシャー対応処理（最小実装）
-     */
-    fun processImageWithMemoryPressureHandling(bitmap: Bitmap): MemoryPressureResult {
-        // 常に最適化されたとして返す
-        val optimizedBitmap = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
-        return MemoryPressureResult(
-            bitmap = optimizedBitmap,
-            wasOptimizedForLowMemory = true,
-            compressionRatio = 0.8f
-        )
-    }
 
     /**
      * リソースクリーンアップ（ThreadPoolExecutor終了）
@@ -250,11 +256,11 @@ class ImageCompressionManager private constructor(private val context: Context) 
         compressionExecutor.shutdown()
         try {
             // 実行中のタスクが完了するまで5秒待つ
-            if (!compressionExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+            if (!compressionExecutor.awaitTermination(TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 // 強制終了
                 compressionExecutor.shutdownNow()
                 // さらに5秒待つ
-                if (!compressionExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                if (!compressionExecutor.awaitTermination(TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                     // ログ出力（実際のアプリではロギングライブラリを使用）
                     println("ImageCompressionManager: ThreadPool did not terminate gracefully")
                 }

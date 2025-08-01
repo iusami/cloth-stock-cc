@@ -17,6 +17,7 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "MemoryPressureMonitor"
+        private const val MONITORING_INTERVAL_MS = 100L // 監視間隔100ms
         
         @Volatile
         private var INSTANCE: MemoryPressureMonitor? = null
@@ -58,47 +59,7 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
         
         // バックグラウンドでの継続監視を開始
         Thread {
-            while (isMonitoring) {
-                try {
-                    val currentLevel = getCurrentPressureLevel()
-                    
-                    // レベル変更のコールバック
-                    pressureCallback?.onPressureLevelChanged(currentLevel)
-                    
-                    // レベル別の対応処理
-                    when (currentLevel) {
-                        PressureLevel.HIGH -> {
-                            triggerAutoCleanup()
-                            pressureCallback?.onLowMemoryWarning()
-                        }
-                        PressureLevel.CRITICAL -> {
-                            triggerAutoCleanup()
-                            triggerGarbageCollection()
-                            pressureCallback?.onCriticalMemoryError()
-                        }
-                        else -> {
-                            // LOW, MODERATEは特別な処理なし
-                        }
-                    }
-                    
-                    // 監視間隔（100ms）
-                    Thread.sleep(100)
-                    
-                } catch (e: InterruptedException) {
-                    // スレッド割り込みを適切に処理
-                    Thread.currentThread().interrupt()
-                    Log.d(TAG, "Memory monitoring thread interrupted")
-                    break
-                } catch (e: SecurityException) {
-                    // ActivityManagerへのアクセスが拒否された場合
-                    Log.w(TAG, "Security exception in memory monitoring", e)
-                    pressureCallback?.onCriticalMemoryError()
-                    break
-                } catch (e: RuntimeException) {
-                    // ランタイム例外は継続可能なものとして扱う
-                    Log.w(TAG, "Runtime exception in memory monitoring, continuing", e)
-                }
-            }
+            monitoringLoop()
         }.start()
         
         return true
@@ -168,6 +129,89 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
     }
 
     // ===== 内部メソッド =====
+
+    /**
+     * メモリ監視ループの実行
+     */
+    private fun monitoringLoop() {
+        var shouldContinue = true
+        
+        while (isMonitoring && shouldContinue) {
+            try {
+                performMonitoringCycle()
+                
+                // 監視間隔（100ms）
+                Thread.sleep(MONITORING_INTERVAL_MS)
+                
+            } catch (e: Exception) {
+                shouldContinue = handleMonitoringException(e)
+            }
+        }
+    }
+
+    /**
+     * 監視例外の処理
+     * @return 監視を継続する場合はtrue、停止する場合はfalse
+     */
+    private fun handleMonitoringException(exception: Exception): Boolean {
+        return when (exception) {
+            is InterruptedException -> {
+                // スレッド割り込みを適切に処理
+                Thread.currentThread().interrupt()
+                Log.d(TAG, "Memory monitoring thread interrupted")
+                false // 監視停止
+            }
+            is SecurityException -> {
+                // ActivityManagerへのアクセスが拒否された場合
+                Log.w(TAG, "Security exception in memory monitoring", exception)
+                pressureCallback?.onCriticalMemoryError()
+                false // 監視停止
+            }
+            is IllegalStateException -> {
+                // システム状態の問題（ActivityManagerが無効など）
+                Log.w(TAG, "System state exception in memory monitoring", exception)
+                pressureCallback?.onCriticalMemoryError()
+                false // 監視停止
+            }
+            is OutOfMemoryError -> {
+                // メモリ不足エラー（極端な状況）
+                Log.e(TAG, "Out of memory in monitoring thread", exception)
+                pressureCallback?.onCriticalMemoryError()
+                false // 監視停止
+            }
+            else -> {
+                // その他の予期しない例外は継続可能として扱う
+                Log.w(TAG, "Unexpected exception in memory monitoring, continuing", exception)
+                true // 監視継続
+            }
+        }
+    }
+
+    /**
+     * 単一の監視サイクルを実行
+     */
+    private fun performMonitoringCycle() {
+        val currentLevel = getCurrentPressureLevel()
+        
+        // レベル変更のコールバック
+        pressureCallback?.onPressureLevelChanged(currentLevel)
+        
+        // レベル別の対応処理
+        when (currentLevel) {
+            PressureLevel.HIGH -> {
+                triggerAutoCleanup()
+                pressureCallback?.onLowMemoryWarning()
+            }
+            PressureLevel.CRITICAL -> {
+                triggerAutoCleanup()
+                triggerGarbageCollection()
+                pressureCallback?.onCriticalMemoryError()
+            }
+            else -> {
+                // LOW, MODERATEは特別な処理なし
+            }
+        }
+    }
 
     private fun getAvailableMemoryMB(): Int {
         // テスト用シミュレーション値があればそれを返す
