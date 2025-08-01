@@ -24,6 +24,10 @@ import kotlin.test.assertTrue
 @Config(sdk = [28])
 class ImageMemoryUsageTest {
 
+    companion object {
+        private const val MEMORY_BLOCK_SIZE_BYTES = 10 * 1024 * 1024 // 10MB per block
+    }
+
     private lateinit var context: Context
     private lateinit var imageCompressionManager: ImageCompressionManager
     private lateinit var memoryPressureMonitor: MemoryPressureMonitor
@@ -223,7 +227,7 @@ class ImageMemoryUsageTest {
         // 大きなバイト配列を作成してメモリを消費
         val memoryConsumers = mutableListOf<ByteArray>()
         repeat(10) {
-            memoryConsumers.add(ByteArray(10 * 1024 * 1024)) // 10MB × 10 = 100MB消費
+            memoryConsumers.add(ByteArray(MEMORY_BLOCK_SIZE_BYTES)) // 10MB × 10 = 100MB消費
         }
     }
 
