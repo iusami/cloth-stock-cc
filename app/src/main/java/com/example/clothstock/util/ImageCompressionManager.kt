@@ -2,6 +2,10 @@ package com.example.clothstock.util
 
 import android.content.Context
 import android.graphics.Bitmap
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * 画像圧縮管理クラス（TDD GREEN段階 - 最小実装）
@@ -17,6 +21,22 @@ class ImageCompressionManager private constructor(private val context: Context) 
         fun getInstance(context: Context): ImageCompressionManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: ImageCompressionManager(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+
+    // ThreadPoolExecutor for background compression tasks
+    private val compressionExecutor = ThreadPoolExecutor(
+        2, // corePoolSize: 最低2スレッド保持
+        4, // maximumPoolSize: 最大4スレッド
+        60L, TimeUnit.SECONDS, // keepAliveTime: アイドルスレッド60秒で終了
+        LinkedBlockingQueue<Runnable>(100) // workQueue: 最大100タスクをキュー
+    ).apply {
+        // スレッド名とデーモン設定
+        threadFactory = java.util.concurrent.ThreadFactory { runnable ->
+            Thread(runnable, "ImageCompression-${System.currentTimeMillis()}").apply {
+                isDaemon = true // アプリ終了時にスレッドプールを強制終了
+                priority = Thread.NORM_PRIORITY - 1 // 少し低い優先度
             }
         }
     }
@@ -144,7 +164,7 @@ class ImageCompressionManager private constructor(private val context: Context) 
     }
 
     /**
-     * バックグラウンド圧縮（Phase 2 REFACTOR - 改善実装）
+     * バックグラウンド圧縮（Phase 2 REFACTOR - ThreadPoolExecutor使用）
      */
     fun compressInBackground(
         bitmap: Bitmap,
@@ -153,39 +173,52 @@ class ImageCompressionManager private constructor(private val context: Context) 
     ): CompressionJob {
         val job = CompressionJob()
         
-        // バックグラウンドスレッドで処理（改善実装）
-        Thread {
-            try {
-                // キャンセルチェック
-                if (job.isCancelled()) {
-                    callback.onCompressionError(Exception("圧縮処理がキャンセルされました"))
-                    return@Thread
-                }
-                
-                // 処理時間をシミュレート（テスト用）
-                Thread.sleep(50)
-                
-                // 再度キャンセルチェック
-                if (job.isCancelled()) {
-                    callback.onCompressionError(Exception("圧縮処理がキャンセルされました"))
-                    return@Thread
-                }
-                
-                val result = compressWithStrategy(bitmap, strategy)
-                
-                // 最終キャンセルチェック
-                if (!job.isCancelled()) {
-                    job.complete(result)
-                    callback.onCompressionComplete(result)
-                }
-                
-            } catch (e: Exception) {
-                if (!job.isCancelled()) {
-                    job.fail(e)
-                    callback.onCompressionError(e)
+        try {
+            // ThreadPoolExecutorで処理（改善実装）
+            compressionExecutor.execute {
+                try {
+                    // キャンセルチェック
+                    if (job.isCancelled()) {
+                        callback.onCompressionError(Exception("圧縮処理がキャンセルされました"))
+                        return@execute
+                    }
+                    
+                    // 処理時間をシミュレート（テスト用）
+                    Thread.sleep(50)
+                    
+                    // 再度キャンセルチェック
+                    if (job.isCancelled()) {
+                        callback.onCompressionError(Exception("圧縮処理がキャンセルされました"))
+                        return@execute
+                    }
+                    
+                    val result = compressWithStrategy(bitmap, strategy)
+                    
+                    // 最終キャンセルチェック
+                    if (!job.isCancelled()) {
+                        job.complete(result)
+                        callback.onCompressionComplete(result)
+                    }
+                    
+                } catch (e: InterruptedException) {
+                    // スレッド割り込みを適切に処理
+                    Thread.currentThread().interrupt()
+                    if (!job.isCancelled()) {
+                        job.fail(e)
+                        callback.onCompressionError(Exception("圧縮処理が中断されました", e))
+                    }
+                } catch (e: Exception) {
+                    if (!job.isCancelled()) {
+                        job.fail(e)
+                        callback.onCompressionError(e)
+                    }
                 }
             }
-        }.start()
+        } catch (e: RejectedExecutionException) {
+            // スレッドプールが満杯の場合
+            job.fail(e)
+            callback.onCompressionError(Exception("圧縮処理キューが満杯です。しばらく待ってから再試行してください", e))
+        }
         
         return job
     }
@@ -208,6 +241,29 @@ class ImageCompressionManager private constructor(private val context: Context) 
             wasOptimizedForLowMemory = true,
             compressionRatio = 0.8f
         )
+    }
+
+    /**
+     * リソースクリーンアップ（ThreadPoolExecutor終了）
+     */
+    fun shutdown() {
+        compressionExecutor.shutdown()
+        try {
+            // 実行中のタスクが完了するまで5秒待つ
+            if (!compressionExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                // 強制終了
+                compressionExecutor.shutdownNow()
+                // さらに5秒待つ
+                if (!compressionExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    // ログ出力（実際のアプリではロギングライブラリを使用）
+                    println("ImageCompressionManager: ThreadPool did not terminate gracefully")
+                }
+            }
+        } catch (e: InterruptedException) {
+            // 現在のスレッドが割り込まれた場合
+            compressionExecutor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     // ===== ヘルパーメソッド =====

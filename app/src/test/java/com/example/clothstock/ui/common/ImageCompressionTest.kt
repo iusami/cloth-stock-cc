@@ -14,6 +14,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 /**
  * 画像圧縮機能のテストクラス（TDD RED段階）
@@ -175,25 +176,21 @@ class ImageCompressionTest {
     }
 
     @Test
-    fun `バックグラウンド圧縮処理が正常に動作すること`() {
-        // Arrange: 複数の画像を準備
-        val bitmaps = (1..5).map { createTestBitmap(800, 600) }
+    fun `ThreadPoolExecutorによるバックグラウンド圧縮処理が正常に動作すること`() {
+        // Arrange: 複数の画像を準備（ThreadPoolExecutorのテスト）
+        val bitmaps = (1..3).map { createTestBitmap(400, 300) } // サイズ縮小でテスト高速化
         val compressionJobs = mutableListOf<ImageCompressionManager.CompressionJob>()
+        val callbacks = mutableListOf<TestCompressionCallback>()
 
-        // Act: バックグラウンドで並列圧縮を開始
+        // Act: ThreadPoolExecutorでバックグラウンド並列圧縮を開始
         bitmaps.forEachIndexed { index, bitmap ->
+            val callback = TestCompressionCallback()
+            callbacks.add(callback)
+            
             val job = imageCompressionManager.compressInBackground(
                 bitmap = bitmap,
                 strategy = CompressionStrategy.GALLERY_DISPLAY,
-                callback = object : ImageCompressionManager.CompressionCallback {
-                    override fun onCompressionComplete(result: ImageCompressionManager.CompressionResult) {
-                        // 結果の検証は後で実行
-                    }
-                    
-                    override fun onCompressionError(error: Exception) {
-                        throw AssertionError("圧縮処理${index}でエラーが発生: ${error.message}")
-                    }
-                }
+                callback = callback
             )
             compressionJobs.add(job)
         }
@@ -256,6 +253,52 @@ class ImageCompressionTest {
 
         // クリーンアップ
         largeBitmap.recycle()
+    }
+
+    @Test 
+    fun `ThreadPoolExecutorリソース管理テスト`() {
+        // Arrange: 少数のタスクでリソース管理をテスト
+        val testBitmap = createTestBitmap(256, 256)
+        val callback = TestCompressionCallback()
+        
+        // Act: バックグラウンド処理実行
+        val job = imageCompressionManager.compressInBackground(
+            testBitmap,
+            CompressionStrategy.THUMBNAIL,
+            callback
+        )
+        
+        // 処理完了を待つ
+        Thread.sleep(100)
+        
+        // Assert: 正常処理完了
+        assertTrue(job.isCompleted(), "ジョブが完了していません")
+        assertTrue(callback.isCompleted, "コールバックが完了していません")
+        assertFalse(callback.hasError, "予期しないエラーが発生しました")
+        
+        // クリーンアップ
+        testBitmap.recycle()
+        callback.result?.bitmap?.recycle()
+    }
+
+    // ===== テストヘルパークラス =====
+
+    private class TestCompressionCallback : ImageCompressionManager.CompressionCallback {
+        var result: ImageCompressionManager.CompressionResult? = null
+        var error: Exception? = null
+        var isCompleted = false
+        var hasError = false
+
+        override fun onCompressionComplete(result: ImageCompressionManager.CompressionResult) {
+            this.result = result
+            isCompleted = true
+        }
+
+        override fun onCompressionError(error: Exception) {
+            this.error = error
+            hasError = true
+            isCompleted = true
+        }
     }
 
     // ===== ヘルパーメソッド =====
