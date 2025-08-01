@@ -24,8 +24,8 @@ jobs:
       checks: write
       pull-requests: write
     
-    # タイムアウト設定（Phase 1-3最適化により短縮）
-    timeout-minutes: 8
+    # タイムアウト設定（安定性のため延長）
+    timeout-minutes: 12
     
     steps:
     - name: Checkout repository
@@ -49,9 +49,9 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # 2024年最適化: 並列テスト実行
-    - name: Run unit tests in parallel
-      run: ./gradlew testDebugUnitTest --parallel --stacktrace
+    # 2024年最適化: 安定化されたテスト実行
+    - name: Run unit tests
+      run: ./gradlew testDebugUnitTest --stacktrace
       env:
         GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC"
         CI: "true"
@@ -65,9 +65,9 @@ jobs:
         reporter: java-junit
         fail-on-error: false
         
-    # 2024年最適化: 並列APKビルド
-    - name: Build debug APK in parallel
-      run: ./gradlew assembleDebug --parallel --stacktrace
+    # 2024年最適化: 安定化されたAPKビルド
+    - name: Build debug APK
+      run: ./gradlew assembleDebug --stacktrace
       env:
         GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=768m -XX:+UseG1GC"
         CI: "true"
@@ -107,8 +107,8 @@ jobs:
     needs: android-ci  # android-ciジョブの成功後に実行
     if: success()
     
-    # タイムアウト設定（並列最適化により短縮）
-    timeout-minutes: 5
+    # タイムアウト設定（安定性のため適正化）
+    timeout-minutes: 8
     
     # GitHub Token権限設定
     permissions:
@@ -157,8 +157,8 @@ jobs:
     name: Static Code Analysis
     runs-on: ubuntu-latest
     
-    # タイムアウト設定（並列実行により短縮）
-    timeout-minutes: 6
+    # タイムアウト設定（安定性のため適正化）
+    timeout-minutes: 10
     
     # GitHub Token権限設定
     permissions:
@@ -187,9 +187,9 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # 2024年最適化: 静的解析の並列実行
-    - name: Run lint and Detekt analysis in parallel
-      run: ./gradlew lintDebug detekt --parallel --stacktrace
+    # 2024年最適化: 安定化された静的解析
+    - name: Run lint and Detekt analysis
+      run: ./gradlew lintDebug detekt --stacktrace
       env:
         GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
         CI: "true"
@@ -224,8 +224,8 @@ jobs:
       checks: write
       pull-requests: write
     
-    # タイムアウト設定（大幅な最適化により短縮）
-    timeout-minutes: 12
+    # タイムアウト設定（安定性のため適正化）
+    timeout-minutes: 15
     
     steps:
     - name: Checkout repository
@@ -249,16 +249,16 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # 2024年最適化: 効率的なビルド検証プロセス
-    - name: Clean and parallel build verification
-      run: ./gradlew clean build --parallel --stacktrace
+    # 2024年最適化: 安定化されたビルド検証プロセス
+    - name: Clean and build verification
+      run: ./gradlew clean build --stacktrace
       env:
         GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
         
-    # 重要なビルド段階の個別検証（並列実行後）
+    # 重要なビルド段階の個別検証
     - name: Verify KAPT processing
-      run: ./gradlew kaptDebugKotlin kaptReleaseKotlin --parallel --stacktrace
+      run: ./gradlew kaptDebugKotlin kaptReleaseKotlin --stacktrace
       env:
         GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=768m"
         CI: "true"
