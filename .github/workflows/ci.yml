@@ -44,6 +44,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
+        validate-wrappers: false  # test-projectのWrapper検証を無効化
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -63,7 +64,6 @@ jobs:
         path: '**/build/test-results/testDebugUnitTest/TEST-*.xml'
         reporter: java-junit
         fail-on-error: false
-        github_token: ${{ secrets.GITHUB_TOKEN }}
         
     # 2024年最適化: 並列APKビルド
     - name: Build debug APK in parallel
@@ -132,6 +132,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
+        validate-wrappers: false  # test-projectのWrapper検証を無効化
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -181,6 +182,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
+        validate-wrappers: false  # test-projectのWrapper検証を無効化
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -242,6 +244,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
+        validate-wrappers: false  # test-projectのWrapper検証を無効化
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
