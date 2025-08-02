@@ -47,12 +47,9 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        # 依存関係キャッシュの最適化
-        dependencies-cache-enabled: true
-        dependencies-cache-key: gradle-dependencies-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        configuration-cache-enabled: true
         # Build Scan で継続的なパフォーマンス監視
-        arguments: --scan
+        build-scan-publish: true
+        build-scan-terms-of-use-agree: "yes"
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -75,8 +72,8 @@ jobs:
           --build-cache \
           --configuration-cache
       env:
-        # 2025年最適化: CI環境専用メモリ設定
-        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UnlockExperimentalVMOptions -XX:+UseZGC"
+        # 2025年最適化: CI環境専用メモリ設定（G1GC統一）
+        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=8m"
         CI: "true"
         # ビルドキャッシュの最適化
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
@@ -155,6 +152,7 @@ jobs:
       uses: gradle/gradle-build-action@v3
       with:
         cache-read-only: true  # PRでは読み取り専用
+        gradle-home-cache-cleanup: true
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -163,14 +161,14 @@ jobs:
     - name: Run Detekt analysis
       run: ./gradlew detekt --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
       
     # コードカバレッジ（テストは既に実行済みなので、レポート生成のみ）
     - name: Generate code coverage report
       run: ./gradlew jacocoTestReport --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
       
     - name: Upload coverage to Codecov
