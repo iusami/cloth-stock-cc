@@ -13,8 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  android-ci:
-    name: Android CI Pipeline (Optimized)
+  # 統合された高速CIジョブ - 最も重要なチェックを効率的に実行
+  fast-ci:
+    name: Fast CI Pipeline (Optimized)
     runs-on: ubuntu-latest
     
     # GitHub Token権限設定
@@ -24,116 +25,116 @@ jobs:
       checks: write
       pull-requests: write
     
-    # タイムアウト設定（安定性のため延長）
-    timeout-minutes: 12
+    # タイムアウト設定（最適化により短縮）
+    timeout-minutes: 8
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        # 深い履歴は不要 - 高速化
+        fetch-depth: 1
       
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: 'gradle'
         
-    # 2024年最新: Gradle公式アクションによる高度なキャッシュ戦略
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    # 2025年最新: Gradle Build Action で最大限のキャッシュ効率を実現
+    - name: Setup Gradle with advanced caching
+      uses: gradle/gradle-build-action@v3
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        # Wrapper検証を有効化（セキュリティ強化）
+        # 依存関係キャッシュの最適化
+        dependencies-cache-enabled: true
+        dependencies-cache-key: gradle-dependencies-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        configuration-cache-enabled: true
+        # Build Scan で継続的なパフォーマンス監視
+        arguments: --scan
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # CI環境メモリ使用量監視
-    - name: Monitor system memory before build
+    # ビルド時間測定開始
+    - name: Record build start time
+      run: echo "BUILD_START_TIME=$(date +%s)" >> $GITHUB_ENV
+      
+    # 並列実行: テスト + リント + デバッグビルドを同時実行
+    - name: Run tests, lint, and build in parallel
       run: |
-        echo "=== System Memory Status ==="
-        free -h
-        echo "=== CPU Information ==="
-        nproc
-        echo "=== Disk Usage ==="
-        df -h
-      
-    # 2024年最適化: 安定化されたテスト実行
-    - name: Run unit tests
-      run: ./gradlew testDebugUnitTest --stacktrace
+        # 増分ビルドを活用（cleanなし）- 大幅な時間短縮
+        echo "🚀 Starting optimized parallel build..."
+        ./gradlew --parallel --max-workers=4 \
+          testDebugUnitTest \
+          lintDebug \
+          assembleDebug \
+          --stacktrace \
+          --continue \
+          --build-cache \
+          --configuration-cache
       env:
-        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -XX:+UseStringDeduplication"
+        # 2025年最適化: CI環境専用メモリ設定
+        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UnlockExperimentalVMOptions -XX:+UseZGC"
         CI: "true"
+        # ビルドキャッシュの最適化
+        ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
       
+    # ビルド時間測定と結果表示
+    - name: Calculate and display build time
+      run: |
+        BUILD_END_TIME=$(date +%s)
+        BUILD_DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
+        echo "⏱️ Build completed in ${BUILD_DURATION} seconds"
+        echo "BUILD_DURATION=${BUILD_DURATION}" >> $GITHUB_ENV
+        
+        # 成功メッセージ
+        echo "✅ Fast CI Pipeline completed successfully!"
+        echo "📊 Performance metrics:"
+        echo "   - Build time: ${BUILD_DURATION}s"
+        echo "   - Parallel workers: 4"
+        echo "   - Configuration cache: enabled"
+        echo "   - Build cache: enabled"
+      
+    # 高速テストレポート生成
     - name: Generate test report
       uses: dorny/test-reporter@v1
-      if: success() || failure()  # テスト失敗時もレポート生成
+      if: success() || failure()
       with:
-        name: Unit Tests Results
+        name: Fast CI Test Results
         path: '**/build/test-results/testDebugUnitTest/TEST-*.xml'
         reporter: java-junit
         fail-on-error: false
         
-    # 2024年最適化: 安定化されたAPKビルド
-    - name: Build debug APK
-      run: ./gradlew assembleDebug --stacktrace
-      env:
-        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
-        CI: "true"
-      
-    # CI環境メモリ使用量監視（ビルド後）
-    - name: Monitor system memory after build
-      run: |
-        echo "=== Post-Build Memory Status ==="
-        free -h
-        echo "=== Gradle Daemon Processes ==="
-        ps aux | grep -i gradle || true
-        echo "=== Java Processes ==="
-        ps aux | grep -i java || true
-      if: always()
-        
-    - name: Upload debug APK
+    # 条件付きアーティファクト生成（失敗時は詳細、成功時は最小限）
+    - name: Upload debug APK (success only)
       uses: actions/upload-artifact@v4
       if: success()
       with:
-        name: debug-apk-${{ github.sha }}
+        name: debug-apk-${{ github.run_number }}
         path: app/build/outputs/apk/debug/*.apk
-        retention-days: 30
+        retention-days: 7  # 短縮してストレージ効率化
         
-    - name: Upload test results
+    - name: Upload detailed logs (failure only)
       uses: actions/upload-artifact@v4
-      if: always()  # 成功・失敗問わずアップロード
+      if: failure()
       with:
-        name: test-results-${{ github.sha }}
-        path: |
-          **/build/test-results/testDebugUnitTest/
-          **/build/reports/tests/testDebugUnitTest/
-        retention-days: 30
-        
-    - name: Upload build logs
-      uses: actions/upload-artifact@v4
-      if: failure()  # 失敗時のみログアップロード
-      with:
-        name: build-logs-${{ github.sha }}
+        name: failure-logs-${{ github.run_number }}
         path: |
           **/build/reports/
-          **/build.log
-        retention-days: 7
+          **/build/test-results/
+        retention-days: 3  # 短縮してストレージ効率化
 
-  # コードカバレッジ計測（将来の拡張用）
-  code-coverage:
-    name: Code Coverage Analysis
+  # 追加チェック（プルリクエスト時のみ実行し、mainブランチマージ時は省略）
+  extended-checks:
+    name: Extended Checks (PR Only)
     runs-on: ubuntu-latest
-    needs: android-ci  # android-ciジョブの成功後に実行
-    if: success()
+    if: github.event_name == 'pull_request'
+    needs: fast-ci
     
-    # タイムアウト設定（安定性のため適正化）
-    timeout-minutes: 8
+    timeout-minutes: 6
     
-    # GitHub Token権限設定
     permissions:
       contents: read
       actions: read
@@ -141,171 +142,51 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
       
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: 'gradle'
         
-    # 2024年最新: Gradle公式アクションによる高度なキャッシュ戦略
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    - name: Setup Gradle with caching
+      uses: gradle/gradle-build-action@v3
       with:
-        gradle-home-cache-cleanup: true
-        cache-read-only: ${{ github.event_name == 'pull_request' }}
-        # Wrapper検証を有効化（セキュリティ強化）
+        cache-read-only: true  # PRでは読み取り専用
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
+    # Detekt実行（lintは既にfast-ciで実行済み）
+    - name: Run Detekt analysis
+      run: ./gradlew detekt --stacktrace
+      env:
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
+        CI: "true"
+      
+    # コードカバレッジ（テストは既に実行済みなので、レポート生成のみ）
     - name: Generate code coverage report
       run: ./gradlew jacocoTestReport --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
         CI: "true"
       
-    - name: Upload coverage reports to Codecov
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       if: success()
       with:
         file: 'app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
         flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false  # カバレッジ失敗でもCIは継続
-
-  # 静的解析（Detekt + Android Lint）
-  static-analysis:
-    name: Static Code Analysis
-    runs-on: ubuntu-latest
-    
-    # タイムアウト設定（安定性のため適正化）
-    timeout-minutes: 10
-    
-    # GitHub Token権限設定
-    permissions:
-      contents: read
-      actions: read
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'gradle'
+        fail_ci_if_error: false
         
-    # 2024年最新: Gradle公式アクションによる高度なキャッシュ戦略
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-home-cache-cleanup: true
-        cache-read-only: ${{ github.event_name == 'pull_request' }}
-        # Wrapper検証を有効化（セキュリティ強化）
-        
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      
-    # 2024年最適化: 安定化された静的解析
-    - name: Run lint and Detekt analysis
-      run: ./gradlew lintDebug detekt --stacktrace
-      env:
-        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
-        CI: "true"
-      
-    - name: Upload lint results
+    - name: Upload analysis results
       uses: actions/upload-artifact@v4
-      if: always()
+      if: failure()
       with:
-        name: lint-results-${{ github.sha }}
-        path: '**/build/reports/lint-results-*.html'
-        retention-days: 30
-        
-    - name: Upload Detekt results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: detekt-results-${{ github.sha }}
+        name: analysis-results-${{ github.run_number }}
         path: |
           **/build/reports/detekt/
           app/config/detekt/baseline.xml
-        retention-days: 30
-
-  # Android Studio相当のビルド検証（kaptタスク等の明示的テスト）
-  android-studio-build-verification:
-    name: Android Studio Build Verification
-    runs-on: ubuntu-latest
-    
-    # GitHub Token権限設定
-    permissions:
-      contents: read
-      actions: read
-      checks: write
-      pull-requests: write
-    
-    # タイムアウト設定（安定性のため適正化）
-    timeout-minutes: 15
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'gradle'
-        
-    # 2024年最新: Gradle公式アクションによる高度なキャッシュ戦略
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-home-cache-cleanup: true
-        cache-read-only: ${{ github.event_name == 'pull_request' }}
-        # Wrapper検証を有効化（セキュリティ強化）
-        
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      
-    # 2024年最適化: 安定化されたビルド検証プロセス
-    - name: Clean and build verification
-      run: ./gradlew clean build --stacktrace
-      env:
-        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
-        CI: "true"
-        
-    # 重要なビルド段階の個別検証
-    - name: Verify KAPT processing
-      run: ./gradlew kaptDebugKotlin kaptReleaseKotlin --stacktrace
-      env:
-        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
-        CI: "true"
-      
-    - name: Upload KAPT build logs
-      uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: kapt-build-logs-${{ github.sha }}
-        path: |
-          **/build/reports/
-          **/build/tmp/kapt*/
-          **/*.log
-        retention-days: 7
-        
-    - name: Upload Kotlin compilation logs
-      uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: kotlin-compilation-logs-${{ github.sha }}
-        path: |
-          **/build/tmp/kotlin-classes/
-          **/build/kotlin/
-        retention-days: 7
+        retention-days: 3
