@@ -21,6 +21,7 @@
 *   **データベース**: [Room](https://developer.android.com/training/data-storage/room)
 *   **カメラ**: [CameraX](https://developer.android.com/training/camerax)
 *   **画像読み込み**: [Glide](https://github.com/bumptech/glide)
+*   **ビルドシステム**: [Gradle](https://gradle.org/) with optimized configuration
 *   **テスト**:
     *   ユニットテスト: [JUnit](https://junit.org/junit5/), [Mockito](https://site.mockito.org/), [Robolectric](http://robolectric.org/)
     *   UIテスト: [Espresso](https://developer.android.com/training/testing/espresso)
@@ -47,6 +48,16 @@
 *   Android SDK
 *   JDK 11以上
 
+### ビルド最適化設定
+
+このプロジェクトでは、ビルドパフォーマンスを向上させるために以下の最適化設定を適用しています：
+
+*   **Gradle Build Cache**: ビルド成果物をキャッシュして再ビルド時間を短縮
+*   **Configuration Cache**: Gradle設定フェーズの結果をキャッシュ（CI環境では安定性のため無効化）
+*   **並列ビルド**: 複数のモジュールを並列でビルド
+*   **Kotlin増分コンパイル**: 変更されたファイルのみを再コンパイル
+*   **R8フルモード**: より効率的なコード最適化とサイズ削減
+
 ### ビルドコマンド
 
 プロジェクトをビルドするには、以下のコマンドを実行します。
@@ -59,6 +70,15 @@
 
 ```bash
 ./gradlew assembleDebug
+```
+
+### ビルドキャッシュのクリア
+
+ビルドに問題が発生した場合は、キャッシュをクリアしてから再ビルドしてください：
+
+```bash
+./gradlew clean
+./gradlew build --no-build-cache
 ```
 
 ## テスト
@@ -81,10 +101,25 @@ UIテスト（インストルメンテーションテスト）を実行するに
 
 ### 静的解析
 
-[detekt](https.detekt.dev/) を使用して静的コード解析を実行します。
+[detekt](https://detekt.dev/) を使用して静的コード解析を実行します。
 
 ```bash
 ./gradlew detekt
+```
+
+### ビルドパフォーマンステスト
+
+ビルドパフォーマンスを測定・分析するには：
+
+```bash
+# ビルドスキャンを生成（詳細な分析）
+./gradlew build --scan
+
+# プロファイルレポートを生成
+./gradlew build --profile
+
+# ビルドキャッシュの効果を確認
+./gradlew build --build-cache --info | grep "FROM-CACHE"
 ```
 
 ## リリース手順
@@ -117,3 +152,21 @@ UIテスト（インストルメンテーションテスト）を実行するに
 5.  **リリースの確認**: GitHubの[Releases](https://github.com/gemini-claude-be/cloth-stock-cc/releases)ページにアクセスし、新しいリリースが作成されていることを確認します。
 
 以上でリリース作業は完了です。
+
+## 開発者向け情報
+
+### ビルド最適化
+
+このプロジェクトでは、開発効率とCI/CDパフォーマンスを向上させるために、以下のビルド最適化を実装しています：
+
+*   **Gradle Build Cache**: ビルド成果物の再利用による高速化
+*   **Configuration Cache**: 設定フェーズの結果キャッシュ
+*   **並列ビルド**: マルチコアCPUの活用
+*   **Kotlin増分コンパイル**: 変更ファイルのみの再コンパイル
+*   **R8フルモード**: 効率的なコード最適化
+
+詳細な設定については、[docs/implementation/gradle-configuration.md](docs/implementation/gradle-configuration.md) を参照してください。
+
+### パフォーマンス監視
+
+ビルドパフォーマンスの監視と最適化については、[docs/implementation/build-optimization.md](docs/implementation/build-optimization.md) を参照してください。
