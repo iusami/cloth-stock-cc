@@ -1,11 +1,11 @@
 name: Continuous Integration
 
-# ワークフロートリガー: プッシュとプルリクエスト
+# ワークフロートリガー: mainブランチpush + mainへのPR（重複実行排除）
 on:
   push:
-    branches: [ '*' ]  # 全ブランチ
+    branches: [ 'main' ]  # mainブランチのみ（マージ後の品質確認）
   pull_request:
-    branches: [ '*' ]  # 全ブランチへのPR
+    branches: [ 'main' ]  # mainへのPRのみ（開発テスト）
 
 # 並行実行制御（同じPRで複数回実行時は最新のみ）
 concurrency:
