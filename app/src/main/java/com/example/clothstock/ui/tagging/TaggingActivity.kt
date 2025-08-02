@@ -111,8 +111,8 @@ class TaggingActivity : AppCompatActivity() {
         // 保存ボタンのテキストを更新に変更
         binding.buttonSave.text = getString(R.string.button_update)
         
-        // 編集モードであることを示すインジケーターを追加
-        // TODO: 必要に応じて編集モード表示を追加
+        // 現在の実装では、タイトル変更と保存ボタンテキスト変更で
+        // 編集モードの識別は十分と判断し、追加の視覚的インジケーターは不要
     }
     
     /**
