@@ -20,6 +20,7 @@ data class TagData(
         // サイズ制約定数
         const val MIN_SIZE = 60
         const val MAX_SIZE = 160
+        const val SIZE_INCREMENT = 10 // 10単位増分
         
         // デフォルト値定数
         const val DEFAULT_SIZE = 100
@@ -36,6 +37,16 @@ data class TagData(
                 category = DEFAULT_CATEGORY
             )
         }
+        
+        /**
+         * 有効なサイズオプションのリストを生成
+         * 10単位増分で60から160までの値を返す
+         * 
+         * @return [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
+         */
+        fun getValidSizeOptions(): List<Int> {
+            return (MIN_SIZE..MAX_SIZE step SIZE_INCREMENT).toList()
+        }
     }
 
     init {
@@ -44,10 +55,10 @@ data class TagData(
     }
 
     /**
-     * サイズが有効範囲（60-160）内かチェック
+     * サイズが有効範囲（60-160）内かつ10単位増分かチェック
      */
     fun isValidSize(): Boolean {
-        return size in MIN_SIZE..MAX_SIZE
+        return size in MIN_SIZE..MAX_SIZE && (size - MIN_SIZE) % SIZE_INCREMENT == 0
     }
 
     /**
@@ -56,7 +67,9 @@ data class TagData(
     override fun validate(): ValidationResult {
         return when {
             !isValidSize() -> ValidationResult.error(
-                "サイズは${MIN_SIZE}～${MAX_SIZE}の範囲で入力してください（現在: $size）",
+                "サイズは${MIN_SIZE}～${MAX_SIZE}の範囲で10単位刻み" +
+                "（${MIN_SIZE}, ${MIN_SIZE + SIZE_INCREMENT}, ${MIN_SIZE + SIZE_INCREMENT * 2}...）" +
+                "で入力してください（現在: $size）",
                 "size"
             )
             color.isBlank() -> ValidationResult.error("色を入力してください", "color")

@@ -89,11 +89,30 @@ class TaggingActivity : AppCompatActivity() {
             return
         }
         
-        // タイトルを編集モードに変更
-        title = getString(R.string.title_edit_tags)
+        try {
+            // タイトルを編集モードに変更
+            title = getString(R.string.title_edit_tags)
+            
+            // 編集モード特有のUI調整
+            setupEditModeUI()
+            
+            // ViewModelに編集モードを設定
+            viewModel.setEditMode(clothItemId)
+        } catch (e: Exception) {
+            showError("編集モードの初期化に失敗しました: ${e.message}")
+            finish()
+        }
+    }
+    
+    /**
+     * 編集モード特有のUI設定
+     */
+    private fun setupEditModeUI() {
+        // 保存ボタンのテキストを更新に変更
+        binding.buttonSave.text = getString(R.string.button_update)
         
-        // ViewModelに編集モードを設定
-        viewModel.setEditMode(clothItemId)
+        // 現在の実装では、タイトル変更と保存ボタンテキスト変更で
+        // 編集モードの識別は十分と判断し、追加の視覚的インジケーターは不要
     }
     
     /**
@@ -161,17 +180,27 @@ class TaggingActivity : AppCompatActivity() {
     }
     
     /**
-     * NumberPickerの初期化
+     * NumberPickerの初期化（10単位増分対応）
      */
     private fun setupNumberPicker() {
+        val validSizeOptions = TagData.getValidSizeOptions()
+        
         binding.numberPickerSize.apply {
-            minValue = TagData.MIN_SIZE
-            maxValue = TagData.MAX_SIZE
-            value = TagData.DEFAULT_SIZE
+            // 10単位増分の有効なサイズオプションのみ表示
+            minValue = 0
+            maxValue = validSizeOptions.size - 1
             
-            // NumberPickerの値変更監視
-            setOnValueChangedListener { _, _, newVal ->
-                viewModel.updateSize(newVal)
+            // カスタム表示文字列を設定
+            displayedValues = validSizeOptions.map { it.toString() }.toTypedArray()
+            
+            // デフォルト値のインデックスを設定
+            val defaultSizeIndex = validSizeOptions.indexOf(TagData.DEFAULT_SIZE)
+            value = if (defaultSizeIndex >= 0) defaultSizeIndex else 0
+            
+            // NumberPickerの値変更監視（インデックスから実際のサイズ値に変換）
+            setOnValueChangedListener { _, _, newIndex ->
+                val actualSize = validSizeOptions[newIndex]
+                viewModel.updateSize(actualSize)
             }
         }
     }
@@ -233,11 +262,19 @@ class TaggingActivity : AppCompatActivity() {
     private fun setupButtons() {
         // 保存ボタン
         binding.buttonSave.setOnClickListener {
-            val imageUriString = imageUri?.toString()
-            if (imageUriString != null) {
-                viewModel.saveTaggedItem(imageUriString)
+            val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+            
+            if (isEditMode) {
+                // 編集モードでは画像URIは必須でない（既存の画像を使用）
+                viewModel.saveTaggedItem(imageUri?.toString())
             } else {
-                showError(getString(R.string.error_image_save_failed))
+                // 新規作成モードでは画像URIが必須
+                val imageUriString = imageUri?.toString()
+                if (imageUriString != null) {
+                    viewModel.saveTaggedItem(imageUriString)
+                } else {
+                    showError(getString(R.string.error_image_save_failed))
+                }
             }
         }
         
@@ -285,7 +322,11 @@ class TaggingActivity : AppCompatActivity() {
                 // フィールドを既存データで事前入力
                 binding.editTextColor.setText(it.tagData.color)
                 binding.editTextCategory.setText(it.tagData.category)
-                binding.numberPickerSize.value = it.tagData.size
+                
+                // NumberPickerのインデックスを正しく設定（10単位増分対応）
+                val validSizeOptions = TagData.getValidSizeOptions()
+                val sizeIndex = validSizeOptions.indexOf(it.tagData.size)
+                binding.numberPickerSize.value = if (sizeIndex >= 0) sizeIndex else 0
                 
                 // 画像を表示（編集モードで画像URIがない場合）
                 if (imageUri == null && !it.imagePath.isNullOrEmpty()) {
@@ -408,11 +449,19 @@ class TaggingActivity : AppCompatActivity() {
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton("再試行") { _, _ ->
-                val imageUriString = imageUri?.toString()
-                if (imageUriString != null) {
-                    viewModel.saveTaggedItem(imageUriString)
+                val isEditMode = intent.getBooleanExtra(EXTRA_EDIT_MODE, false)
+                
+                if (isEditMode) {
+                    // 編集モードでは画像URIは必須でない
+                    viewModel.saveTaggedItem(imageUri?.toString())
                 } else {
-                    showError(getString(R.string.error_image_save_failed))
+                    // 新規作成モードでは画像URIが必須
+                    val imageUriString = imageUri?.toString()
+                    if (imageUriString != null) {
+                        viewModel.saveTaggedItem(imageUriString)
+                    } else {
+                        showError(getString(R.string.error_image_save_failed))
+                    }
                 }
             }
             .setNegativeButton("キャンセル", null)

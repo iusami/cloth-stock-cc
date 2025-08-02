@@ -246,6 +246,60 @@ class TagDataTest {
         assertEquals(100, original.size) // 元のオブジェクトは変更されない
     }
 
+    // ===== 10単位増分テスト =====
+
+    @Test
+    fun `getValidSizeOptions_正しい10単位増分オプションを返す`() {
+        // When
+        val validOptions = TagData.getValidSizeOptions()
+
+        // Then
+        val expected = listOf(60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160)
+        assertEquals(expected, validOptions)
+        assertEquals(11, validOptions.size)
+    }
+
+    @Test
+    fun `isValidSize_10単位増分の有効なサイズ_trueを返す`() {
+        val validSizes = listOf(60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160)
+        
+        validSizes.forEach { size ->
+            // Given
+            val tagData = TagData(size, "青", "シャツ")
+            
+            // When & Then
+            assertTrue("サイズ${size}は有効", tagData.isValidSize())
+        }
+    }
+
+    @Test
+    fun `isValidSize_10単位増分でない範囲内サイズ_falseを返す`() {
+        val invalidSizes = listOf(61, 65, 75, 85, 95, 105, 115, 125, 135, 145, 155, 159)
+        
+        invalidSizes.forEach { size ->
+            // Given
+            val tagData = TagData(size, "青", "シャツ")
+            
+            // When & Then
+            assertFalse("サイズ${size}は無効（10単位増分でない）", tagData.isValidSize())
+        }
+    }
+
+    @Test
+    fun `validate_10単位増分でないサイズ_適切なエラーメッセージを返す`() {
+        // Given
+        val tagData = TagData(65, "青", "シャツ") // 65は10単位増分でない
+        
+        // When
+        val result = tagData.validate()
+        
+        // Then
+        assertFalse("バリデーション失敗", result.isSuccess())
+        assertTrue("エラー結果", result.isError())
+        assertNotNull("エラーメッセージが存在", result.getErrorMessage())
+        assertTrue("10単位刻みメッセージを含む", result.getErrorMessage()!!.contains("10単位刻み"))
+    }
+
     // ===== 定数テスト =====
 
     @Test
@@ -253,6 +307,7 @@ class TagDataTest {
         // When & Then
         assertEquals(60, TagData.MIN_SIZE)
         assertEquals(160, TagData.MAX_SIZE)
+        assertEquals(10, TagData.SIZE_INCREMENT)
     }
 
     @Test
