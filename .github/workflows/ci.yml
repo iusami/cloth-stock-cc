@@ -25,8 +25,8 @@ jobs:
       checks: write
       pull-requests: write
     
-    # タイムアウト設定（最適化により短縮）
-    timeout-minutes: 8
+    # タイムアウト設定（安定性重視で延長）
+    timeout-minutes: 15
     
     steps:
     - name: Checkout repository
@@ -58,24 +58,31 @@ jobs:
     - name: Record build start time
       run: echo "BUILD_START_TIME=$(date +%s)" >> $GITHUB_ENV
       
-    # 並列実行: テスト + リント + デバッグビルドを同時実行
-    - name: Run tests, lint, and build in parallel
+    # 段階的実行: まずテストとリントを並列実行
+    - name: Run tests and lint in parallel
       run: |
-        # 増分ビルドを活用（cleanなし）- 大幅な時間短縮
-        echo "🚀 Starting optimized parallel build..."
-        ./gradlew --parallel --max-workers=4 \
+        echo "🚀 Starting tests and lint..."
+        ./gradlew --parallel --max-workers=2 \
           testDebugUnitTest \
           lintDebug \
-          assembleDebug \
           --stacktrace \
           --continue \
-          --build-cache \
-          --configuration-cache
+          --build-cache
       env:
-        # 2025年最適化: CI環境専用メモリ設定（G1GC統一）
-        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=8m"
+        # CI環境専用メモリ設定（安定性重視）
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
-        # ビルドキャッシュの最適化
+        ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
+        
+    # 次にAPKビルドを実行
+    - name: Build debug APK
+      run: |
+        echo "🔨 Building APK..."
+        ./gradlew assembleDebug --stacktrace --build-cache
+      env:
+        # APKビルド用メモリ設定
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        CI: "true"
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
       
     # ビルド時間測定と結果表示
