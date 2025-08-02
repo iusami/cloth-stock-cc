@@ -261,13 +261,21 @@ class DetailActivity : AppCompatActivity() {
 
     /**
      * TaggingActivityへ遷移（編集モード）
-     * TODO: 編集モード対応は後のタスクで実装
      */
     private fun navigateToTaggingActivity(clothItemId: Long) {
-        // 現在は編集機能未実装のため、情報表示のみ
-        val clothItem = viewModel.clothItem.value
-        if (clothItem != null) {
-            Snackbar.make(binding.root, "編集機能は次のタスクで実装予定です", Snackbar.LENGTH_LONG).show()
+        if (clothItemId <= 0) {
+            showError("無効なアイテムIDです")
+            return
+        }
+        
+        try {
+            val intent = Intent(this, TaggingActivity::class.java).apply {
+                putExtra(TaggingActivity.EXTRA_EDIT_MODE, true)
+                putExtra(TaggingActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            showError("編集画面の起動に失敗しました: ${e.message}")
         }
     }
 
