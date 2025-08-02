@@ -44,16 +44,27 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        validate-wrappers: false  # test-projectのWrapper検証を無効化
+        # Wrapper検証を有効化（セキュリティ強化）
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      
+    # CI環境メモリ使用量監視
+    - name: Monitor system memory before build
+      run: |
+        echo "=== System Memory Status ==="
+        free -h
+        echo "=== CPU Information ==="
+        nproc
+        echo "=== Disk Usage ==="
+        df -h
       
     # 2024年最適化: 安定化されたテスト実行
     - name: Run unit tests
       run: ./gradlew testDebugUnitTest --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC"
+        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
       
     - name: Generate test report
@@ -69,9 +80,21 @@ jobs:
     - name: Build debug APK
       run: ./gradlew assembleDebug --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=768m -XX:+UseG1GC"
+        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
       
+    # CI環境メモリ使用量監視（ビルド後）
+    - name: Monitor system memory after build
+      run: |
+        echo "=== Post-Build Memory Status ==="
+        free -h
+        echo "=== Gradle Daemon Processes ==="
+        ps aux | grep -i gradle || true
+        echo "=== Java Processes ==="
+        ps aux | grep -i java || true
+      if: always()
+        
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
       if: success()
@@ -132,7 +155,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        validate-wrappers: false  # test-projectのWrapper検証を無効化
+        # Wrapper検証を有効化（セキュリティ強化）
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -182,7 +205,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        validate-wrappers: false  # test-projectのWrapper検証を無効化
+        # Wrapper検証を有効化（セキュリティ強化）
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -191,7 +214,8 @@ jobs:
     - name: Run lint and Detekt analysis
       run: ./gradlew lintDebug detekt --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
+        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
       
     - name: Upload lint results
@@ -244,7 +268,7 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
         cache-read-only: ${{ github.event_name == 'pull_request' }}
-        validate-wrappers: false  # test-projectのWrapper検証を無効化
+        # Wrapper検証を有効化（セキュリティ強化）
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -253,14 +277,16 @@ jobs:
     - name: Clean and build verification
       run: ./gradlew clean build --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -XX:+UseStringDeduplication"
+        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
         
     # 重要なビルド段階の個別検証
     - name: Verify KAPT processing
       run: ./gradlew kaptDebugKotlin kaptReleaseKotlin --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=768m"
+        # CI環境専用: GitHub Actions runner (7GB RAM) 制約に対応
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC"
         CI: "true"
       
     - name: Upload KAPT build logs
