@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 統合された高速CIジョブ - 最も重要なチェックを効率的に実行
+  # 統合された高速CIジョブ - 4コアランナーで最高性能を実現
   fast-ci:
-    name: Fast CI Pipeline (Optimized)
-    runs-on: ubuntu-latest
+    name: Fast CI Pipeline (4-Core Optimized)
+    runs-on: ubuntu-latest-4-cores
     
     # GitHub Token権限設定
     permissions:
@@ -34,6 +34,21 @@ jobs:
       with:
         # 深い履歴は不要 - 高速化
         fetch-depth: 1
+      
+    # 🚀 メモリ制約解決: 15GBスワップファイル追加（最重要最適化）
+    - name: Create swap file to solve memory constraints
+      run: |
+        echo "🔧 Creating 15GB swap file to solve GitHub Actions 7GB RAM limit..."
+        sudo fallocate -l 15G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        echo "✅ Swap file created successfully"
+        # メモリ状況確認
+        echo "📊 Memory status after swap creation:"
+        free -h
+        echo "💾 Available memory: $(free -h | awk '/^Mem:/ {print $7}')"
+        echo "🔄 Swap space: $(free -h | awk '/^Swap:/ {print $2}')"
       
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -58,19 +73,19 @@ jobs:
     - name: Record build start time
       run: echo "BUILD_START_TIME=$(date +%s)" >> $GITHUB_ENV
       
-    # 段階的実行: まずテストとリントを並列実行
+    # 段階的実行: まずテストとリントを並列実行（4コア最大活用）
     - name: Run tests and lint in parallel
       run: |
         echo "🚀 Starting tests and lint..."
-        ./gradlew --parallel --max-workers=2 \
+        ./gradlew --parallel --max-workers=4 \
           testDebugUnitTest \
           lintDebug \
           --stacktrace \
           --continue \
           --build-cache
       env:
-        # CI環境専用メモリ設定（安定性重視）
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        # CI環境専用メモリ設定（15GBスワップでメモリ制約解決済み）
+        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
         CI: "true"
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
         
@@ -80,8 +95,8 @@ jobs:
         echo "🔨 Building APK..."
         ./gradlew assembleDebug --stacktrace --build-cache
       env:
-        # APKビルド用メモリ設定
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        # APKビルド用メモリ設定（メモリ制約解決済みで大容量化）
+        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
         CI: "true"
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
       
@@ -97,7 +112,7 @@ jobs:
         echo "✅ Fast CI Pipeline completed successfully!"
         echo "📊 Performance metrics:"
         echo "   - Build time: ${BUILD_DURATION}s"
-        echo "   - Parallel workers: 4"
+        echo "   - Parallel workers: 4 (max utilization)"
         echo "   - Configuration cache: enabled"
         echo "   - Build cache: enabled"
       
@@ -132,8 +147,8 @@ jobs:
 
   # 追加チェック（プルリクエスト時のみ実行し、mainブランチマージ時は省略）
   extended-checks:
-    name: Extended Checks (PR Only)
-    runs-on: ubuntu-latest
+    name: Extended Checks (PR Only - 4-Core)
+    runs-on: ubuntu-latest-4-cores
     if: github.event_name == 'pull_request'
     needs: fast-ci
     
@@ -168,14 +183,14 @@ jobs:
     - name: Run Detekt analysis
       run: ./gradlew detekt --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
         CI: "true"
       
     # コードカバレッジ（テストは既に実行済みなので、レポート生成のみ）
     - name: Generate code coverage report
       run: ./gradlew jacocoTestReport --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
         CI: "true"
       
     - name: Upload coverage to Codecov

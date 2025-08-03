@@ -27,6 +27,8 @@ android {
 
     buildTypes {
         debug {
+            // CI最適化: R8を無効化してメモリ消費とビルド時間を削減
+            isMinifyEnabled = false
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
         }
@@ -66,6 +68,19 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // CI最適化: 不要なメタデータファイルを除外してAPKサイズとビルド時間を削減
+            excludes += listOf(
+                "/META-INF/DEPENDENCIES",
+                "/META-INF/LICENSE",
+                "/META-INF/LICENSE.txt",
+                "/META-INF/NOTICE",
+                "/META-INF/NOTICE.txt",
+                "/META-INF/*.kotlin_module"
+            )
+        }
+        // デバッグビルド用：ネイティブライブラリの圧縮を無効化（ビルド時間短縮）
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }
