@@ -102,6 +102,12 @@ jobs:
         echo "🔨 Building debug APK..."
         ./gradlew assembleDebug --stacktrace --build-cache
         
+        # Step 4: コードカバレッジレポート生成（PRのみ）
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "📊 Generating code coverage report for PR..."
+          ./gradlew jacocoTestReport --stacktrace --build-cache
+        fi
+        
         echo "✅ All CI tasks completed successfully!"
       env:
         # GitHub Free対応：保守的メモリ設定（スワップなしでも安全）
@@ -143,6 +149,25 @@ jobs:
         name: debug-apk-${{ github.run_number }}
         path: app/build/outputs/apk/debug/*.apk
         retention-days: 7  # 短縮してストレージ効率化
+    
+    # コードカバレッジアーティファクト（PRのみ）    
+    - name: Upload coverage reports (PR only)
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'pull_request' && success()
+      with:
+        name: coverage-reports-${{ github.run_number }}
+        path: |
+          app/build/reports/jacoco/jacocoTestReport/
+        retention-days: 7
+    
+    # Codecovアップロード（PRのみ）
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: github.event_name == 'pull_request' && success()
+      with:
+        file: 'app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
+        flags: unittests
+        fail_ci_if_error: false
         
     - name: Upload detailed logs (failure only)
       uses: actions/upload-artifact@v4
@@ -188,27 +213,12 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # Detekt実行（GitHub Free対応）
+    # Detekt実行（GitHub Free対応・軽量化）
     - name: Run Detekt analysis
       run: ./gradlew detekt --stacktrace
       env:
         GRADLE_OPTS: "-Xmx1500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
         CI: "true"
-      
-    # コードカバレッジ（GitHub Free対応）
-    - name: Generate code coverage report
-      run: ./gradlew jacocoTestReport --stacktrace
-      env:
-        GRADLE_OPTS: "-Xmx1500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
-        CI: "true"
-      
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      if: success()
-      with:
-        file: 'app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
-        flags: unittests
-        fail_ci_if_error: false
         
     - name: Upload analysis results
       uses: actions/upload-artifact@v4
