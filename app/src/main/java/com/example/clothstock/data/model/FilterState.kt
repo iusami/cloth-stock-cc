@@ -11,6 +11,12 @@ data class FilterState(
     val searchText: String = ""
 ) : Parcelable {
     
+    init {
+        require(sizeFilters.all { it > 0 }) { "All sizes must be positive" }
+        require(colorFilters.all { it.isNotBlank() }) { "Color filters cannot be blank" }
+        require(categoryFilters.all { it.isNotBlank() }) { "Category filters cannot be blank" }
+    }
+    
     fun hasActiveFilters(): Boolean = 
         sizeFilters.isNotEmpty() || colorFilters.isNotEmpty() || 
         categoryFilters.isNotEmpty() || searchText.isNotBlank()

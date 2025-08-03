@@ -22,4 +22,20 @@ class FilterTypeTest {
         assertEquals(FilterType.CATEGORY, FilterType.valueOf("CATEGORY"))
         assertEquals(FilterType.SEARCH, FilterType.valueOf("SEARCH"))
     }
+    
+    @Test
+    fun `getDisplayName returns correct localized names`() {
+        assertEquals("サイズ", FilterType.SIZE.getDisplayName())
+        assertEquals("色", FilterType.COLOR.getDisplayName())
+        assertEquals("カテゴリ", FilterType.CATEGORY.getDisplayName())
+        assertEquals("検索", FilterType.SEARCH.getDisplayName())
+    }
+    
+    @Test
+    fun `supportsMultipleSelection returns correct values`() {
+        assertTrue(FilterType.SIZE.supportsMultipleSelection())
+        assertTrue(FilterType.COLOR.supportsMultipleSelection())
+        assertTrue(FilterType.CATEGORY.supportsMultipleSelection())
+        assertFalse(FilterType.SEARCH.supportsMultipleSelection())
+    }
 }

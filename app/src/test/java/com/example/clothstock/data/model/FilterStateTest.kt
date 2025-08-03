@@ -5,13 +5,7 @@ import org.junit.Assert.*
 
 class FilterStateTest {
 
-    companion object {
-        // Test data constants for better maintainability
-        private val SAMPLE_SIZES = setOf(100, 110, 120)
-        private val SAMPLE_COLORS = setOf("赤", "青", "緑")
-        private val SAMPLE_CATEGORIES = setOf("トップス", "ボトムス")
-        private const val SAMPLE_SEARCH_TEXT = "シャツ"
-    }
+
 
     @Test
     fun `hasActiveFilters returns false when no filters are active`() {
@@ -99,13 +93,13 @@ class FilterStateTest {
     @Test
     fun `toDisplayString returns correct format for color filters only`() {
         val filterState = FilterState(colorFilters = setOf("青", "赤"))
-        assertEquals("色: 青, 赤", filterState.toDisplayString()) // Sorted alphabetically
+        assertEquals("色: 赤, 青", filterState.toDisplayString()) // Sorted alphabetically
     }
 
     @Test
     fun `toDisplayString returns correct format for category filters only`() {
         val filterState = FilterState(categoryFilters = setOf("ボトムス", "トップス"))
-        assertEquals("カテゴリ: ボトムス, トップス", filterState.toDisplayString()) // Sorted alphabetically
+        assertEquals("カテゴリ: トップス, ボトムス", filterState.toDisplayString()) // Sorted alphabetically
     }
 
     @Test
@@ -171,5 +165,38 @@ class FilterStateTest {
     fun `toDisplayString handles special characters in search text`() {
         val filterState = FilterState(searchText = "シャツ \"特別\"")
         assertEquals("検索: \"シャツ \\\"特別\\\"\"", filterState.toDisplayString())
+    }
+    
+    // Validation tests
+    @Test
+    fun `constructor throws exception for negative size filters`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterState(sizeFilters = setOf(100, -1))
+        }
+    }
+    
+    @Test
+    fun `constructor throws exception for blank color filters`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterState(colorFilters = setOf("赤", ""))
+        }
+    }
+    
+    @Test
+    fun `constructor throws exception for blank category filters`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterState(categoryFilters = setOf("トップス", "   "))
+        }
+    }
+    
+    @Test
+    fun `constructor accepts valid filter values`() {
+        val filterState = FilterState(
+            sizeFilters = setOf(100, 110),
+            colorFilters = setOf("赤", "青"),
+            categoryFilters = setOf("トップス", "ボトムス"),
+            searchText = "シャツ"
+        )
+        assertTrue(filterState.hasActiveFilters())
     }
 }

@@ -84,4 +84,122 @@ class FilterChipTest {
         assertEquals("\"\"", chip.displayText)
         assertTrue(chip.isSelected)
     }
+    
+    // New tests for enhanced functionality
+    
+    @Test
+    fun `toggleSelection changes selection state`() {
+        val chip = FilterChip.createSizeChip(100, isSelected = false)
+        val toggledChip = chip.toggleSelection()
+        
+        assertTrue(toggledChip.isSelected)
+        assertEquals(chip.type, toggledChip.type)
+        assertEquals(chip.value, toggledChip.value)
+        assertEquals(chip.displayText, toggledChip.displayText)
+    }
+    
+    @Test
+    fun `canBeDeselected returns true for non-search chips`() {
+        assertTrue(FilterChip.createSizeChip(100).canBeDeselected())
+        assertTrue(FilterChip.createColorChip("赤").canBeDeselected())
+        assertTrue(FilterChip.createCategoryChip("トップス").canBeDeselected())
+    }
+    
+    @Test
+    fun `canBeDeselected returns false for search chips`() {
+        assertFalse(FilterChip.createSearchChip("シャツ").canBeDeselected())
+    }
+    
+    @Test
+    fun `createSizeChip throws exception for invalid size`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createSizeChip(0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createSizeChip(-1)
+        }
+    }
+    
+    @Test
+    fun `createColorChip throws exception for blank color`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createColorChip("")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createColorChip("   ")
+        }
+    }
+    
+    @Test
+    fun `createCategoryChip throws exception for blank category`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createCategoryChip("")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FilterChip.createCategoryChip("   ")
+        }
+    }
+    
+    @Test
+    fun `createColorChip trims whitespace`() {
+        val chip = FilterChip.createColorChip("  赤  ")
+        assertEquals("赤", chip.value)
+        assertEquals("赤", chip.displayText)
+    }
+    
+    @Test
+    fun `createCategoryChip trims whitespace`() {
+        val chip = FilterChip.createCategoryChip("  トップス  ")
+        assertEquals("トップス", chip.value)
+        assertEquals("トップス", chip.displayText)
+    }
+    
+    @Test
+    fun `createSearchChip trims whitespace`() {
+        val chip = FilterChip.createSearchChip("  シャツ  ")
+        assertEquals("シャツ", chip.value)
+        assertEquals("\"シャツ\"", chip.displayText)
+    }
+    
+    @Test
+    fun `create factory method works for all types`() {
+        val sizeChip = FilterChip.create(FilterType.SIZE, "100")
+        assertEquals(FilterType.SIZE, sizeChip.type)
+        assertEquals("100", sizeChip.value)
+        
+        val colorChip = FilterChip.create(FilterType.COLOR, "赤")
+        assertEquals(FilterType.COLOR, colorChip.type)
+        assertEquals("赤", colorChip.value)
+        
+        val categoryChip = FilterChip.create(FilterType.CATEGORY, "トップス")
+        assertEquals(FilterType.CATEGORY, categoryChip.type)
+        assertEquals("トップス", categoryChip.value)
+        
+        val searchChip = FilterChip.create(FilterType.SEARCH, "シャツ")
+        assertEquals(FilterType.SEARCH, searchChip.type)
+        assertEquals("シャツ", searchChip.value)
+    }
+    
+    @Test
+    fun `getUniqueId returns consistent identifier`() {
+        val sizeChip = FilterChip.createSizeChip(100)
+        assertEquals("SIZE:100", sizeChip.getUniqueId())
+        
+        val colorChip = FilterChip.createColorChip("赤")
+        assertEquals("COLOR:赤", colorChip.getUniqueId())
+        
+        val categoryChip = FilterChip.createCategoryChip("トップス")
+        assertEquals("CATEGORY:トップス", categoryChip.getUniqueId())
+        
+        val searchChip = FilterChip.createSearchChip("シャツ")
+        assertEquals("SEARCH:シャツ", searchChip.getUniqueId())
+    }
+    
+    @Test
+    fun `chips with same type and value have same unique id`() {
+        val chip1 = FilterChip.createSizeChip(100, isSelected = true)
+        val chip2 = FilterChip.createSizeChip(100, isSelected = false)
+        
+        assertEquals(chip1.getUniqueId(), chip2.getUniqueId())
+    }
 }
