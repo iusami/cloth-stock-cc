@@ -7,16 +7,16 @@ on:
   pull_request:
     branches: [ 'main' ]  # mainへのPRのみ（開発テスト）
 
-# 並行実行制御（同じPRで複数回実行時は最新のみ）
+# 並行実行制御（GitHub Freeプラン対応：単一ジョブ実行）
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # 統合された高速CIジョブ - 4コアランナーで最高性能を実現
-  fast-ci:
-    name: Fast CI Pipeline (4-Core Optimized)
-    runs-on: ubuntu-latest-4-cores
+  # GitHub Free対応：単一統合CIジョブ（並行ジョブ制限回避）
+  unified-ci:
+    name: Unified CI Pipeline (Free Plan Optimized)
+    runs-on: ubuntu-latest
     
     # GitHub Token権限設定
     permissions:
@@ -35,20 +35,18 @@ jobs:
         # 深い履歴は不要 - 高速化
         fetch-depth: 1
       
-    # 🚀 メモリ制約解決: 15GBスワップファイル追加（最重要最適化）
-    - name: Create swap file to solve memory constraints
+    # 🚀 GitHub Free最適化: 軽量スワップファイル（2GB）
+    - name: Create lightweight swap for Free plan
       run: |
-        echo "🔧 Creating 15GB swap file to solve GitHub Actions 7GB RAM limit..."
-        sudo fallocate -l 15G /swapfile
+        echo "🔧 Creating 2GB swap file for GitHub Free plan optimization..."
+        sudo fallocate -l 2G /swapfile
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
         sudo swapon /swapfile
-        echo "✅ Swap file created successfully"
+        echo "✅ Lightweight swap created successfully"
         # メモリ状況確認
-        echo "📊 Memory status after swap creation:"
+        echo "📊 Memory status:"
         free -h
-        echo "💾 Available memory: $(free -h | awk '/^Mem:/ {print $7}')"
-        echo "🔄 Swap space: $(free -h | awk '/^Swap:/ {print $2}')"
       
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -73,30 +71,27 @@ jobs:
     - name: Record build start time
       run: echo "BUILD_START_TIME=$(date +%s)" >> $GITHUB_ENV
       
-    # 段階的実行: まずテストとリントを並列実行（4コア最大活用）
-    - name: Run tests and lint in parallel
+    # GitHub Free対応: 単一ステップで全てのタスクを順次実行
+    - name: Run unified CI tasks (Free plan optimized)
       run: |
-        echo "🚀 Starting tests and lint..."
-        ./gradlew --parallel --max-workers=4 \
-          testDebugUnitTest \
-          lintDebug \
-          --stacktrace \
-          --continue \
-          --build-cache
-      env:
-        # CI環境専用メモリ設定（15GBスワップでメモリ制約解決済み）
-        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
-        CI: "true"
-        ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
+        echo "🚀 Starting unified CI pipeline for GitHub Free plan..."
         
-    # 次にAPKビルドを実行
-    - name: Build debug APK
-      run: |
-        echo "🔨 Building APK..."
+        # Step 1: テスト実行（並列度を下げてメモリ効率化）
+        echo "🧪 Running tests..."
+        ./gradlew --parallel --max-workers=2 testDebugUnitTest --stacktrace --build-cache
+        
+        # Step 2: リント実行
+        echo "🔍 Running lint..."
+        ./gradlew lintDebug --stacktrace --build-cache
+        
+        # Step 3: APKビルド
+        echo "🔨 Building debug APK..."
         ./gradlew assembleDebug --stacktrace --build-cache
+        
+        echo "✅ All CI tasks completed successfully!"
       env:
-        # APKビルド用メモリ設定（メモリ制約解決済みで大容量化）
-        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
+        # GitHub Free対応：軽量メモリ設定（2GBスワップ使用）
+        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
       
@@ -112,8 +107,8 @@ jobs:
         echo "✅ Fast CI Pipeline completed successfully!"
         echo "📊 Performance metrics:"
         echo "   - Build time: ${BUILD_DURATION}s"
-        echo "   - Parallel workers: 4 (max utilization)"
-        echo "   - Configuration cache: enabled"
+        echo "   - Parallel workers: 2 (Free plan optimized)"
+        echo "   - Memory allocation: 2GB + 2GB swap"
         echo "   - Build cache: enabled"
       
     # 高速テストレポート生成
@@ -121,7 +116,7 @@ jobs:
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
-        name: Fast CI Test Results
+        name: Unified CI Test Results
         path: '**/build/test-results/testDebugUnitTest/TEST-*.xml'
         reporter: java-junit
         fail-on-error: false
@@ -145,12 +140,12 @@ jobs:
           **/build/test-results/
         retention-days: 3  # 短縮してストレージ効率化
 
-  # 追加チェック（プルリクエスト時のみ実行し、mainブランチマージ時は省略）
+  # 追加チェック（PRのみ、GitHub Free対応で軽量化）
   extended-checks:
-    name: Extended Checks (PR Only - 4-Core)
-    runs-on: ubuntu-latest-4-cores
+    name: Extended Checks (PR Only - Free Plan)
+    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: fast-ci
+    needs: unified-ci
     
     timeout-minutes: 6
     
@@ -179,18 +174,18 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    # Detekt実行（lintは既にfast-ciで実行済み）
+    # Detekt実行（GitHub Free対応）
     - name: Run Detekt analysis
       run: ./gradlew detekt --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
+        GRADLE_OPTS: "-Xmx1500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
         CI: "true"
       
-    # コードカバレッジ（テストは既に実行済みなので、レポート生成のみ）
+    # コードカバレッジ（GitHub Free対応）
     - name: Generate code coverage report
       run: ./gradlew jacocoTestReport --stacktrace
       env:
-        GRADLE_OPTS: "-Xmx3500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1HeapRegionSize=16m"
+        GRADLE_OPTS: "-Xmx1500m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
         CI: "true"
       
     - name: Upload coverage to Codecov
