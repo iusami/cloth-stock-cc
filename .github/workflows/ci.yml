@@ -35,17 +35,31 @@ jobs:
         # 深い履歴は不要 - 高速化
         fetch-depth: 1
       
-    # 🚀 GitHub Free最適化: 軽量スワップファイル（2GB）
+    # 🚀 GitHub Free最適化: 安全なスワップファイル作成（オプショナル）
     - name: Create lightweight swap for Free plan
+      continue-on-error: true
       run: |
-        echo "🔧 Creating 2GB swap file for GitHub Free plan optimization..."
-        sudo fallocate -l 2G /swapfile
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
-        echo "✅ Lightweight swap created successfully"
-        # メモリ状況確認
-        echo "📊 Memory status:"
+        echo "🔧 Creating additional swap for GitHub Free plan optimization..."
+        
+        # 既存スワップ確認
+        echo "📊 Current memory status:"
+        free -h
+        
+        # 一意なスワップファイル名で作成（既存ファイルとの競合回避）
+        SWAP_FILE="/tmp/ci-swap-$$"
+        echo "Creating swap file: $SWAP_FILE"
+        
+        # スワップファイル作成（エラーハンドリング付き）
+        if sudo dd if=/dev/zero of="$SWAP_FILE" bs=1M count=1024 status=progress && \
+           sudo chmod 600 "$SWAP_FILE" && \
+           sudo mkswap "$SWAP_FILE" && \
+           sudo swapon "$SWAP_FILE"; then
+          echo "✅ Additional 1GB swap created successfully"
+        else
+          echo "⚠️ Swap creation failed, continuing with existing memory..."
+        fi
+        
+        echo "📊 Final memory status:"
         free -h
       
     - name: Set up JDK 17
@@ -90,8 +104,8 @@ jobs:
         
         echo "✅ All CI tasks completed successfully!"
       env:
-        # GitHub Free対応：軽量メモリ設定（2GBスワップ使用）
-        GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+UseStringDeduplication"
+        # GitHub Free対応：保守的メモリ設定（スワップなしでも安全）
+        GRADLE_OPTS: "-Xmx1800m -XX:MaxMetaspaceSize=400m -XX:+UseG1GC -XX:+UseStringDeduplication"
         CI: "true"
         ORG_GRADLE_PROJECT_android.enableBuildCache: "true"
       
@@ -108,7 +122,7 @@ jobs:
         echo "📊 Performance metrics:"
         echo "   - Build time: ${BUILD_DURATION}s"
         echo "   - Parallel workers: 2 (Free plan optimized)"
-        echo "   - Memory allocation: 2GB + 2GB swap"
+        echo "   - Memory allocation: 1.8GB heap + 400MB metaspace"
         echo "   - Build cache: enabled"
       
     # 高速テストレポート生成
