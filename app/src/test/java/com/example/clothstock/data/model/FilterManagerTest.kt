@@ -12,40 +12,75 @@ class FilterManagerTest {
 
     private lateinit var filterManager: FilterManager
 
+    // テスト用定数 - マジックナンバーを排除
+    companion object {
+        private val TEST_SIZE_VALUES = setOf("100", "110", "120")
+        private val TEST_COLOR_VALUES = setOf("赤", "青", "緑")
+        private const val TEST_SEARCH_TEXT = "テスト"
+        private const val TEST_SHIRT_SEARCH = "シャツ"
+        
+        private val EXPECTED_SIZE_FILTERS = setOf(100, 110, 120)
+        private val EXPECTED_COLOR_FILTERS = setOf("赤", "青", "緑")
+    }
+
     @Before
     fun setUp() {
         filterManager = FilterManager()
     }
 
+    // ヘルパーメソッド - 重複コードを削減
+    private fun assertEmptyFiltersExcept(result: FilterState, exceptType: FilterType) {
+        when (exceptType) {
+            FilterType.SIZE -> {
+                assertTrue("Color filters should be empty", result.colorFilters.isEmpty())
+                assertTrue("Category filters should be empty", result.categoryFilters.isEmpty())
+                assertEquals("Search text should be empty", "", result.searchText)
+            }
+            FilterType.COLOR -> {
+                assertTrue("Size filters should be empty", result.sizeFilters.isEmpty())
+                assertTrue("Category filters should be empty", result.categoryFilters.isEmpty())
+                assertEquals("Search text should be empty", "", result.searchText)
+            }
+            FilterType.CATEGORY -> {
+                assertTrue("Size filters should be empty", result.sizeFilters.isEmpty())
+                assertTrue("Color filters should be empty", result.colorFilters.isEmpty())
+                assertEquals("Search text should be empty", "", result.searchText)
+            }
+            FilterType.SEARCH -> {
+                assertTrue("Size filters should be empty", result.sizeFilters.isEmpty())
+                assertTrue("Color filters should be empty", result.colorFilters.isEmpty())
+                assertTrue("Category filters should be empty", result.categoryFilters.isEmpty())
+            }
+        }
+    }
+
+
+
     // RED: FilterManager.updateFilter method with different filter types
     @Test
     fun `updateFilter should update size filters correctly`() {
         // Given
-        val sizeValues = setOf("100", "110", "120")
+        val sizeValues = TEST_SIZE_VALUES
         
         // When
         val result = filterManager.updateFilter(FilterType.SIZE, sizeValues)
         
         // Then
-        assertEquals(setOf(100, 110, 120), result.sizeFilters)
-        assertTrue(result.colorFilters.isEmpty())
-        assertTrue(result.categoryFilters.isEmpty())
-        assertEquals("", result.searchText)
+        assertEquals(EXPECTED_SIZE_FILTERS, result.sizeFilters)
+        assertEmptyFiltersExcept(result, FilterType.SIZE)
     }
 
     @Test
     fun `updateFilter should update color filters correctly`() {
         // Given
-        val colorValues = setOf("赤", "青", "緑")
+        val colorValues = TEST_COLOR_VALUES
         
         // When
         val result = filterManager.updateFilter(FilterType.COLOR, colorValues)
         
         // Then
-        assertEquals(setOf("赤", "青", "緑"), result.colorFilters)
-        assertTrue(result.sizeFilters.isEmpty())
-        assertTrue(result.categoryFilters.isEmpty())
-        assertEquals("", result.searchText)
+        assertEquals(EXPECTED_COLOR_FILTERS, result.colorFilters)
+        assertEmptyFiltersExcept(result, FilterType.COLOR)
     }
 
     @Test
@@ -58,9 +93,7 @@ class FilterManagerTest {
         
         // Then
         assertEquals(setOf("トップス", "ボトムス"), result.categoryFilters)
-        assertTrue(result.sizeFilters.isEmpty())
-        assertTrue(result.colorFilters.isEmpty())
-        assertEquals("", result.searchText)
+        assertEmptyFiltersExcept(result, FilterType.CATEGORY)
     }
 
     @Test
@@ -163,7 +196,7 @@ class FilterManagerTest {
         filterManager.updateFilter(FilterType.SIZE, setOf("100"))
         filterManager.updateFilter(FilterType.COLOR, setOf("赤"))
         filterManager.updateFilter(FilterType.CATEGORY, setOf("トップス"))
-        filterManager.updateSearchText("テスト")
+        filterManager.updateSearchText(TEST_SEARCH_TEXT)
         
         // When
         val result = filterManager.clearAllFilters()
@@ -179,13 +212,13 @@ class FilterManagerTest {
     @Test
     fun `updateSearchText should update search text correctly`() {
         // Given
-        val searchText = "シャツ"
+        val searchText = TEST_SHIRT_SEARCH
         
         // When
         val result = filterManager.updateSearchText(searchText)
         
         // Then
-        assertEquals("シャツ", result.searchText)
+        assertEquals(TEST_SHIRT_SEARCH, result.searchText)
     }
 
     @Test
@@ -194,17 +227,17 @@ class FilterManagerTest {
         filterManager.updateFilter(FilterType.SIZE, setOf("100"))
         
         // When
-        val result = filterManager.updateSearchText("テスト")
+        val result = filterManager.updateSearchText(TEST_SEARCH_TEXT)
         
         // Then
         assertEquals(setOf(100), result.sizeFilters)
-        assertEquals("テスト", result.searchText)
+        assertEquals(TEST_SEARCH_TEXT, result.searchText)
     }
 
     @Test
     fun `updateSearchText should handle empty string`() {
         // Given
-        filterManager.updateSearchText("テスト")
+        filterManager.updateSearchText(TEST_SEARCH_TEXT)
         
         // When
         val result = filterManager.updateSearchText("")
@@ -219,7 +252,7 @@ class FilterManagerTest {
         // Given
         filterManager.updateFilter(FilterType.SIZE, setOf("100"))
         filterManager.updateFilter(FilterType.COLOR, setOf("赤"))
-        filterManager.updateSearchText("テスト")
+        filterManager.updateSearchText(TEST_SEARCH_TEXT)
         
         // When
         val result = filterManager.getCurrentState()
@@ -227,7 +260,7 @@ class FilterManagerTest {
         // Then
         assertEquals(setOf(100), result.sizeFilters)
         assertEquals(setOf("赤"), result.colorFilters)
-        assertEquals("テスト", result.searchText)
+        assertEquals(TEST_SEARCH_TEXT, result.searchText)
     }
 
     @Test
