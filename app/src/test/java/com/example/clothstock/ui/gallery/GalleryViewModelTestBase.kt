@@ -5,8 +5,6 @@ import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.data.repository.FilterManager
-import com.example.clothstock.data.model.FilterState
-import com.example.clothstock.data.model.FilterType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -20,7 +18,6 @@ import org.junit.Assert.assertEquals
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.Mockito.`when`
-import org.mockito.ArgumentMatchers.any
 import kotlinx.coroutines.runBlocking
 import java.util.Date
 
