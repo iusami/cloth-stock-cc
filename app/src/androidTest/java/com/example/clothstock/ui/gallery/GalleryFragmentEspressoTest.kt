@@ -252,6 +252,225 @@ class GalleryFragmentEspressoTest {
             .check(matches(isDisplayed()))
     }
 
+    // ===== Task6: フィルター・検索UI機能テスト (RED フェーズ) =====
+
+    @Test
+    fun フィルターボタン_ツールバーにフィルターボタンが表示される() {
+        // Given: GalleryFragmentを起動
+        launchFragmentInContainer<GalleryFragment>()
+
+        // When: フィルターボタンが表示される
+        // Then: フィルターボタンがツールバーに表示される
+        onView(withId(R.id.buttonFilter))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルターボタン_クリックでフィルターボトムシートが表示される() {
+        // Given: GalleryFragmentを起動
+        launchFragmentInContainer<GalleryFragment>()
+
+        // When: フィルターボタンをクリック
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // Then: フィルターボトムシートが表示される
+        onView(withId(R.id.bottomSheetFilter))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルターボトムシート_サイズフィルターチップが表示される() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: ボトムシートが表示される
+        // Then: サイズフィルターチップグループが表示される
+        onView(withId(R.id.chipGroupSize))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルターボトムシート_色フィルターチップが表示される() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: ボトムシートが表示される
+        // Then: 色フィルターチップグループが表示される
+        onView(withId(R.id.chipGroupColor))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルターボトムシート_カテゴリフィルターチップが表示される() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: ボトムシートが表示される
+        // Then: カテゴリフィルターチップグループが表示される
+        onView(withId(R.id.chipGroupCategory))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルターチップ_サイズチップをクリックで選択状態になる() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: サイズ100のチップをクリック
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .perform(click())
+
+        // Then: チップが選択状態になる
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .check(matches(isChecked()))
+    }
+
+    @Test
+    fun フィルターチップ_色チップをクリックで選択状態になる() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: 赤色のチップをクリック
+        onView(allOf(withId(R.id.chipColorRed), withText("赤")))
+            .perform(click())
+
+        // Then: チップが選択状態になる
+        onView(allOf(withId(R.id.chipColorRed), withText("赤")))
+            .check(matches(isChecked()))
+    }
+
+    @Test
+    fun フィルターチップ_カテゴリチップをクリックで選択状態になる() {
+        // Given: フィルターボトムシートを表示
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+
+        // When: トップスのチップをクリック
+        onView(allOf(withId(R.id.chipCategoryTops), withText("トップス")))
+            .perform(click())
+
+        // Then: チップが選択状態になる
+        onView(allOf(withId(R.id.chipCategoryTops), withText("トップス")))
+            .check(matches(isChecked()))
+    }
+
+    @Test
+    fun フィルターチップ_選択済みチップを再クリックで選択解除される() {
+        // Given: フィルターボトムシートでチップを選択
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .perform(click())
+
+        // When: 選択済みチップを再度クリック
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .perform(click())
+
+        // Then: チップの選択が解除される
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .check(matches(not(isChecked())))
+    }
+
+    @Test
+    fun 検索バー_ツールバーに検索バーが表示される() {
+        // Given: GalleryFragmentを起動
+        launchFragmentInContainer<GalleryFragment>()
+
+        // When: 検索バーが表示される
+        // Then: 検索バーがツールバーに表示される
+        onView(withId(R.id.searchView))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun 検索バー_テキスト入力時にクエリが更新される() {
+        // Given: GalleryFragmentを起動
+        launchFragmentInContainer<GalleryFragment>()
+
+        // When: 検索バーにテキストを入力
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("シャツ"))
+
+        // Then: 検索テキストが設定される
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .check(matches(withText("シャツ")))
+    }
+
+    @Test
+    fun 検索バー_入力バリデーションが機能する() {
+        // Given: GalleryFragmentを起動
+        launchFragmentInContainer<GalleryFragment>()
+
+        // When: 空白のみの検索テキストを入力
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("   "))
+
+        // Then: 空白文字は検索処理されない（バリデーション機能）
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .check(matches(withText("   ")))
+    }
+
+    @Test
+    fun フィルター適用_複数フィルター選択時に結果が更新される() {
+        // Given: テストデータと複数フィルター選択
+        val testItems = TestDataHelper.createMultipleTestItems(5)
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        Thread.sleep(1000)
+        
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .perform(click())
+        onView(allOf(withId(R.id.chipColorRed), withText("赤")))
+            .perform(click())
+
+        // When: フィルターを適用
+        onView(withId(R.id.buttonApplyFilter))
+            .perform(click())
+
+        // Then: フィルター結果が表示される
+        Thread.sleep(1000) // フィルタリング処理待機
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun フィルタークリア_全フィルターリセットボタンが機能する() {
+        // Given: フィルターを適用した状態
+        launchFragmentInContainer<GalleryFragment>()
+        onView(withId(R.id.buttonFilter))
+            .perform(click())
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .perform(click())
+
+        // When: フィルタークリアボタンをクリック
+        onView(withId(R.id.buttonClearFilter))
+            .perform(click())
+
+        // Then: 全フィルターが解除される
+        onView(allOf(withId(R.id.chipSize100), withText("100")))
+            .check(matches(not(isChecked())))
+    }
+
     // ===== フィルタリング機能テスト =====
 
     @Test

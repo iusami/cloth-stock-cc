@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottomSheetFilter"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_background"
+    app:behavior_hideable="true"
+    app:behavior_peekHeight="0dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- ボトムシートハンドル -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="?attr/colorOutlineVariant"
+            android:backgroundTint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/filter_handle_description"
+            android:importantForAccessibility="yes" />
+
+        <!-- フィルターヘッダー -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/filter_title"
+                android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                android:textColor="?attr/colorOnSurface"
+                android:accessibilityHeading="true" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonClearFilter"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_clear_all"
+                android:textColor="?attr/colorPrimary" />
+
+        </LinearLayout>
+
+        <!-- サイズフィルター -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/filter_size_title"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_size_group_description"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="4dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize100"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="100"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize110"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="110"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize120"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="120"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize130"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="130"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize140"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="140"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize150"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="150"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize160"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="160"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- 色フィルター -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/filter_color_title"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_color_group_description"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="4dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorRed"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="赤"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorBlue"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="青"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorGreen"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="緑"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorYellow"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="黄"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorBlack"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="黒"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorWhite"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="白"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorPink"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="ピンク"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorPurple"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="紫"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- カテゴリフィルター -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/filter_category_title"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_category_group_description"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="4dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryTops"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="トップス"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryBottoms"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="ボトムス"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryOuterwear"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="アウター"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryShoes"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="靴"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryAccessories"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="アクセサリー"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- 適用ボタン -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonApplyFilter"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/filter_apply"
+            app:icon="@drawable/ic_filter_applied"
+            app:iconGravity="start" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
