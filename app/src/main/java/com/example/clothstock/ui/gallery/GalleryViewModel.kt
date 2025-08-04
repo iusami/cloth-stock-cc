@@ -5,12 +5,18 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clothstock.data.model.ClothItem
+import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.repository.ClothRepository
+import com.example.clothstock.data.repository.FilterManager
+import com.example.clothstock.data.model.FilterState
+import com.example.clothstock.data.model.FilterType
 import com.example.clothstock.ui.common.LoadingStateManager
 import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import android.util.Log
 
 /**
@@ -20,11 +26,13 @@ import android.util.Log
  * 衣服アイテムの表示、フィルタリング、ソート、削除機能を提供
  */
 class GalleryViewModel(
-    private val clothRepository: ClothRepository
+    private val clothRepository: ClothRepository,
+    private val filterManager: FilterManager = FilterManager()
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "GalleryViewModel"
+        private const val SEARCH_DEBOUNCE_DELAY_MS = 300L
     }
 
     // ===== LiveData定義 =====
@@ -47,6 +55,24 @@ class GalleryViewModel(
     private val _lastOperation = MutableLiveData<String>()
     val lastOperation: LiveData<String> = _lastOperation
 
+    // ===== Task5: フィルター・検索機能のLiveData =====
+
+    private val _currentFilters = MutableLiveData<FilterState>()
+    val currentFilters: LiveData<FilterState> = _currentFilters
+
+    private val _availableFilterOptions = MutableLiveData<FilterOptions>()
+    val availableFilterOptions: LiveData<FilterOptions> = _availableFilterOptions
+
+    private val _isFiltersActive = MutableLiveData<Boolean>()
+    val isFiltersActive: LiveData<Boolean> = _isFiltersActive
+
+    private val _currentSearchText = MutableLiveData<String>()
+    val currentSearchText: LiveData<String> = _currentSearchText
+
+    // 検索デバウンシング用
+    private var searchJob: Job? = null
+    private val searchDelayMs = SEARCH_DEBOUNCE_DELAY_MS
+
     // ===== 初期化 =====
 
     init {
@@ -58,9 +84,15 @@ class GalleryViewModel(
         _errorMessage.value = null
         _isEmpty.value = true // 初期状態は空
 
+        // フィルター・検索機能の初期化
+        _currentFilters.value = filterManager.getCurrentState()
+        _isFiltersActive.value = false
+        _currentSearchText.value = ""
+
         // 初期データ読み込み
         Log.d(TAG, "Starting initial data load")
         loadClothItems()
+        loadAvailableFilterOptions()
     }
 
     // ===== パブリックメソッド =====
@@ -326,5 +358,127 @@ class GalleryViewModel(
             }
         }
         Log.d(TAG, "=== END DATABASE ITEMS DEBUG ===")
+    }
+
+    // ===== Task5: フィルター・検索機能の実装 =====
+
+    /**
+     * 利用可能なフィルターオプションを読み込み
+     */
+    private fun loadAvailableFilterOptions() {
+        viewModelScope.launch {
+            try {
+                val options = clothRepository.getAvailableFilterOptions()
+                _availableFilterOptions.value = options
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load filter options", e)
+                // エラー時は空のFilterOptionsを設定
+                _availableFilterOptions.value = FilterOptions(
+                    availableSizes = emptyList(),
+                    availableColors = emptyList(),
+                    availableCategories = emptyList()
+                )
+            }
+        }
+    }
+
+    /**
+     * フィルターを適用
+     */
+    fun applyFilter(filterType: FilterType, value: String) {
+        filterManager.updateFilter(filterType, setOf(value))
+        _currentFilters.value = filterManager.getCurrentState()
+        _isFiltersActive.value = filterManager.getCurrentState().hasActiveFilters()
+        applyCurrentFiltersAndSearch()
+    }
+
+    /**
+     * 指定フィルターを削除
+     */
+    fun removeFilter(filterType: FilterType, value: String) {
+        filterManager.removeFilter(filterType, value)
+        _currentFilters.value = filterManager.getCurrentState()
+        _isFiltersActive.value = filterManager.getCurrentState().hasActiveFilters()
+        applyCurrentFiltersAndSearch()
+    }
+
+    /**
+     * 全フィルターをクリア
+     */
+    fun clearAllFilters() {
+        filterManager.clearAllFilters()
+        _currentFilters.value = filterManager.getCurrentState()
+        _isFiltersActive.value = false
+        applyCurrentFiltersAndSearch()
+    }
+
+    /**
+     * 検索を実行（デバウンシング付き）
+     */
+    fun performSearch(searchText: String) {
+        _currentSearchText.value = searchText
+        
+        // 既存の検索ジョブをキャンセル
+        searchJob?.cancel()
+        
+        // 新しい検索ジョブを開始
+        searchJob = viewModelScope.launch {
+            delay(searchDelayMs) // デバウンシング
+            filterManager.updateSearchText(searchText)
+            applyCurrentFiltersAndSearch()
+        }
+    }
+
+    /**
+     * 検索をクリア
+     */
+    fun clearSearch() {
+        searchJob?.cancel()
+        _currentSearchText.value = ""
+        filterManager.updateSearchText("")
+        applyCurrentFiltersAndSearch()
+    }
+
+    /**
+     * 現在のフィルターと検索条件を適用
+     */
+    private fun applyCurrentFiltersAndSearch() {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
+
+                val currentState = filterManager.getCurrentState()
+                val searchText = if (currentState.searchText.isNotBlank()) currentState.searchText else null
+
+                val items = if (currentState.hasActiveFilters() || searchText != null) {
+                    // フィルターまたは検索条件がある場合
+                    clothRepository.searchItemsWithFilters(
+                        sizeFilters = if (currentState.sizeFilters.isNotEmpty()) {
+                            currentState.sizeFilters.toList()
+                        } else null,
+                        colorFilters = if (currentState.colorFilters.isNotEmpty()) {
+                            currentState.colorFilters.toList()
+                        } else null,
+                        categoryFilters = if (currentState.categoryFilters.isNotEmpty()) {
+                            currentState.categoryFilters.toList()
+                        } else null,
+                        searchText = searchText
+                    ).first()
+                } else {
+                    // フィルター・検索条件がない場合は全件取得
+                    clothRepository.getAllItems().first()
+                }
+
+                _clothItems.value = items
+                _isEmpty.value = items.isEmpty()
+                
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "フィルタリング・検索エラーが発生しました"
+                Log.e(TAG, "Filter/search error", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

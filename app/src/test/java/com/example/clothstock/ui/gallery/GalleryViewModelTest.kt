@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.repository.ClothRepository
+import com.example.clothstock.data.model.FilterType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -30,6 +31,8 @@ import java.util.Date
  * 
  * TDD Greenフェーズ - 簡素化されたテストセット
  * 核心的な機能のみテスト
+ * 
+ * Task5: フィルター・検索機能のテスト追加
  */
 @ExperimentalCoroutinesApi
 class GalleryViewModelTest {
@@ -286,5 +289,130 @@ class GalleryViewModelTest {
         
         // Then: デフォルトでデータ読み込みが実行される
         verify(clothRepository, times(1)).getAllItems()
+    }
+
+    // ===== Task5: フィルター・検索機能のテスト =====
+
+    @Test
+    fun `フィルター状態LiveData_初期化時に正しいデフォルト値が設定される`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        // When: ViewModelを初期化
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: フィルター関連LiveDataが適切に初期化される（まだ実装されていないのでテストが失敗する）
+        assertNotNull("currentFilters should be initialized", viewModel.currentFilters.value)
+        assertNotNull("availableFilterOptions should be initialized", viewModel.availableFilterOptions.value)
+        assertNotNull("isFiltersActive should be initialized", viewModel.isFiltersActive.value)
+        assertEquals("Default search text should be empty", "", viewModel.currentSearchText.value)
+    }
+
+    @Test
+    fun `applyFilter_サイズフィルター適用時に状態が更新される`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.searchItemsWithFilters(listOf(100), null, null, null))
+            .thenReturn(flowOf(testClothItems.filter { it.tagData.size == 100 }))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: サイズフィルターを適用（まだ実装されていない）
+        viewModel.applyFilter(FilterType.SIZE, "100")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: フィルター状態が更新される
+        assertTrue("Filters should be active", viewModel.isFiltersActive.value == true)
+        verify(clothRepository).searchItemsWithFilters(listOf(100), null, null, null)
+    }
+
+    @Test
+    fun `removeFilter_指定フィルター削除時に状態が更新される`() = runTest {
+        // Given: リポジトリ設定とフィルター適用状態
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: フィルターを削除（まだ実装されていない）
+        viewModel.removeFilter(FilterType.SIZE, "100")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: フィルター状態が更新される
+        verify(clothRepository, times(2)).getAllItems() // 初期化 + removeFilter後の再読み込み
+    }
+
+    @Test
+    fun `clearAllFilters_全フィルタークリア時に全データが表示される`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 全フィルターをクリア（まだ実装されていない）
+        viewModel.clearAllFilters()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: フィルターが非アクティブになり全データが表示される
+        assertFalse("Filters should be inactive", viewModel.isFiltersActive.value == true)
+        verify(clothRepository, times(2)).getAllItems() // 初期化 + clearAllFilters後の再読み込み
+    }
+
+    @Test
+    fun `performSearch_検索テキスト入力時にデバウンシング付きで検索される`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.searchItemsByText("シャツ")).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 検索を実行（まだ実装されていない）
+        viewModel.performSearch("シャツ")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 検索テキストが更新され、リポジトリの検索メソッドが呼ばれる
+        assertEquals("Search text should be updated", "シャツ", viewModel.currentSearchText.value)
+        verify(clothRepository).searchItemsByText("シャツ")
+    }
+
+    @Test
+    fun `clearSearch_検索クリア時に全データが表示される`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 検索をクリア（まだ実装されていない）
+        viewModel.clearSearch()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 検索テキストがクリアされ、全データが表示される
+        assertEquals("Search text should be cleared", "", viewModel.currentSearchText.value)
+        verify(clothRepository, times(2)).getAllItems() // 初期化 + clearSearch後の再読み込み
+    }
+
+    @Test
+    fun `複合フィルター操作_フィルターと検索の組み合わせで正しく動作する`() = runTest {
+        // Given: リポジトリ設定
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.searchItemsWithFilters(listOf(100), listOf("赤"), null, "シャツ"))
+            .thenReturn(flowOf(testClothItems.take(1)))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 複合条件でフィルターと検索を適用（まだ実装されていない）
+        viewModel.applyFilter(FilterType.SIZE, "100")
+        viewModel.applyFilter(FilterType.COLOR, "赤")
+        viewModel.performSearch("シャツ")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 複合条件で検索が実行される
+        verify(clothRepository).searchItemsWithFilters(listOf(100), listOf("赤"), null, "シャツ")
     }
 }
