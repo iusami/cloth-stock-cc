@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.database.ClothDao
 import com.example.clothstock.data.database.ClothDatabase
 import com.example.clothstock.data.model.ClothItem
+import com.example.clothstock.data.model.FilterOptions
 
 /**
  * ClothRepository の実装クラス
@@ -137,13 +138,13 @@ class ClothRepositoryImpl(
         return clothDao.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText)
     }
 
-    override suspend fun getAvailableFilterOptions(): com.example.clothstock.data.model.FilterOptions {
+    override suspend fun getAvailableFilterOptions(): FilterOptions {
         // 3つのDistinctクエリを並行実行してFilterOptionsオブジェクトを構築
         val sizes = clothDao.getDistinctSizes()
         val colors = clothDao.getDistinctColors()
         val categories = clothDao.getDistinctCategories()
         
-        return com.example.clothstock.data.model.FilterOptions(
+        return FilterOptions(
             availableSizes = sizes,
             availableColors = colors,
             availableCategories = categories

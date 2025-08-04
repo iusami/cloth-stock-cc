@@ -2,6 +2,7 @@ package com.example.clothstock.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.model.ClothItem
+import com.example.clothstock.data.model.FilterOptions
 
 /**
  * 衣服データアクセスのリポジトリインターフェース
@@ -236,5 +237,5 @@ interface ClothRepository {
      * @return フィルターオプション情報
      * @throws RuntimeException データアクセスエラーの場合
      */
-    suspend fun getAvailableFilterOptions(): com.example.clothstock.data.model.FilterOptions
+    suspend fun getAvailableFilterOptions(): FilterOptions
 }
