@@ -200,4 +200,41 @@ interface ClothRepository {
      * キャッシュをクリア（将来のキャッシュ機能拡張用）
      */
     suspend fun clearCache()
+
+    // ===== Task4: フィルター・検索機能 =====
+
+    /**
+     * テキスト検索で衣服アイテムを検索
+     * 色、カテゴリフィールドを対象に部分一致検索を実行
+     * 
+     * @param searchText 検索テキスト（空の場合は全件取得）
+     * @return 検索条件に合致するアイテムのFlow
+     */
+    fun searchItemsByText(searchText: String?): Flow<List<ClothItem>>
+
+    /**
+     * 複合フィルター条件で衣服アイテムを検索
+     * サイズ、色、カテゴリの複数条件とテキスト検索を組み合わせ
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return フィルター条件に合致するアイテムのFlow
+     */
+    fun searchItemsWithFilters(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Flow<List<ClothItem>>
+
+    /**
+     * 利用可能なフィルターオプションを取得
+     * データベースに存在する重複なしのサイズ、色、カテゴリリストを取得
+     * 
+     * @return フィルターオプション情報
+     * @throws RuntimeException データアクセスエラーの場合
+     */
+    suspend fun getAvailableFilterOptions(): com.example.clothstock.data.model.FilterOptions
 }

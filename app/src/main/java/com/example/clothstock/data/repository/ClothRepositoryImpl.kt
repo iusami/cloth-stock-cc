@@ -122,6 +122,34 @@ class ClothRepositoryImpl(
         return clothDao.getItemCountBySize().associate { it.size to it.count }
     }
 
+    // ===== Task4: フィルター・検索機能 =====
+
+    override fun searchItemsByText(searchText: String?): Flow<List<ClothItem>> {
+        return clothDao.searchItemsByText(searchText)
+    }
+
+    override fun searchItemsWithFilters(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Flow<List<ClothItem>> {
+        return clothDao.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText)
+    }
+
+    override suspend fun getAvailableFilterOptions(): com.example.clothstock.data.model.FilterOptions {
+        // 3つのDistinctクエリを並行実行してFilterOptionsオブジェクトを構築
+        val sizes = clothDao.getDistinctSizes()
+        val colors = clothDao.getDistinctColors()
+        val categories = clothDao.getDistinctCategories()
+        
+        return com.example.clothstock.data.model.FilterOptions(
+            availableSizes = sizes,
+            availableColors = colors,
+            availableCategories = categories
+        )
+    }
+
     // ===== メンテナンス操作 =====
 
     override suspend fun checkDataIntegrity(): Boolean {

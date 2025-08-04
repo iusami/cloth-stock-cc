@@ -354,4 +354,256 @@ class ClothRepositoryTest {
             assertEquals("データベースエラー", e.message)
         }
     }
+
+    // ===== Task4: 新しいフィルター・検索機能のテスト =====
+
+    @Test
+    fun `searchItemsByText_正常な検索テキスト_正しいFlowを返す`() = runTest {
+        // Given
+        val searchText = "シャツ"
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsByText(searchText)).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText(searchText).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsByText_null検索テキスト_全件取得を返す`() = runTest {
+        // Given
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsByText(null)).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText(null).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsByText(null)
+    }
+
+    @Test
+    fun `searchItemsByText_空文字列検索_全件取得を返す`() = runTest {
+        // Given
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsByText("")).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText("").first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsByText("")
+    }
+
+    @Test
+    fun `searchItemsByText_該当なし_空リストを返す`() = runTest {
+        // Given
+        val searchText = "存在しない"
+        `when`(clothDao.searchItemsByText(searchText)).thenReturn(flowOf(emptyList()))
+
+        // When
+        val result = clothRepository.searchItemsByText(searchText).first()
+
+        // Then
+        assertTrue(result.isEmpty())
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_サイズフィルターのみ_正しいFlowを返す`() = runTest {
+        // Given
+        val sizeFilters = listOf(100, 110)
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, null, null, null))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(sizeFilters, null, null, null).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsWithFilters(sizeFilters, null, null, null)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_色フィルターのみ_正しいFlowを返す`() = runTest {
+        // Given
+        val colorFilters = listOf("青", "赤")
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsWithFilters(null, colorFilters, null, null))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(null, colorFilters, null, null).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsWithFilters(null, colorFilters, null, null)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_カテゴリフィルターのみ_正しいFlowを返す`() = runTest {
+        // Given
+        val categoryFilters = listOf("シャツ", "パンツ")
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsWithFilters(null, null, categoryFilters, null))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(null, null, categoryFilters, null).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsWithFilters(null, null, categoryFilters, null)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_複合条件_正しいFlowを返す`() = runTest {
+        // Given
+        val sizeFilters = listOf(100)
+        val colorFilters = listOf("青")
+        val categoryFilters = listOf("シャツ")
+        val searchText = "カジュアル"
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_空のフィルター_全件取得を返す`() = runTest {
+        // Given
+        val expectedItems = listOf(testClothItem)
+        `when`(clothDao.searchItemsWithFilters(null, null, null, null))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(null, null, null, null).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        verify(clothDao).searchItemsWithFilters(null, null, null, null)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_該当なし_空リストを返す`() = runTest {
+        // Given
+        val sizeFilters = listOf(999) // 存在しないサイズ
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, null, null, null))
+            .thenReturn(flowOf(emptyList()))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(sizeFilters, null, null, null).first()
+
+        // Then
+        assertTrue(result.isEmpty())
+        verify(clothDao).searchItemsWithFilters(sizeFilters, null, null, null)
+    }
+
+    @Test
+    fun `getAvailableFilterOptions_正常なデータ_FilterOptionsを返す`() = runTest {
+        // Given
+        val expectedSizes = listOf(80, 90, 100, 110)
+        val expectedColors = listOf("青", "赤", "緑")
+        val expectedCategories = listOf("シャツ", "パンツ", "ジャケット")
+        
+        `when`(clothDao.getDistinctSizes()).thenReturn(expectedSizes)
+        `when`(clothDao.getDistinctColors()).thenReturn(expectedColors)
+        `when`(clothDao.getDistinctCategories()).thenReturn(expectedCategories)
+
+        // When
+        val result = clothRepository.getAvailableFilterOptions()
+
+        // Then
+        assertEquals(expectedSizes, result.availableSizes)
+        assertEquals(expectedColors, result.availableColors)
+        assertEquals(expectedCategories, result.availableCategories)
+        
+        verify(clothDao).getDistinctSizes()
+        verify(clothDao).getDistinctColors()
+        verify(clothDao).getDistinctCategories()
+    }
+
+    @Test
+    fun `getAvailableFilterOptions_空のデータベース_空のFilterOptionsを返す`() = runTest {
+        // Given
+        `when`(clothDao.getDistinctSizes()).thenReturn(emptyList())
+        `when`(clothDao.getDistinctColors()).thenReturn(emptyList())
+        `when`(clothDao.getDistinctCategories()).thenReturn(emptyList())
+
+        // When
+        val result = clothRepository.getAvailableFilterOptions()
+
+        // Then
+        assertTrue(result.availableSizes.isEmpty())
+        assertTrue(result.availableColors.isEmpty())
+        assertTrue(result.availableCategories.isEmpty())
+        assertTrue(result.isEmpty())
+        
+        verify(clothDao).getDistinctSizes()
+        verify(clothDao).getDistinctColors()
+        verify(clothDao).getDistinctCategories()
+    }
+
+    @Test
+    fun `getAvailableFilterOptions_DAOで例外発生_RuntimeExceptionを再スロー`() = runTest {
+        // Given
+        `when`(clothDao.getDistinctSizes()).thenThrow(RuntimeException("データベースアクセスエラー"))
+
+        // When & Then
+        try {
+            clothRepository.getAvailableFilterOptions()
+            fail("RuntimeExceptionがスローされるべき")
+        } catch (e: RuntimeException) {
+            assertEquals("データベースアクセスエラー", e.message)
+        }
+        
+        verify(clothDao).getDistinctSizes()
+    }
+
+    @Test
+    fun `searchItemsByText_DAOで例外発生_例外を再スロー`() = runTest {
+        // Given
+        val searchText = "テスト"
+        `when`(clothDao.searchItemsByText(searchText)).thenThrow(RuntimeException("検索エラー"))
+
+        // When & Then
+        try {
+            clothRepository.searchItemsByText(searchText).first()
+            fail("RuntimeExceptionがスローされるべき")
+        } catch (e: RuntimeException) {
+            assertEquals("検索エラー", e.message)
+        }
+        
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_DAOで例外発生_例外を再スロー`() = runTest {
+        // Given
+        val sizeFilters = listOf(100)
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, null, null, null))
+            .thenThrow(RuntimeException("フィルター検索エラー"))
+
+        // When & Then
+        try {
+            clothRepository.searchItemsWithFilters(sizeFilters, null, null, null).first()
+            fail("RuntimeExceptionがスローされるべき")
+        } catch (e: RuntimeException) {
+            assertEquals("フィルター検索エラー", e.message)
+        }
+        
+        verify(clothDao).searchItemsWithFilters(sizeFilters, null, null, null)
+    }
 }
