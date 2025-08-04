@@ -132,7 +132,7 @@ CI失敗を防ぐため、CIと同じコマンドでローカル事前確認を�
 ### Detektコマンド
 ```bash
 # 静的解析実行
-./gradlew detekt　--autoCorrect
+./gradlew detekt --autoCorrect
 
 # ベースライン更新（既存問題を新たに除外）
 ./gradlew detektBaseline
