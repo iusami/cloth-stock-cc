@@ -79,6 +79,23 @@
     <string name="error_cloth_item_not_found">アイテムが見つかりません</string>
     <string name="button_retry">再試行</string>
     
+    <!-- フィルター機能 -->
+    <string name="filter_title">フィルター</string>
+    <string name="filter_clear_all">すべてクリア</string>
+    <string name="filter_apply">適用</string>
+    <string name="filter_size_title">サイズ</string>
+    <string name="filter_color_title">色</string>
+    <string name="filter_category_title">カテゴリ</string>
+    <string name="search_hint">アイテムを検索</string>
+    <string name="search_no_results">検索結果が見つかりません</string>
+    <string name="filter_active_indicator">フィルター適用中</string>
+    
+    <!-- アクセシビリティ文字列 -->
+    <string name="filter_handle_description">フィルターボトムシートのハンドル</string>
+    <string name="filter_size_group_description">サイズフィルターの選択項目</string>
+    <string name="filter_color_group_description">色フィルターの選択項目</string>
+    <string name="filter_category_group_description">カテゴリフィルターの選択項目</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
