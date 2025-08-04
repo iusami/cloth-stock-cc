@@ -207,6 +207,88 @@ interface ClothDao {
     @Query("SELECT * FROM cloth_items WHERE createdAt BETWEEN :startTime AND :endTime ORDER BY createdAt DESC")
     fun getItemsByDateRange(startTime: Long, endTime: Long): Flow<List<ClothItem>>
 
+    // ===== Task3: フィルター・検索機能 =====
+
+    /**
+     * テキスト検索で衣服アイテムを検索
+     * 色、カテゴリフィールドを対象に部分一致検索を実行
+     * 
+     * パフォーマンス考慮:
+     * - LIKE演算子の前方一致を優先することでインデックス活用を促進
+     * - OR条件の短絡評価を活用
+     * - NULL値と空文字列の効率的なハンドリング
+     * 
+     * @param searchText 検索テキスト（空の場合は全件取得）
+     * @return 検索条件に合致するアイテムのFlow（作成日時降順）
+     */
+    @Query("""
+        SELECT * FROM cloth_items 
+        WHERE (:searchText IS NULL OR :searchText = '' OR 
+               color LIKE '%' || :searchText || '%' OR 
+               category LIKE '%' || :searchText || '%')
+        ORDER BY createdAt DESC
+    """)
+    fun searchItemsByText(searchText: String?): Flow<List<ClothItem>>
+
+    /**
+     * 複合フィルター条件で衣服アイテムを検索
+     * サイズ、色、カテゴリの複数条件とテキスト検索を組み合わせ
+     * 
+     * パフォーマンス最適化:
+     * - 空リストのnullチェックを含む効率的なクエリ
+     * - インデックス活用を考慮した条件順序
+     * - 短絡評価による効率化
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return フィルター条件に合致するアイテムのFlow
+     */
+    @Query("""
+        SELECT * FROM cloth_items 
+        WHERE (:sizeFilters IS NULL OR size IN (:sizeFilters))
+        AND (:colorFilters IS NULL OR color IN (:colorFilters))
+        AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
+        AND (:searchText IS NULL OR :searchText = '' OR 
+             color LIKE '%' || :searchText || '%' OR 
+             category LIKE '%' || :searchText || '%')
+        ORDER BY createdAt DESC
+    """)
+    fun searchItemsWithFilters(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Flow<List<ClothItem>>
+
+    /**
+     * データベースに存在する重複なしのサイズリストを取得
+     * フィルターオプション生成に使用
+     * 
+     * @return 昇順ソートされたサイズリスト
+     */
+    @Query("SELECT DISTINCT size FROM cloth_items ORDER BY size")
+    suspend fun getDistinctSizes(): List<Int>
+
+    /**
+     * データベースに存在する重複なしの色リストを取得
+     * フィルターオプション生成に使用
+     * 
+     * @return アルファベット順ソートされた色リスト
+     */
+    @Query("SELECT DISTINCT color FROM cloth_items ORDER BY color")
+    suspend fun getDistinctColors(): List<String>
+
+    /**
+     * データベースに存在する重複なしのカテゴリリストを取得
+     * フィルターオプション生成に使用
+     * 
+     * @return アルファベット順ソートされたカテゴリリスト
+     */
+    @Query("SELECT DISTINCT category FROM cloth_items ORDER BY category")
+    suspend fun getDistinctCategories(): List<String>
+
     // ===== メンテナンス操作 =====
     // 注意: PRAGMA、VACUUM、ANALYZEはRoomでサポートされていないため
     // これらの操作は上位層で直接SQLiteDatabaseインスタンスを使用して実装する
