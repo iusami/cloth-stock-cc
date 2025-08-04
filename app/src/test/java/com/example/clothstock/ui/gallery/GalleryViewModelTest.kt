@@ -77,6 +77,13 @@ class GalleryViewModelTest {
     fun `初期化_デフォルト状態が設定される`() = runTest {
         // Given: 空のデータを返すモック
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = emptyList(),
+                availableColors = emptyList(),
+                availableCategories = emptyList()
+            )
+        )
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -93,6 +100,13 @@ class GalleryViewModelTest {
     fun `データ読み込み_成功時に正しくアイテムが設定される`() = runTest {
         // Given: テストデータを返すモック
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -109,6 +123,13 @@ class GalleryViewModelTest {
     fun `データ読み込み_空リスト時に空状態が設定される`() = runTest {
         // Given: 空リストを返すモック
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = emptyList(),
+                availableColors = emptyList(),
+                availableCategories = emptyList()
+            )
+        )
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -124,6 +145,13 @@ class GalleryViewModelTest {
     fun `カテゴリフィルタ_指定カテゴリのアイテムのみ表示される`() = runTest {
         // Given: 初期化とカテゴリフィルタ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.getItemsByCategory("トップス"))
             .thenReturn(flowOf(listOf(testClothItems[0])))
         
@@ -144,6 +172,13 @@ class GalleryViewModelTest {
     fun `色フィルタ_指定色のアイテムのみ表示される`() = runTest {
         // Given: 初期化と色フィルタ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.getItemsByColor("赤"))
             .thenReturn(flowOf(listOf(testClothItems[0])))
         
@@ -163,6 +198,13 @@ class GalleryViewModelTest {
     fun `フィルタクリア_全アイテムが再表示される`() = runTest {
         // Given: フィルタ適用済み状態から開始
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.getItemsByCategory("トップス"))
             .thenReturn(flowOf(listOf(testClothItems[0])))
         
@@ -184,6 +226,13 @@ class GalleryViewModelTest {
     fun `リフレッシュ_データが再読み込みされる`() = runTest {
         // Given: 初期データ
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -201,6 +250,13 @@ class GalleryViewModelTest {
     fun `エラーメッセージクリア_nullに設定される`() = runTest {
         // Given: 初期化
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = emptyList(),
+                availableColors = emptyList(),
+                availableCategories = emptyList()
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -216,6 +272,13 @@ class GalleryViewModelTest {
     fun `アイテム削除_成功時にデータが再読み込みされる`() = runTest {
         // Given: 削除設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.deleteItemById(1L)).thenReturn(true)
         
         val viewModel = GalleryViewModel(clothRepository)
@@ -233,6 +296,13 @@ class GalleryViewModelTest {
     fun `アイテム削除_失敗時にエラーメッセージが表示される`() = runTest {
         // Given: 削除失敗設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = emptyList(),
+                availableColors = emptyList(),
+                availableCategories = emptyList()
+            )
+        )
         `when`(clothRepository.deleteItemById(1L)).thenReturn(false)
         
         val viewModel = GalleryViewModel(clothRepository)
@@ -250,6 +320,13 @@ class GalleryViewModelTest {
     fun `retryLastOperation_loadClothItems操作の場合は再読み込みされる`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -269,6 +346,13 @@ class GalleryViewModelTest {
     fun `retryLastOperation_未知の操作の場合はデフォルトで再読み込みされる`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         
@@ -297,12 +381,19 @@ class GalleryViewModelTest {
     fun `フィルター状態LiveData_初期化時に正しいデフォルト値が設定される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // Then: フィルター関連LiveDataが適切に初期化される（まだ実装されていないのでテストが失敗する）
+        // Then: フィルター関連LiveDataが適切に初期化される
         assertNotNull("currentFilters should be initialized", viewModel.currentFilters.value)
         assertNotNull("availableFilterOptions should be initialized", viewModel.availableFilterOptions.value)
         assertNotNull("isFiltersActive should be initialized", viewModel.isFiltersActive.value)
@@ -313,13 +404,20 @@ class GalleryViewModelTest {
     fun `applyFilter_サイズフィルター適用時に状態が更新される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.searchItemsWithFilters(listOf(100), null, null, null))
             .thenReturn(flowOf(testClothItems.filter { it.tagData.size == 100 }))
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: サイズフィルターを適用（まだ実装されていない）
+        // When: サイズフィルターを適用
         viewModel.applyFilter(FilterType.SIZE, "100")
         testDispatcher.scheduler.advanceUntilIdle()
         
@@ -332,11 +430,18 @@ class GalleryViewModelTest {
     fun `removeFilter_指定フィルター削除時に状態が更新される`() = runTest {
         // Given: リポジトリ設定とフィルター適用状態
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: フィルターを削除（まだ実装されていない）
+        // When: フィルターを削除
         viewModel.removeFilter(FilterType.SIZE, "100")
         testDispatcher.scheduler.advanceUntilIdle()
         
@@ -348,11 +453,18 @@ class GalleryViewModelTest {
     fun `clearAllFilters_全フィルタークリア時に全データが表示される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: 全フィルターをクリア（まだ実装されていない）
+        // When: 全フィルターをクリア
         viewModel.clearAllFilters()
         testDispatcher.scheduler.advanceUntilIdle()
         
@@ -365,29 +477,43 @@ class GalleryViewModelTest {
     fun `performSearch_検索テキスト入力時にデバウンシング付きで検索される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.searchItemsByText("シャツ")).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
+        `when`(clothRepository.searchItemsWithFilters(null, null, null, "シャツ")).thenReturn(flowOf(testClothItems))
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: 検索を実行（まだ実装されていない）
+        // When: 検索を実行
         viewModel.performSearch("シャツ")
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: 検索テキストが更新され、リポジトリの検索メソッドが呼ばれる
         assertEquals("Search text should be updated", "シャツ", viewModel.currentSearchText.value)
-        verify(clothRepository).searchItemsByText("シャツ")
+        verify(clothRepository).searchItemsWithFilters(null, null, null, "シャツ")
     }
 
     @Test
     fun `clearSearch_検索クリア時に全データが表示される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: 検索をクリア（まだ実装されていない）
+        // When: 検索をクリア
         viewModel.clearSearch()
         testDispatcher.scheduler.advanceUntilIdle()
         
@@ -400,13 +526,20 @@ class GalleryViewModelTest {
     fun `複合フィルター操作_フィルターと検索の組み合わせで正しく動作する`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
+            com.example.clothstock.data.model.FilterOptions(
+                availableSizes = listOf(100, 120),
+                availableColors = listOf("赤", "青"),
+                availableCategories = listOf("トップス", "ボトムス")
+            )
+        )
         `when`(clothRepository.searchItemsWithFilters(listOf(100), listOf("赤"), null, "シャツ"))
             .thenReturn(flowOf(testClothItems.take(1)))
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: 複合条件でフィルターと検索を適用（まだ実装されていない）
+        // When: 複合条件でフィルターと検索を適用
         viewModel.applyFilter(FilterType.SIZE, "100")
         viewModel.applyFilter(FilterType.COLOR, "赤")
         viewModel.performSearch("シャツ")
