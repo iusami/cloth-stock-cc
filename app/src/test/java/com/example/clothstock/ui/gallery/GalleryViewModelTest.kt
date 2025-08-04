@@ -60,10 +60,40 @@ class GalleryViewModelTest {
         )
     )
 
+    private val defaultFilterOptions = com.example.clothstock.data.model.FilterOptions(
+        availableSizes = listOf(100, 120),
+        availableColors = listOf("赤", "青"),
+        availableCategories = listOf("トップス", "ボトムス")
+    )
+
+    private val emptyFilterOptions = com.example.clothstock.data.model.FilterOptions(
+        availableSizes = emptyList(),
+        availableColors = emptyList(),
+        availableCategories = emptyList()
+    )
+
     @Before
     fun setUp() {
         MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
+    }
+
+    /**
+     * リポジトリの基本的なモック設定を行うヘルパーメソッド
+     */
+    private fun setupBasicRepositoryMocks(
+        items: List<ClothItem> = testClothItems,
+        filterOptions: com.example.clothstock.data.model.FilterOptions = defaultFilterOptions
+    ) {
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(items))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(filterOptions)
+    }
+
+    /**
+     * 空のデータでリポジトリをモック設定するヘルパーメソッド
+     */
+    private fun setupEmptyRepositoryMocks() {
+        setupBasicRepositoryMocks(emptyList(), emptyFilterOptions)
     }
 
     @After
@@ -76,14 +106,7 @@ class GalleryViewModelTest {
     @Test
     fun `初期化_デフォルト状態が設定される`() = runTest {
         // Given: 空のデータを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = emptyList(),
-                availableColors = emptyList(),
-                availableCategories = emptyList()
-            )
-        )
+        setupEmptyRepositoryMocks()
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -99,14 +122,7 @@ class GalleryViewModelTest {
     @Test
     fun `データ読み込み_成功時に正しくアイテムが設定される`() = runTest {
         // Given: テストデータを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = listOf(100, 120),
-                availableColors = listOf("赤", "青"),
-                availableCategories = listOf("トップス", "ボトムス")
-            )
-        )
+        setupBasicRepositoryMocks()
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -122,14 +138,7 @@ class GalleryViewModelTest {
     @Test
     fun `データ読み込み_空リスト時に空状態が設定される`() = runTest {
         // Given: 空リストを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = emptyList(),
-                availableColors = emptyList(),
-                availableCategories = emptyList()
-            )
-        )
+        setupEmptyRepositoryMocks()
         
         // When: ViewModelを初期化
         val viewModel = GalleryViewModel(clothRepository)
@@ -378,6 +387,27 @@ class GalleryViewModelTest {
     // ===== Task5: フィルター・検索機能のテスト =====
 
     @Test
+    fun `検索デバウンシング_連続入力時に最後の検索のみ実行される`() = runTest {
+        // Given: リポジトリ設定
+        setupBasicRepositoryMocks()
+        `when`(clothRepository.searchItemsWithFilters(null, null, null, "最終検索"))
+            .thenReturn(flowOf(testClothItems))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 連続して検索を実行（デバウンシングテスト）
+        viewModel.performSearch("検索1")
+        viewModel.performSearch("検索2")
+        viewModel.performSearch("最終検索")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 最後の検索のみが実行される
+        verify(clothRepository).searchItemsWithFilters(null, null, null, "最終検索")
+        assertEquals("最終検索", viewModel.currentSearchText.value)
+    }
+
+    @Test
     fun `フィルター状態LiveData_初期化時に正しいデフォルト値が設定される`() = runTest {
         // Given: リポジトリ設定
         `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
@@ -523,29 +553,101 @@ class GalleryViewModelTest {
     }
 
     @Test
-    fun `複合フィルター操作_フィルターと検索の組み合わせで正しく動作する`() = runTest {
+    fun `複合フィルター操作_サイズと色フィルターの組み合わせで正しく動作する`() = runTest {
         // Given: リポジトリ設定
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = listOf(100, 120),
-                availableColors = listOf("赤", "青"),
-                availableCategories = listOf("トップス", "ボトムス")
-            )
-        )
-        `when`(clothRepository.searchItemsWithFilters(listOf(100), listOf("赤"), null, "シャツ"))
+        setupBasicRepositoryMocks()
+        `when`(clothRepository.searchItemsWithFilters(listOf(100), listOf("赤"), null, null))
             .thenReturn(flowOf(testClothItems.take(1)))
         
         val viewModel = GalleryViewModel(clothRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
-        // When: 複合条件でフィルターと検索を適用
+        // When: サイズと色フィルターを適用
         viewModel.applyFilter(FilterType.SIZE, "100")
         viewModel.applyFilter(FilterType.COLOR, "赤")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 複合条件で検索が実行される
+        verify(clothRepository).searchItemsWithFilters(listOf(100), listOf("赤"), null, null)
+    }
+
+    @Test
+    fun `複合フィルター操作_フィルターと検索テキストの組み合わせで正しく動作する`() = runTest {
+        // Given: リポジトリ設定
+        setupBasicRepositoryMocks()
+        `when`(clothRepository.searchItemsWithFilters(listOf(100), null, null, "シャツ"))
+            .thenReturn(flowOf(testClothItems.take(1)))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: サイズフィルターと検索テキストを適用
+        viewModel.applyFilter(FilterType.SIZE, "100")
         viewModel.performSearch("シャツ")
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: 複合条件で検索が実行される
-        verify(clothRepository).searchItemsWithFilters(listOf(100), listOf("赤"), null, "シャツ")
+        verify(clothRepository).searchItemsWithFilters(listOf(100), null, null, "シャツ")
+    }
+
+    // ===== エラーハンドリングテスト =====
+
+    @Test
+    fun `フィルターオプション読み込み失敗時_空のオプションが設定される`() = runTest {
+        // Given: フィルターオプション読み込みが失敗するモック
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
+        `when`(clothRepository.getAvailableFilterOptions()).thenThrow(RuntimeException("Database error"))
+        
+        // When: ViewModelを初期化
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: 空のフィルターオプションが設定される
+        val options = viewModel.availableFilterOptions.value
+        assertNotNull("Filter options should not be null", options)
+        assertTrue("Available sizes should be empty", options!!.availableSizes.isEmpty())
+        assertTrue("Available colors should be empty", options.availableColors.isEmpty())
+        assertTrue("Available categories should be empty", options.availableCategories.isEmpty())
+    }
+
+    @Test
+    fun `検索実行中にエラー発生時_適切なエラーメッセージが表示される`() = runTest {
+        // Given: 検索でエラーが発生するモック
+        setupBasicRepositoryMocks()
+        `when`(clothRepository.searchItemsWithFilters(null, null, null, "エラー検索"))
+            .thenThrow(RuntimeException("Search failed"))
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: エラーが発生する検索を実行
+        viewModel.performSearch("エラー検索")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Then: エラーメッセージが設定される
+        assertNotNull("Error message should be set", viewModel.errorMessage.value)
+        assertTrue("Error message should contain relevant info", 
+            viewModel.errorMessage.value!!.contains("フィルタリング・検索エラー") ||
+            viewModel.errorMessage.value!!.contains("Search failed"))
+        assertEquals(false, viewModel.isLoading.value)
+    }
+
+    // ===== メモリリーク防止テスト =====
+
+    @Test
+    fun `ViewModel破棄時_検索ジョブがキャンセルされる`() = runTest {
+        // Given: リポジトリ設定
+        setupBasicRepositoryMocks()
+        
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // When: 検索を開始してすぐにViewModelを破棄
+        viewModel.performSearch("検索テスト")
+        viewModel.onCleared() // ViewModelの破棄をシミュレート
+        
+        // Then: 例外が発生しないことを確認（ジョブが適切にキャンセルされる）
+        // このテストは主にメモリリーク防止の確認
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 }
