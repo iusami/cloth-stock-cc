@@ -46,25 +46,38 @@ class GalleryViewModelTest {
     @Mock
     private lateinit var clothRepository: ClothRepository
 
+    // テスト定数
+    companion object {
+        private const val TEST_SIZE_SMALL = 100
+        private const val TEST_SIZE_LARGE = 120
+        private const val TEST_COLOR_RED = "赤"
+        private const val TEST_COLOR_BLUE = "青"
+        private const val TEST_CATEGORY_TOPS = "トップス"
+        private const val TEST_CATEGORY_BOTTOMS = "ボトムス"
+        private const val TEST_IMAGE_PATH_1 = "/test/image1.jpg"
+        private const val TEST_IMAGE_PATH_2 = "/test/image2.jpg"
+        private const val ERROR_MESSAGE_DELETE_FAILED = "アイテムの削除に失敗しました"
+    }
+
     private val testClothItems = listOf(
         ClothItem(
             id = 1L,
-            imagePath = "/test/image1.jpg",
-            tagData = TagData(size = 100, color = "赤", category = "トップス"),
+            imagePath = TEST_IMAGE_PATH_1,
+            tagData = TagData(size = TEST_SIZE_SMALL, color = TEST_COLOR_RED, category = TEST_CATEGORY_TOPS),
             createdAt = Date()
         ),
         ClothItem(
             id = 2L,
-            imagePath = "/test/image2.jpg",
-            tagData = TagData(size = 120, color = "青", category = "ボトムス"),
+            imagePath = TEST_IMAGE_PATH_2,
+            tagData = TagData(size = TEST_SIZE_LARGE, color = TEST_COLOR_BLUE, category = TEST_CATEGORY_BOTTOMS),
             createdAt = Date()
         )
     )
 
     private val defaultFilterOptions = com.example.clothstock.data.model.FilterOptions(
-        availableSizes = listOf(100, 120),
-        availableColors = listOf("赤", "青"),
-        availableCategories = listOf("トップス", "ボトムス")
+        availableSizes = listOf(TEST_SIZE_SMALL, TEST_SIZE_LARGE),
+        availableColors = listOf(TEST_COLOR_RED, TEST_COLOR_BLUE),
+        availableCategories = listOf(TEST_CATEGORY_TOPS, TEST_CATEGORY_BOTTOMS)
     )
 
     private val emptyFilterOptions = com.example.clothstock.data.model.FilterOptions(
@@ -79,30 +92,69 @@ class GalleryViewModelTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-
-
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    /**
+     * リポジトリの基本的なモック設定を行うヘルパーメソッド
+     */
+    private suspend fun setupBasicRepositoryMocks(
+        items: List<ClothItem> = testClothItems,
+        filterOptions: com.example.clothstock.data.model.FilterOptions = defaultFilterOptions
+    ) {
+        `when`(clothRepository.getAllItems()).thenReturn(flowOf(items))
+        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(filterOptions)
+    }
+
+    /**
+     * ViewModelを初期化し、テストディスパッチャーを進めるヘルパーメソッド
+     */
+    private suspend fun createViewModelAndAdvance(): GalleryViewModel {
+        val viewModel = GalleryViewModel(clothRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        return viewModel
+    }
+
+    /**
+     * 特定のフィルター条件でのモック設定を行うヘルパーメソッド
+     */
+    private suspend fun setupFilterMocks(
+        category: String? = null,
+        color: String? = null,
+        size: Int? = null,
+        searchText: String? = null,
+        expectedResult: List<ClothItem> = emptyList()
+    ) {
+        when {
+            category != null -> `when`(clothRepository.getItemsByCategory(category)).thenReturn(flowOf(expectedResult))
+            color != null -> `when`(clothRepository.getItemsByColor(color)).thenReturn(flowOf(expectedResult))
+            size != null -> `when`(clothRepository.getItemsBySize(size)).thenReturn(flowOf(expectedResult))
+            searchText != null -> `when`(clothRepository.searchItemsWithFilters(null, null, null, searchText)).thenReturn(flowOf(expectedResult))
+        }
+    }
+
+    /**
+     * ViewModelの基本状態をアサートするヘルパーメソッド
+     */
+    private fun assertViewModelInitialState(viewModel: GalleryViewModel, expectedItems: List<ClothItem>) {
+        assertEquals(expectedItems, viewModel.clothItems.value)
+        assertEquals(expectedItems.isEmpty(), viewModel.isEmpty.value)
+        assertEquals(false, viewModel.isLoading.value)
+    }
+
+
 
     // ===== 核心機能テスト =====
 
     @Test
     fun `初期化_デフォルト状態が設定される`() = runTest {
         // Given: 空のデータを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = emptyList(),
-                availableColors = emptyList(),
-                availableCategories = emptyList()
-            )
-        )
+        setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: 初期状態が正しく設定される
         assertEquals(emptyList<ClothItem>(), viewModel.clothItems.value)
@@ -114,41 +166,23 @@ class GalleryViewModelTest {
     @Test
     fun `データ読み込み_成功時に正しくアイテムが設定される`() = runTest {
         // Given: テストデータを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = listOf(100, 120),
-                availableColors = listOf("赤", "青"),
-                availableCategories = listOf("トップス", "ボトムス")
-            )
-        )
+        setupBasicRepositoryMocks()
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: データが正しく設定される
-        assertEquals(testClothItems, viewModel.clothItems.value)
-        assertEquals(false, viewModel.isEmpty.value)
-        assertEquals(false, viewModel.isLoading.value)
+        assertViewModelInitialState(viewModel, testClothItems)
         verify(clothRepository).getAllItems()
     }
 
     @Test
     fun `データ読み込み_空リスト時に空状態が設定される`() = runTest {
         // Given: 空リストを返すモック
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = emptyList(),
-                availableColors = emptyList(),
-                availableCategories = emptyList()
-            )
-        )
+        setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: 空状態が設定される
         assertEquals(emptyList<ClothItem>(), viewModel.clothItems.value)
@@ -159,26 +193,17 @@ class GalleryViewModelTest {
     @Test
     fun `カテゴリフィルタ_指定カテゴリのアイテムのみ表示される`() = runTest {
         // Given: 初期化とカテゴリフィルタ設定
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = listOf(100, 120),
-                availableColors = listOf("赤", "青"),
-                availableCategories = listOf("トップス", "ボトムス")
-            )
-        )
-        `when`(clothRepository.getItemsByCategory("トップス"))
-            .thenReturn(flowOf(listOf(testClothItems[0])))
+        setupBasicRepositoryMocks()
+        setupFilterMocks(category = TEST_CATEGORY_TOPS, expectedResult = listOf(testClothItems[0]))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: カテゴリでフィルタ
-        viewModel.filterByCategory("トップス")
+        viewModel.filterByCategory(TEST_CATEGORY_TOPS)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: トップスのアイテムのみ取得される
-        verify(clothRepository).getItemsByCategory("トップス")
+        verify(clothRepository).getItemsByCategory(TEST_CATEGORY_TOPS)
         assertEquals(listOf(testClothItems[0]), viewModel.clothItems.value)
         assertEquals(false, viewModel.isEmpty.value)
     }
@@ -186,26 +211,17 @@ class GalleryViewModelTest {
     @Test
     fun `色フィルタ_指定色のアイテムのみ表示される`() = runTest {
         // Given: 初期化と色フィルタ設定
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(testClothItems))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = listOf(100, 120),
-                availableColors = listOf("赤", "青"),
-                availableCategories = listOf("トップス", "ボトムス")
-            )
-        )
-        `when`(clothRepository.getItemsByColor("赤"))
-            .thenReturn(flowOf(listOf(testClothItems[0])))
+        setupBasicRepositoryMocks()
+        setupFilterMocks(color = TEST_COLOR_RED, expectedResult = listOf(testClothItems[0]))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 色でフィルタ
-        viewModel.filterByColor("赤")
+        viewModel.filterByColor(TEST_COLOR_RED)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: 赤のアイテムのみ取得される
-        verify(clothRepository).getItemsByColor("赤")
+        verify(clothRepository).getItemsByColor(TEST_COLOR_RED)
         assertEquals(listOf(testClothItems[0]), viewModel.clothItems.value)
     }
 
@@ -310,25 +326,17 @@ class GalleryViewModelTest {
     @Test
     fun `アイテム削除_失敗時にエラーメッセージが表示される`() = runTest {
         // Given: 削除失敗設定
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(emptyList()))
-        `when`(clothRepository.getAvailableFilterOptions()).thenReturn(
-            com.example.clothstock.data.model.FilterOptions(
-                availableSizes = emptyList(),
-                availableColors = emptyList(),
-                availableCategories = emptyList()
-            )
-        )
+        setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         `when`(clothRepository.deleteItemById(1L)).thenReturn(false)
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: アイテムを削除
         viewModel.deleteItem(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then: エラーメッセージが設定される
-        assertEquals("アイテムの削除に失敗しました", viewModel.errorMessage.value)
+        assertEquals(ERROR_MESSAGE_DELETE_FAILED, viewModel.errorMessage.value)
     }
 
     @Test
