@@ -234,10 +234,7 @@ interface ClothDao {
      * 複合フィルター条件で衣服アイテムを検索
      * サイズ、色、カテゴリの複数条件とテキスト検索を組み合わせ
      * 
-     * パフォーマンス最適化:
-     * - 空リストのnullチェックを含む効率的なクエリ
-     * - インデックス活用を考慮した条件順序
-     * - 短絡評価による効率化
+     * 注意: Roomの制約により、空のリストはnullに変換して渡すこと
      * 
      * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
      * @param colorFilters 色フィルター（nullまたは空の場合は無視）
@@ -255,12 +252,36 @@ interface ClothDao {
              category LIKE '%' || :searchText || '%')
         ORDER BY createdAt DESC
     """)
-    fun searchItemsWithFilters(
+    fun searchItemsWithFiltersInternal(
         sizeFilters: List<Int>?,
         colorFilters: List<String>?,
         categoryFilters: List<String>?,
         searchText: String?
     ): Flow<List<ClothItem>>
+
+    /**
+     * 複合フィルター条件で衣服アイテムを検索（空リスト対応版）
+     * 空のリストを適切にnullに変換してから内部メソッドを呼び出す
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return フィルター条件に合致するアイテムのFlow
+     */
+    fun searchItemsWithFilters(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Flow<List<ClothItem>> {
+        return searchItemsWithFiltersInternal(
+            sizeFilters = sizeFilters?.takeIf { it.isNotEmpty() },
+            colorFilters = colorFilters?.takeIf { it.isNotEmpty() },
+            categoryFilters = categoryFilters?.takeIf { it.isNotEmpty() },
+            searchText = searchText?.takeIf { it.isNotBlank() }
+        )
+    }
 
     /**
      * データベースに存在する重複なしのサイズリストを取得
