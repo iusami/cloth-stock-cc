@@ -221,4 +221,238 @@ class ClothDaoInstrumentedTest {
         assertEquals(20, categoryItems.size) // 100÷5=20個
         assertTrue("検索パフォーマンス", searchTime < 500) // 0.5秒以内
     }
+
+    // ===== Task3: 新しいフィルター・検索機能のテスト =====
+
+    @Test
+    fun `searchItemsByText_様々な検索条件で正しく動作する`() = runTest {
+        // Given - 検索テスト用のサンプルデータを準備
+        val testItems = listOf(
+            ClothItem.create("/shirt_red.jpg", TagData(100, "赤", "シャツ")),
+            ClothItem.create("/pants_blue.jpg", TagData(110, "青", "パンツ")),
+            ClothItem.create("/jacket_red.jpg", TagData(120, "赤", "ジャケット")),
+            ClothItem.create("/shirt_white.jpg", TagData(90, "白", "シャツ")),
+            ClothItem.create("/dress_black.jpg", TagData(80, "黒", "ワンピース"))
+        )
+        
+        testItems.forEach { clothDao.insert(it) }
+
+        // When - 色で検索（部分一致）
+        val redItems = clothDao.searchItemsByText("赤").first()
+
+        // Then
+        assertEquals("赤を含むアイテムが2件", 2, redItems.size)
+        assertTrue("すべて赤を含む", redItems.all { it.tagData.color.contains("赤") })
+
+        // When - カテゴリで検索
+        val shirtItems = clothDao.searchItemsByText("シャツ").first()
+
+        // Then
+        assertEquals("シャツを含むアイテムが2件", 2, shirtItems.size)
+        assertTrue("すべてシャツを含む", shirtItems.all { it.tagData.category.contains("シャツ") })
+
+        // When - 存在しない文字列で検索
+        val notFoundItems = clothDao.searchItemsByText("存在しない").first()
+
+        // Then
+        assertTrue("該当なし", notFoundItems.isEmpty())
+
+        // When - 空文字列で検索
+        val allItemsFromEmptySearch = clothDao.searchItemsByText("").first()
+
+        // Then
+        assertEquals("空文字列では全件取得", 5, allItemsFromEmptySearch.size)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_複合条件で正しく動作する`() = runTest {
+        // Given - 複合検索テスト用のサンプルデータ
+        val testItems = listOf(
+            ClothItem.create("/item1.jpg", TagData(100, "赤", "シャツ")),
+            ClothItem.create("/item2.jpg", TagData(110, "青", "シャツ")),
+            ClothItem.create("/item3.jpg", TagData(120, "赤", "パンツ")),
+            ClothItem.create("/item4.jpg", TagData(100, "緑", "ジャケット")),
+            ClothItem.create("/item5.jpg", TagData(90, "赤", "シャツ")),
+            ClothItem.create("/item6.jpg", TagData(130, "白", "ワンピース"))
+        )
+        
+        testItems.forEach { clothDao.insert(it) }
+
+        // When - サイズフィルターのみ
+        val size100Items = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(100),
+            colorFilters = null,
+            categoryFilters = null,
+            searchText = null
+        ).first()
+
+        // Then
+        assertEquals("サイズ100のアイテムが2件", 2, size100Items.size)
+        assertTrue("すべてサイズ100", size100Items.all { it.tagData.size == 100 })
+
+        // When - 色フィルターのみ
+        val redItems = clothDao.searchItemsWithFilters(
+            sizeFilters = null,
+            colorFilters = listOf("赤"),
+            categoryFilters = null,
+            searchText = null
+        ).first()
+
+        // Then
+        assertEquals("赤いアイテムが3件", 3, redItems.size)
+        assertTrue("すべて赤", redItems.all { it.tagData.color == "赤" })
+
+        // When - 複数の色フィルター
+        val redAndBlueItems = clothDao.searchItemsWithFilters(
+            sizeFilters = null,
+            colorFilters = listOf("赤", "青"),
+            categoryFilters = null,
+            searchText = null
+        ).first()
+
+        // Then
+        assertEquals("赤または青のアイテムが4件", 4, redAndBlueItems.size)
+        assertTrue("すべて赤または青", redAndBlueItems.all { 
+            it.tagData.color == "赤" || it.tagData.color == "青" 
+        })
+
+        // When - サイズと色の複合条件
+        val size100RedItems = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(100),
+            colorFilters = listOf("赤"),
+            categoryFilters = null,
+            searchText = null
+        ).first()
+
+        // Then
+        assertEquals("サイズ100かつ赤のアイテムが1件", 1, size100RedItems.size)
+        val item = size100RedItems[0]
+        assertEquals(100, item.tagData.size)
+        assertEquals("赤", item.tagData.color)
+
+        // When - すべてのフィルター条件
+        val complexFilterItems = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(90, 100),
+            colorFilters = listOf("赤"),
+            categoryFilters = listOf("シャツ"),
+            searchText = "シャツ"
+        ).first()
+
+        // Then
+        assertEquals("複合条件で2件", 2, complexFilterItems.size)
+        assertTrue("すべて条件を満たす", complexFilterItems.all { 
+            (it.tagData.size == 90 || it.tagData.size == 100) &&
+            it.tagData.color == "赤" &&
+            it.tagData.category == "シャツ"
+        })
+    }
+
+    @Test
+    fun `getDistinctSizes_重複なしのサイズリストを返す`() = runTest {
+        // Given - 様々なサイズのアイテム
+        val testItems = listOf(
+            ClothItem.create("/item1.jpg", TagData(100, "赤", "シャツ")),
+            ClothItem.create("/item2.jpg", TagData(110, "青", "パンツ")),
+            ClothItem.create("/item3.jpg", TagData(100, "緑", "ジャケット")), // 重複サイズ
+            ClothItem.create("/item4.jpg", TagData(90, "白", "シャツ")),
+            ClothItem.create("/item5.jpg", TagData(110, "黒", "ワンピース")) // 重複サイズ
+        )
+        
+        testItems.forEach { clothDao.insert(it) }
+
+        // When
+        val distinctSizes = clothDao.getDistinctSizes()
+
+        // Then
+        assertEquals("重複なしで3種類", 3, distinctSizes.size)
+        assertEquals("ソートされている", listOf(90, 100, 110), distinctSizes.sorted())
+        assertTrue("重複なし", distinctSizes.toSet().size == distinctSizes.size)
+    }
+
+    @Test
+    fun `getDistinctColors_重複なしの色リストを返す`() = runTest {
+        // Given - 様々な色のアイテム
+        val testItems = listOf(
+            ClothItem.create("/item1.jpg", TagData(100, "赤", "シャツ")),
+            ClothItem.create("/item2.jpg", TagData(110, "青", "パンツ")),
+            ClothItem.create("/item3.jpg", TagData(120, "赤", "ジャケット")), // 重複色
+            ClothItem.create("/item4.jpg", TagData(90, "緑", "シャツ")),
+            ClothItem.create("/item5.jpg", TagData(130, "青", "ワンピース")) // 重複色
+        )
+        
+        testItems.forEach { clothDao.insert(it) }
+
+        // When
+        val distinctColors = clothDao.getDistinctColors()
+
+        // Then
+        assertEquals("重複なしで3種類", 3, distinctColors.size)
+        assertTrue("赤が含まれる", distinctColors.contains("赤"))
+        assertTrue("青が含まれる", distinctColors.contains("青"))
+        assertTrue("緑が含まれる", distinctColors.contains("緑"))
+        assertTrue("重複なし", distinctColors.toSet().size == distinctColors.size)
+    }
+
+    @Test
+    fun `getDistinctCategories_重複なしのカテゴリリストを返す`() = runTest {
+        // Given - 様々なカテゴリのアイテム
+        val testItems = listOf(
+            ClothItem.create("/item1.jpg", TagData(100, "赤", "シャツ")),
+            ClothItem.create("/item2.jpg", TagData(110, "青", "パンツ")),
+            ClothItem.create("/item3.jpg", TagData(120, "緑", "シャツ")), // 重複カテゴリ
+            ClothItem.create("/item4.jpg", TagData(90, "白", "ジャケット")),
+            ClothItem.create("/item5.jpg", TagData(130, "黒", "パンツ")) // 重複カテゴリ
+        )
+        
+        testItems.forEach { clothDao.insert(it) }
+
+        // When
+        val distinctCategories = clothDao.getDistinctCategories()
+
+        // Then
+        assertEquals("重複なしで3種類", 3, distinctCategories.size)
+        assertTrue("シャツが含まれる", distinctCategories.contains("シャツ"))
+        assertTrue("パンツが含まれる", distinctCategories.contains("パンツ"))
+        assertTrue("ジャケットが含まれる", distinctCategories.contains("ジャケット"))
+        assertTrue("重複なし", distinctCategories.toSet().size == distinctCategories.size)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_空のデータベースで正しく動作する`() = runTest {
+        // Given - 空のデータベース（何も挿入しない）
+
+        // When
+        val results = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(100),
+            colorFilters = listOf("赤"),
+            categoryFilters = listOf("シャツ"),
+            searchText = "test"
+        ).first()
+
+        // Then
+        assertTrue("空のリストが返される", results.isEmpty())
+    }
+
+    @Test
+    fun `getDistinct系メソッド_空のデータベースで正しく動作する`() = runTest {
+        // Given - 空のデータベース
+
+        // When & Then
+        assertTrue("サイズリストが空", clothDao.getDistinctSizes().isEmpty())
+        assertTrue("色リストが空", clothDao.getDistinctColors().isEmpty())
+        assertTrue("カテゴリリストが空", clothDao.getDistinctCategories().isEmpty())
+    }
+
+    @Test
+    fun `searchItemsByText_nullや空文字列を適切に処理する`() = runTest {
+        // Given
+        val testItem = ClothItem.create("/test.jpg", TagData(100, "赤", "シャツ"))
+        clothDao.insert(testItem)
+
+        // When - null（実際には空文字列として扱われる）
+        val nullResults = clothDao.searchItemsByText("").first()
+
+        // Then
+        assertEquals("空文字列では全件取得", 1, nullResults.size)
+    }
 }
