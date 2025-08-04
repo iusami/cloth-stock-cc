@@ -120,7 +120,8 @@ class GalleryFragment : Fragment() {
      */
     private fun setupViewModel() {
         val repository = ClothRepositoryImpl.getInstance(requireContext())
-        val viewModelFactory = GalleryViewModelFactory(repository)
+        val filterManager = com.example.clothstock.data.repository.FilterManager()
+        val viewModelFactory = GalleryViewModelFactory(repository, filterManager)
         viewModel = ViewModelProvider(this, viewModelFactory)[GalleryViewModel::class.java]
         binding.viewModel = viewModel
     }
@@ -367,13 +368,14 @@ class GalleryFragment : Fragment() {
  * GalleryViewModel用のViewModelFactory
  */
 class GalleryViewModelFactory(
-    private val repository: com.example.clothstock.data.repository.ClothRepository
+    private val repository: com.example.clothstock.data.repository.ClothRepository,
+    private val filterManager: com.example.clothstock.data.repository.FilterManager
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(GalleryViewModel::class.java)) {
-            return GalleryViewModel(repository) as T
+            return GalleryViewModel(repository, filterManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

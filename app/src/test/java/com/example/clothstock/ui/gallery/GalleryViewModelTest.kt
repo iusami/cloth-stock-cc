@@ -1,32 +1,18 @@
 package com.example.clothstock.ui.gallery
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.clothstock.data.model.ClothItem
-import com.example.clothstock.data.model.TagData
-import com.example.clothstock.data.repository.ClothRepository
-import com.example.clothstock.data.model.FilterType
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.runBlocking
-import org.junit.After
-import org.junit.Assert.*
-import org.junit.Before
-import org.junit.Rule
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Test
-import org.mockito.Mock
-import org.mockito.MockitoAnnotations
-import org.mockito.Mockito.`when`
+import org.junit.Assert.*
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.clearInvocations
 import org.mockito.Mockito.times
 import org.mockito.Mockito.atLeastOnce
+import org.mockito.Mockito.`when`
 import androidx.lifecycle.MutableLiveData
-import java.util.Date
+import com.example.clothstock.data.model.FilterType
+import com.example.clothstock.data.model.ClothItem
 
 /**
  * GalleryViewModelのユニットテスト
@@ -42,141 +28,11 @@ import java.util.Date
  * - テストクラスを機能別に分割予定
  */
 @ExperimentalCoroutinesApi
-class GalleryViewModelTest {
+class GalleryViewModelTest : GalleryViewModelTestBase() {
 
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
+    // 基底クラスから継承されたフィールドとメソッドを使用
 
-    private val testDispatcher = StandardTestDispatcher()
-
-    @Mock
-    private lateinit var clothRepository: ClothRepository
-
-    // テスト定数 - より意味のある名前に変更
-    companion object {
-        private const val TEST_SIZE_SMALL = 100
-        private const val TEST_SIZE_LARGE = 120
-        private const val TEST_COLOR_RED = "赤"
-        private const val TEST_COLOR_BLUE = "青"
-        private const val TEST_CATEGORY_TOPS = "トップス"
-        private const val TEST_CATEGORY_BOTTOMS = "ボトムス"
-        private const val TEST_IMAGE_PATH_1 = "/test/image1.jpg"
-        private const val TEST_IMAGE_PATH_2 = "/test/image2.jpg"
-        private const val ERROR_MESSAGE_DELETE_FAILED = "アイテムの削除に失敗しました"
-        
-    }
-
-    // テストデータファクトリー - Builder パターンで柔軟なテストデータ作成
-    private class TestClothItemBuilder {
-        private var id: Long = 1L
-        private var imagePath: String = TEST_IMAGE_PATH_1
-        private var size: Int = TEST_SIZE_SMALL
-        private var color: String = TEST_COLOR_RED
-        private var category: String = TEST_CATEGORY_TOPS
-        private var createdAt: Date = Date()
-
-        fun withId(id: Long) = apply { this.id = id }
-        fun withImagePath(path: String) = apply { this.imagePath = path }
-        fun withSize(size: Int) = apply { this.size = size }
-        fun withColor(color: String) = apply { this.color = color }
-        fun withCategory(category: String) = apply { this.category = category }
-        fun withCreatedAt(date: Date) = apply { this.createdAt = date }
-
-        fun build() = ClothItem(
-            id = id,
-            imagePath = imagePath,
-            tagData = TagData(size = size, color = color, category = category),
-            createdAt = createdAt
-        )
-    }
-
-    private val testClothItems = listOf(
-        TestClothItemBuilder()
-            .withId(1L)
-            .withImagePath(TEST_IMAGE_PATH_1)
-            .withSize(TEST_SIZE_SMALL)
-            .withColor(TEST_COLOR_RED)
-            .withCategory(TEST_CATEGORY_TOPS)
-            .build(),
-        TestClothItemBuilder()
-            .withId(2L)
-            .withImagePath(TEST_IMAGE_PATH_2)
-            .withSize(TEST_SIZE_LARGE)
-            .withColor(TEST_COLOR_BLUE)
-            .withCategory(TEST_CATEGORY_BOTTOMS)
-            .build()
-    )
-
-    private val defaultFilterOptions = com.example.clothstock.data.model.FilterOptions(
-        availableSizes = listOf(TEST_SIZE_SMALL, TEST_SIZE_LARGE),
-        availableColors = listOf(TEST_COLOR_RED, TEST_COLOR_BLUE),
-        availableCategories = listOf(TEST_CATEGORY_TOPS, TEST_CATEGORY_BOTTOMS)
-    )
-
-    private val emptyFilterOptions = com.example.clothstock.data.model.FilterOptions(
-        availableSizes = emptyList(),
-        availableColors = emptyList(),
-        availableCategories = emptyList()
-    )
-
-    @Before
-    fun setUp() {
-        MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    /**
-     * リポジトリの基本的なモック設定を行うヘルパーメソッド
-     */
-    private fun setupBasicRepositoryMocks(
-        items: List<ClothItem> = testClothItems,
-        filterOptions: com.example.clothstock.data.model.FilterOptions = defaultFilterOptions
-    ) {
-        `when`(clothRepository.getAllItems()).thenReturn(flowOf(items))
-        runBlocking {
-            `when`(clothRepository.getAvailableFilterOptions()).thenReturn(filterOptions)
-        }
-    }
-
-
-    /**
-     * 特定のフィルター条件でのモック設定を行うヘルパーメソッド
-     * Strategy パターンを使用してモック設定を分離
-     */
-    private fun setupFilterMocks(
-        category: String? = null,
-        color: String? = null,
-        size: Int? = null,
-        searchText: String? = null,
-        expectedResult: List<ClothItem> = emptyList()
-    ) {
-        category?.let { 
-            `when`(clothRepository.getItemsByCategory(it)).thenReturn(flowOf(expectedResult))
-        }
-        color?.let { 
-            `when`(clothRepository.getItemsByColor(it)).thenReturn(flowOf(expectedResult))
-        }
-        size?.let { 
-            `when`(clothRepository.getItemsBySizeRange(it, it)).thenReturn(flowOf(expectedResult))
-        }
-        searchText?.let { 
-            `when`(clothRepository.searchItemsWithFilters(null, null, null, it)).thenReturn(flowOf(expectedResult))
-        }
-    }
-
-    /**
-     * ViewModelの基本状態をアサートするヘルパーメソッド
-     */
-    private fun assertViewModelInitialState(viewModel: GalleryViewModel, expectedItems: List<ClothItem>) {
-        assertEquals(expectedItems, viewModel.clothItems.value)
-        assertEquals(expectedItems.isEmpty(), viewModel.isEmpty.value)
-        assertEquals(false, viewModel.isLoading.value)
-    }
+    // 基底クラスのヘルパーメソッドを使用
 
 
 
@@ -188,8 +44,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: 初期状態が正しく設定される
         assertEquals(emptyList<ClothItem>(), viewModel.clothItems.value)
@@ -204,8 +59,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks()
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: データが正しく設定される
         assertViewModelInitialState(viewModel, testClothItems)
@@ -218,8 +72,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: 空状態が設定される
         assertEquals(emptyList<ClothItem>(), viewModel.clothItems.value)
@@ -233,8 +86,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks()
         setupFilterMocks(category = TEST_CATEGORY_TOPS, expectedResult = listOf(testClothItems[0]))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: カテゴリでフィルタ
         viewModel.filterByCategory(TEST_CATEGORY_TOPS)
@@ -252,8 +104,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks()
         setupFilterMocks(color = TEST_COLOR_RED, expectedResult = listOf(testClothItems[0]))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 色でフィルタ
         viewModel.filterByColor(TEST_COLOR_RED)
@@ -278,8 +129,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.getItemsByCategory("トップス"))
             .thenReturn(flowOf(listOf(testClothItems[0])))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         viewModel.filterByCategory("トップス")
         testDispatcher.scheduler.advanceUntilIdle()
@@ -304,8 +154,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: リフレッシュ実行
         viewModel.refreshData()
@@ -328,8 +177,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: エラーメッセージをクリア
         viewModel.clearErrorMessage()
@@ -351,8 +199,7 @@ class GalleryViewModelTest {
         )
         `when`(clothRepository.deleteItemById(1L)).thenReturn(true)
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: アイテムを削除
         viewModel.deleteItem(1L)
@@ -368,8 +215,7 @@ class GalleryViewModelTest {
         setupBasicRepositoryMocks(items = emptyList(), filterOptions = emptyFilterOptions)
         `when`(clothRepository.deleteItemById(1L)).thenReturn(false)
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: アイテムを削除
         viewModel.deleteItem(1L)
@@ -391,8 +237,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // リセット（初期化時のgetAllItems呼び出しをクリア）
         clearInvocations(clothRepository)
@@ -417,7 +262,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
+        val viewModel = GalleryViewModel(clothRepository, filterManager)
         
         // lastOperationを未知の値に設定（reflectionを使用）
         val lastOperationField = viewModel.javaClass.getDeclaredField("_lastOperation")
@@ -455,8 +300,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.searchItemsWithFilters(null, null, null, "最終検索"))
             .thenReturn(flowOf(testClothItems))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 連続して検索を実行（デバウンシングテスト）
         viewModel.performSearch("検索1")
@@ -482,8 +326,7 @@ class GalleryViewModelTest {
         )
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: フィルター関連LiveDataが適切に初期化される
         assertNotNull("currentFilters should be initialized", viewModel.currentFilters.value)
@@ -506,8 +349,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.searchItemsWithFilters(listOf(100), null, null, null))
             .thenReturn(flowOf(testClothItems.filter { it.tagData.size == 100 }))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: サイズフィルターを適用
         viewModel.applyFilter(FilterType.SIZE, "100")
@@ -530,8 +372,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: フィルターを削除
         viewModel.removeFilter(FilterType.SIZE, "100")
@@ -553,8 +394,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 全フィルターをクリア
         viewModel.clearAllFilters()
@@ -578,8 +418,7 @@ class GalleryViewModelTest {
         )
         `when`(clothRepository.searchItemsWithFilters(null, null, null, "シャツ")).thenReturn(flowOf(testClothItems))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 検索を実行
         viewModel.performSearch("シャツ")
@@ -602,8 +441,7 @@ class GalleryViewModelTest {
             )
         )
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: 検索をクリア
         viewModel.clearSearch()
@@ -632,8 +470,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.searchItemsWithFilters(listOf(100), listOf("赤"), null, null))
             .thenReturn(flowOf(testClothItems.take(1)))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: サイズと色フィルターを適用
         viewModel.applyFilter(FilterType.SIZE, "100")
@@ -659,8 +496,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.searchItemsWithFilters(listOf(100), null, null, "シャツ"))
             .thenReturn(flowOf(testClothItems.take(1)))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: サイズフィルターと検索テキストを適用
         viewModel.applyFilter(FilterType.SIZE, "100")
@@ -680,8 +516,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.getAvailableFilterOptions()).thenThrow(RuntimeException("Database error"))
         
         // When: ViewModelを初期化
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // Then: 空のフィルターオプションが設定される
         val options = viewModel.availableFilterOptions.value
@@ -705,8 +540,7 @@ class GalleryViewModelTest {
         `when`(clothRepository.searchItemsWithFilters(null, null, null, "エラー検索"))
             .thenThrow(RuntimeException("Search failed"))
         
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModelAndAdvance()
         
         // When: エラーが発生する検索を実行
         viewModel.performSearch("エラー検索")

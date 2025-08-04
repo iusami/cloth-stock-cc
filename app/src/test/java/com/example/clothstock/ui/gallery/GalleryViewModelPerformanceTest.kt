@@ -34,7 +34,7 @@ class GalleryViewModelPerformanceTest : GalleryViewModelTestBase() {
         
         // When: 初期化時間を測定
         val executionTime = measureTimeMillis {
-            val viewModel = GalleryViewModel(clothRepository)
+            val viewModel = GalleryViewModel(clothRepository, filterManager)
             testDispatcher.scheduler.advanceUntilIdle()
             
             // Then: データが正しく設定される
@@ -63,7 +63,7 @@ class GalleryViewModelPerformanceTest : GalleryViewModelTestBase() {
         `when`(clothRepository.getItemsByCategory(TEST_CATEGORY_TOPS))
             .thenReturn(flowOf(filteredResult))
         
-        val viewModel = GalleryViewModel(clothRepository)
+        val viewModel = GalleryViewModel(clothRepository, filterManager)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // When: フィルタリング時間を測定
@@ -92,7 +92,7 @@ class GalleryViewModelPerformanceTest : GalleryViewModelTestBase() {
         `when`(clothRepository.searchItemsWithFilters(null, null, null, "最終検索"))
             .thenReturn(flowOf(searchResults))
         
-        val viewModel = GalleryViewModel(clothRepository)
+        val viewModel = GalleryViewModel(clothRepository, filterManager)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // When: 連続検索の実行時間を測定
@@ -127,7 +127,7 @@ class GalleryViewModelPerformanceTest : GalleryViewModelTestBase() {
         
         // When: ViewModelを作成・破棄を繰り返す
         repeat(5) {
-            val viewModel = GalleryViewModel(clothRepository)
+            val viewModel = GalleryViewModel(clothRepository, filterManager)
             testDispatcher.scheduler.advanceUntilIdle()
             
             // データが正しく設定されることを確認

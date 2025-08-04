@@ -27,7 +27,7 @@ import android.util.Log
  */
 class GalleryViewModel(
     private val clothRepository: ClothRepository,
-    private val filterManager: FilterManager = FilterManager()
+    private val filterManager: FilterManager
 ) : ViewModel() {
 
     companion object {
