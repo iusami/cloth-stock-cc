@@ -64,8 +64,6 @@ class GalleryViewModelTest {
         private const val TEST_IMAGE_PATH_2 = "/test/image2.jpg"
         private const val ERROR_MESSAGE_DELETE_FAILED = "アイテムの削除に失敗しました"
         
-        // デバウンシング関連の定数
-        private const val SEARCH_DEBOUNCE_DELAY_MS = 300L
     }
 
     // テストデータファクトリー - Builder パターンで柔軟なテストデータ作成
@@ -145,14 +143,6 @@ class GalleryViewModelTest {
         }
     }
 
-    /**
-     * ViewModelを初期化し、テストディスパッチャーを進めるヘルパーメソッド
-     */
-    private fun createViewModelAndAdvance(): GalleryViewModel {
-        val viewModel = GalleryViewModel(clothRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
-        return viewModel
-    }
 
     /**
      * 特定のフィルター条件でのモック設定を行うヘルパーメソッド

@@ -474,7 +474,9 @@ class ClothRepositoryTest {
             .thenReturn(flowOf(expectedItems))
 
         // When
-        val result = clothRepository.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText).first()
+        val result = clothRepository.searchItemsWithFilters(
+            sizeFilters, colorFilters, categoryFilters, searchText
+        ).first()
 
         // Then
         assertEquals(expectedItems, result)

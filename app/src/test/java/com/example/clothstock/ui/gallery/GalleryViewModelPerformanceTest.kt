@@ -154,4 +154,5 @@ class GalleryViewModelPerformanceTest : GalleryViewModelTestBase() {
             .withCategory(if (index % 2 == 0) TEST_CATEGORY_TOPS else TEST_CATEGORY_BOTTOMS)
             .build()
     }
+
 }

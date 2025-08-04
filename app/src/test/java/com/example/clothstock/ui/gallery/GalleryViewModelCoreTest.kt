@@ -1,7 +1,6 @@
 package com.example.clothstock.ui.gallery
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -221,4 +220,5 @@ class GalleryViewModelCoreTest : GalleryViewModelTestBase() {
         // Then: デフォルトでデータ読み込みが実行される
         verify(clothRepository, times(1)).getAllItems()
     }
+
 }

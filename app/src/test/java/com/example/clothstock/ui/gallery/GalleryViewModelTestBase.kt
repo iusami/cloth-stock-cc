@@ -169,4 +169,5 @@ abstract class GalleryViewModelTestBase {
         assertEquals(expectedItems.isEmpty(), viewModel.isEmpty.value)
         assertEquals(false, viewModel.isLoading.value)
     }
+
 }

@@ -212,4 +212,5 @@ class GalleryViewModelFilterTest : GalleryViewModelTestBase() {
             viewModel.errorMessage.value!!.contains("Search failed"))
         assertEquals(false, viewModel.isLoading.value)
     }
+
 }
