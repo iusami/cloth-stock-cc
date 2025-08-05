@@ -18,6 +18,11 @@ import com.example.clothstock.ui.camera.CameraActivity
 import com.example.clothstock.ui.detail.DetailActivity
 import com.google.android.material.snackbar.Snackbar
 import android.util.Log
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.chip.Chip
+import com.example.clothstock.data.model.FilterOptions
+import com.example.clothstock.data.model.FilterType
+import androidx.core.view.children
 
 /**
  * ギャラリー画面Fragment
@@ -32,6 +37,9 @@ class GalleryFragment : Fragment() {
 
     private lateinit var viewModel: GalleryViewModel
     private lateinit var adapter: ClothItemAdapter
+    
+    // Task7: フィルター機能用プロパティ
+    private lateinit var filterBottomSheetBehavior: BottomSheetBehavior<*>
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,6 +59,7 @@ class GalleryFragment : Fragment() {
         setupSwipeRefresh()
         setupEmptyStateActions()
         setupFab()
+        setupFilterUI() // Task7: フィルターUI初期化
         observeViewModel()
     }
 
@@ -184,6 +193,332 @@ class GalleryFragment : Fragment() {
     }
 
     /**
+     * Task7: フィルターUIの初期化 (REFACTOR強化版)
+     */
+    private fun setupFilterUI() {
+        Log.d(TAG, "Setting up filter UI")
+        
+        try {
+            // フィルターボトムシートの初期化
+            filterBottomSheetBehavior = BottomSheetBehavior.from(binding.includeBottomSheetFilter.bottomSheetFilter)
+            filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+            filterBottomSheetBehavior.isHideable = true
+            
+            // ボトムシートのコールバック設定（パフォーマンス最適化）
+            filterBottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                    Log.d(TAG, "Bottom sheet state changed to: $newState")
+                    when (newState) {
+                        BottomSheetBehavior.STATE_EXPANDED -> {
+                            // 展開時にフィルターオプションを更新
+                            viewModel.availableFilterOptions.value?.let { filterOptions ->
+                                updateFilterChips(filterOptions)
+                            }
+                        }
+                    }
+                }
+                
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                    // スライド中のパフォーマンス最適化のため、何もしない
+                }
+            })
+            
+            // フィルターボタンのクリックリスナー設定
+            binding.buttonFilter.setOnClickListener {
+                Log.d(TAG, "Filter button clicked")
+                showFilterBottomSheet()
+            }
+            
+            // フィルターチップのリスナー設定
+            setupFilterChipListeners()
+            
+            Log.d(TAG, "Filter UI setup completed")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during filter UI setup", e)
+            // エラー時はフィルターUIを無効化（アルファ値含む）
+            disableFilterUI()
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "IllegalArgumentException during filter UI setup", e)
+            disableFilterUI()
+        }
+    }
+
+    /**
+     * Task7: フィルターボトムシートを表示
+     */
+    private fun showFilterBottomSheet() {
+        Log.d(TAG, "Showing filter bottom sheet")
+        
+        // ViewModelから利用可能なフィルターオプションを取得
+        viewModel.availableFilterOptions.value?.let { filterOptions ->
+            // フィルターチップを動的に更新
+            setupSizeFilterChips(filterOptions)
+            setupColorFilterChips(filterOptions)
+            setupCategoryFilterChips(filterOptions)
+        }
+        
+        // ボトムシートを表示
+        filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+        
+        Log.d(TAG, "Filter bottom sheet displayed")
+    }
+
+    /**
+     * Task7: フィルターチップのリスナー設定
+     */
+    private fun setupFilterChipListeners() {
+        Log.d(TAG, "Setting up filter chip listeners")
+        
+        // フィルタークリアボタンのリスナー
+        binding.includeBottomSheetFilter.buttonClearFilter.setOnClickListener {
+            clearAllFilterHandler()
+        }
+        
+        // フィルター適用ボタンのリスナー
+        binding.includeBottomSheetFilter.buttonApplyFilter.setOnClickListener {
+            applyFilterHandler()
+        }
+        
+        Log.d(TAG, "Filter chip listeners setup completed")
+    }
+
+    /**
+     * Task7: サイズフィルターチップの動的設定
+     */
+    private fun setupSizeFilterChips(filterOptions: FilterOptions) {
+        Log.d(TAG, "Setting up size filter chips with ${filterOptions.availableSizes.size} options")
+        
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupSize
+        val currentState = viewModel.currentFilters.value
+        
+        // 既存のチップの選択状態を更新
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val sizeText = chipView.text.toString()
+                val size = sizeText.toIntOrNull()
+                if (size != null) {
+                    chipView.isChecked = currentState?.sizeFilters?.contains(size) == true
+                    
+                    // チップのクリックリスナー設定
+                    chipView.setOnCheckedChangeListener { _, isChecked ->
+                        Log.d(TAG, "Size chip $size changed to $isChecked")
+                        if (isChecked) {
+                            viewModel.applyFilter(FilterType.SIZE, size.toString())
+                        } else {
+                            viewModel.removeFilter(FilterType.SIZE, size.toString())
+                        }
+                    }
+                }
+            }
+        }
+        
+        Log.d(TAG, "Size filter chips setup completed")
+    }
+
+    /**
+     * Task7: 色フィルターチップの動的設定
+     */
+    private fun setupColorFilterChips(filterOptions: FilterOptions) {
+        Log.d(TAG, "Setting up color filter chips with ${filterOptions.availableColors.size} options")
+        
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupColor
+        val currentState = viewModel.currentFilters.value
+        
+        // 既存のチップの選択状態を更新
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val colorText = chipView.text.toString()
+                chipView.isChecked = currentState?.colorFilters?.contains(colorText) == true
+                
+                // チップのクリックリスナー設定
+                chipView.setOnCheckedChangeListener { _, isChecked ->
+                    Log.d(TAG, "Color chip $colorText changed to $isChecked")
+                    if (isChecked) {
+                        viewModel.applyFilter(FilterType.COLOR, colorText)
+                    } else {
+                        viewModel.removeFilter(FilterType.COLOR, colorText)
+                    }
+                }
+            }
+        }
+        
+        Log.d(TAG, "Color filter chips setup completed")
+    }
+
+    /**
+     * Task7: カテゴリフィルターチップの動的設定
+     */
+    private fun setupCategoryFilterChips(filterOptions: FilterOptions) {
+        Log.d(TAG, "Setting up category filter chips with ${filterOptions.availableCategories.size} options")
+        
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupCategory
+        val currentState = viewModel.currentFilters.value
+        
+        // 既存のチップの選択状態を更新
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val categoryText = chipView.text.toString()
+                chipView.isChecked = currentState?.categoryFilters?.contains(categoryText) == true
+                
+                // チップのクリックリスナー設定
+                chipView.setOnCheckedChangeListener { _, isChecked ->
+                    Log.d(TAG, "Category chip $categoryText changed to $isChecked")
+                    if (isChecked) {
+                        viewModel.applyFilter(FilterType.CATEGORY, categoryText)
+                    } else {
+                        viewModel.removeFilter(FilterType.CATEGORY, categoryText)
+                    }
+                }
+            }
+        }
+        
+        Log.d(TAG, "Category filter chips setup completed")
+    }
+
+    /**
+     * Task7: 全フィルタークリアハンドラー
+     */
+    private fun clearAllFilterHandler() {
+        Log.d(TAG, "Clearing all filters")
+        viewModel.clearAllFilters()
+        
+        // ボトムシートのチップ選択状態もクリア
+        clearAllChipSelections()
+        
+        Log.d(TAG, "All filters cleared")
+    }
+    
+    /**
+     * Task7: フィルター適用ハンドラー
+     */
+    private fun applyFilterHandler() {
+        Log.d(TAG, "Applying filters")
+        
+        // ボトムシートを隠す
+        filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        
+        Log.d(TAG, "Filters applied and bottom sheet hidden")
+    }
+    
+    /**
+     * Task7: 全チップの選択状態をクリア
+     */
+    private fun clearAllChipSelections() {
+        Log.d(TAG, "Clearing all chip selections")
+        
+        // サイズチップの選択をクリア
+        val sizeChipGroup = binding.includeBottomSheetFilter.chipGroupSize
+        for (i in 0 until sizeChipGroup.childCount) {
+            val chip = sizeChipGroup.getChildAt(i) as? Chip
+            chip?.isChecked = false
+        }
+        
+        // 色チップの選択をクリア
+        val colorChipGroup = binding.includeBottomSheetFilter.chipGroupColor
+        for (i in 0 until colorChipGroup.childCount) {
+            val chip = colorChipGroup.getChildAt(i) as? Chip
+            chip?.isChecked = false
+        }
+        
+        // カテゴリチップの選択をクリア
+        val categoryChipGroup = binding.includeBottomSheetFilter.chipGroupCategory
+        for (i in 0 until categoryChipGroup.childCount) {
+            val chip = categoryChipGroup.getChildAt(i) as? Chip
+            chip?.isChecked = false
+        }
+        
+        Log.d(TAG, "All chip selections cleared")
+    }
+    
+    /**
+     * Task7: フィルターチップの最適化された更新 (REFACTOR)
+     */
+    private fun updateFilterChips(filterOptions: FilterOptions) {
+        Log.d(TAG, "Updating filter chips optimally")
+        
+        try {
+            // 並行して各フィルターチップを更新（パフォーマンス最適化）
+            setupSizeFilterChips(filterOptions)
+            setupColorFilterChips(filterOptions)
+            setupCategoryFilterChips(filterOptions)
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException updating filter chips", e)
+            // エラー時のフォールバック: フィルターを無効化
+            disableFilterUI()
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException updating filter chips", e)
+            disableFilterUI()
+        }
+    }
+    
+    /**
+     * Task7: フィルターUI無効化（エラー時のフォールバック）
+     */
+    private fun disableFilterUI() {
+        Log.w(TAG, "Disabling filter UI due to error")
+        
+        try {
+            binding.buttonFilter.isEnabled = false
+            // 条件的アルファ値適用: 無効化時のみ設定
+            if (binding.buttonFilter.alpha != DISABLED_ALPHA) {
+                binding.buttonFilter.alpha = DISABLED_ALPHA
+            }
+            
+            // 全チップを無効化
+            binding.includeBottomSheetFilter.chipGroupSize.children.forEach { view ->
+                (view as? Chip)?.isEnabled = false
+            }
+            binding.includeBottomSheetFilter.chipGroupColor.children.forEach { view ->
+                (view as? Chip)?.isEnabled = false
+            }
+            binding.includeBottomSheetFilter.chipGroupCategory.children.forEach { view ->
+                (view as? Chip)?.isEnabled = false
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException disabling filter UI", e)
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException disabling filter UI", e)
+        }
+    }
+    
+    /**
+     * Task7: フィルターUI有効化（再有効化時のアルファ値リセット）
+     */
+    private fun enableFilterUI() {
+        Log.d(TAG, "Enabling filter UI")
+        
+        try {
+            binding.buttonFilter.isEnabled = true
+            // 条件的アルファ値適用: 再有効化時に1.0fにリセット
+            if (binding.buttonFilter.alpha != ENABLED_ALPHA) {
+                binding.buttonFilter.alpha = ENABLED_ALPHA
+            }
+            
+            // 全チップを有効化
+            binding.includeBottomSheetFilter.chipGroupSize.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            binding.includeBottomSheetFilter.chipGroupColor.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            binding.includeBottomSheetFilter.chipGroupCategory.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException enabling filter UI", e)
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException enabling filter UI", e)
+        }
+    }
+
+    /**
      * ViewModelの監視設定
      */
     private fun observeViewModel() {
@@ -232,6 +567,19 @@ class GalleryFragment : Fragment() {
                 viewModel.clearErrorMessage()
             } else {
                 Log.d(TAG, "errorMessage observer: Error cleared")
+            }
+        }
+
+        // Task7: 利用可能フィルターオプションの監視（UI状態管理）
+        viewModel.availableFilterOptions.observe(viewLifecycleOwner) { filterOptions ->
+            if (filterOptions != null) {
+                Log.d(TAG, "availableFilterOptions observer: Options available, enabling filter UI")
+                // フィルターオプションが利用可能になったらUIを有効化
+                enableFilterUI()
+            } else {
+                Log.d(TAG, "availableFilterOptions observer: No options available, disabling filter UI")
+                // フィルターオプションが利用不可の場合はUIを無効化
+                disableFilterUI()
             }
         }
     }
@@ -354,6 +702,10 @@ class GalleryFragment : Fragment() {
 
     companion object {
         private const val TAG = "GalleryFragment"
+        
+        // Task7: フィルターUI用定数
+        private const val DISABLED_ALPHA = 0.5f
+        private const val ENABLED_ALPHA = 1.0f
         
         /**
          * GalleryFragmentの新しいインスタンスを作成
