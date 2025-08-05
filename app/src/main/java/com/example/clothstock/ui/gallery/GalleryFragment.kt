@@ -450,8 +450,8 @@ class GalleryFragment : Fragment() {
             Log.e(TAG, "IllegalStateException updating filter chips", e)
             // エラー時のフォールバック: フィルターを無効化
             disableFilterUI()
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException updating filter chips", e)
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException updating filter chips", e)
             disableFilterUI()
         }
     }
