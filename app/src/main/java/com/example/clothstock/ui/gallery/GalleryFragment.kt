@@ -236,11 +236,11 @@ class GalleryFragment : Fragment() {
             
         } catch (e: IllegalStateException) {
             Log.e(TAG, "IllegalStateException during filter UI setup", e)
-            // エラー時はボタンを無効化
-            binding.buttonFilter.isEnabled = false
+            // エラー時はフィルターUIを無効化（アルファ値含む）
+            disableFilterUI()
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "IllegalArgumentException during filter UI setup", e)
-            binding.buttonFilter.isEnabled = false
+            disableFilterUI()
         }
     }
 
@@ -464,7 +464,10 @@ class GalleryFragment : Fragment() {
         
         try {
             binding.buttonFilter.isEnabled = false
-            binding.buttonFilter.alpha = DISABLED_ALPHA
+            // 条件的アルファ値適用: 無効化時のみ設定
+            if (binding.buttonFilter.alpha != DISABLED_ALPHA) {
+                binding.buttonFilter.alpha = DISABLED_ALPHA
+            }
             
             // 全チップを無効化
             binding.includeBottomSheetFilter.chipGroupSize.children.forEach { view ->
@@ -481,6 +484,37 @@ class GalleryFragment : Fragment() {
             Log.e(TAG, "IllegalStateException disabling filter UI", e)
         } catch (e: ClassCastException) {
             Log.e(TAG, "ClassCastException disabling filter UI", e)
+        }
+    }
+    
+    /**
+     * Task7: フィルターUI有効化（再有効化時のアルファ値リセット）
+     */
+    private fun enableFilterUI() {
+        Log.d(TAG, "Enabling filter UI")
+        
+        try {
+            binding.buttonFilter.isEnabled = true
+            // 条件的アルファ値適用: 再有効化時に1.0fにリセット
+            if (binding.buttonFilter.alpha != ENABLED_ALPHA) {
+                binding.buttonFilter.alpha = ENABLED_ALPHA
+            }
+            
+            // 全チップを有効化
+            binding.includeBottomSheetFilter.chipGroupSize.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            binding.includeBottomSheetFilter.chipGroupColor.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            binding.includeBottomSheetFilter.chipGroupCategory.children.forEach { view ->
+                (view as? Chip)?.isEnabled = true
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException enabling filter UI", e)
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException enabling filter UI", e)
         }
     }
 
@@ -533,6 +567,19 @@ class GalleryFragment : Fragment() {
                 viewModel.clearErrorMessage()
             } else {
                 Log.d(TAG, "errorMessage observer: Error cleared")
+            }
+        }
+
+        // Task7: 利用可能フィルターオプションの監視（UI状態管理）
+        viewModel.availableFilterOptions.observe(viewLifecycleOwner) { filterOptions ->
+            if (filterOptions != null) {
+                Log.d(TAG, "availableFilterOptions observer: Options available, enabling filter UI")
+                // フィルターオプションが利用可能になったらUIを有効化
+                enableFilterUI()
+            } else {
+                Log.d(TAG, "availableFilterOptions observer: No options available, disabling filter UI")
+                // フィルターオプションが利用不可の場合はUIを無効化
+                disableFilterUI()
             }
         }
     }
@@ -658,6 +705,7 @@ class GalleryFragment : Fragment() {
         
         // Task7: フィルターUI用定数
         private const val DISABLED_ALPHA = 0.5f
+        private const val ENABLED_ALPHA = 1.0f
         
         /**
          * GalleryFragmentの新しいインスタンスを作成
