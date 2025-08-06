@@ -23,6 +23,11 @@ import com.google.android.material.chip.Chip
 import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.model.FilterType
 import androidx.core.view.children
+import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * ギャラリー画面Fragment
@@ -40,6 +45,9 @@ class GalleryFragment : Fragment() {
     
     // Task7: フィルター機能用プロパティ
     private lateinit var filterBottomSheetBehavior: BottomSheetBehavior<*>
+    
+    // Task8: 検索機能用プロパティ
+    private var searchJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,12 +68,18 @@ class GalleryFragment : Fragment() {
         setupEmptyStateActions()
         setupFab()
         setupFilterUI() // Task7: フィルターUI初期化
+        setupSearchBar() // Task8: 検索バー初期化
         observeViewModel()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         Log.d(TAG, "onDestroyView called")
+        
+        // Task8 REFACTOR: 検索ジョブのキャンセル（メモリリーク防止）
+        searchJob?.cancel()
+        searchJob = null
+        Log.d(TAG, "Search job cancelled and cleared")
         
         // Android Q+ pinning非推奨対応: メモリリークの防止
         try {
@@ -517,6 +531,155 @@ class GalleryFragment : Fragment() {
             Log.e(TAG, "ClassCastException enabling filter UI", e)
         }
     }
+    
+    /**
+     * Task8: 検索バーの初期化 (TDD GREEN + REFACTOR強化版)
+     */
+    private fun setupSearchBar() {
+        Log.d(TAG, "Setting up search bar with performance optimizations")
+        
+        try {
+            // 検索バーの初期設定（パフォーマンス最適化）
+            binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    Log.d(TAG, "Search submitted: $query")
+                    // 検索実行時にキーボードを閉じる
+                    binding.searchView.clearFocus()
+                    // 即座に検索実行（デバウンスをスキップ）
+                    searchJob?.cancel()
+                    performImmediateSearch(query ?: "")
+                    return true
+                }
+                
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    Log.d(TAG, "Search text changed: $newText")
+                    performDebouncedSearch(newText ?: "")
+                    return true
+                }
+            })
+            
+            // 検索バーのクリアボタン処理（強化版）
+            binding.searchView.setOnCloseListener {
+                Log.d(TAG, "Search cleared via close button")
+                searchJob?.cancel()
+                viewModel.clearSearch()
+                false
+            }
+            
+            // 検索バーのフォーカス処理（ユーザビリティ向上）
+            binding.searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
+                if (hasFocus) {
+                    Log.d(TAG, "Search view gained focus")
+                } else {
+                    Log.d(TAG, "Search view lost focus")
+                }
+            }
+            
+            Log.d(TAG, "Search bar setup completed with optimizations")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during search bar setup", e)
+            showSearchErrorFallback()
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException during search bar setup", e)
+            showSearchErrorFallback()
+        }
+    }
+    
+    /**
+     * Task8 REFACTOR: 即座に検索実行（submit時用）
+     */
+    private fun performImmediateSearch(searchText: String) {
+        Log.d(TAG, "Performing immediate search for: '$searchText'")
+        
+        val trimmedText = searchText.trim()
+        
+        when {
+            trimmedText.isEmpty() -> {
+                Log.d(TAG, "Immediate search cleared, showing all items")
+                viewModel.clearSearch()
+            }
+            trimmedText.length < MIN_SEARCH_LENGTH -> {
+                Log.d(TAG, "Immediate search text too short, ignoring")
+                // 最小文字数未満でも submit されたら検索する（ユーザー意図尊重）
+                viewModel.performSearch(trimmedText)
+            }
+            else -> {
+                Log.d(TAG, "Performing immediate search for: '$trimmedText'")
+                viewModel.performSearch(trimmedText)
+            }
+        }
+    }
+    
+    /**
+     * Task8 REFACTOR: 検索エラー時のフォールバック処理
+     */
+    private fun showSearchErrorFallback() {
+        Log.w(TAG, "Search functionality disabled due to error")
+        
+        try {
+            binding.searchView.isEnabled = false
+            binding.searchView.alpha = DISABLED_ALPHA
+            
+            // エラーメッセージを表示
+            showEnhancedErrorMessage("検索機能でエラーが発生しました。アプリを再起動してください。")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show search error fallback", e)
+        }
+    }
+    
+    /**
+     * Task8: デバウンス付き検索実行 (300ms遅延 + REFACTOR強化版)
+     */
+    private fun performDebouncedSearch(searchText: String) {
+        Log.d(TAG, "Starting debounced search for: '$searchText'")
+        
+        // 前の検索ジョブをキャンセル（パフォーマンス最適化）
+        searchJob?.cancel()
+        
+        searchJob = lifecycleScope.launch {
+            try {
+                // 300ms待機（デバウンス）
+                delay(SEARCH_DEBOUNCE_DELAY_MS)
+                
+                // 検索テキストのバリデーション（強化版）
+                val trimmedText = searchText.trim()
+                
+                when {
+                    trimmedText.isEmpty() -> {
+                        Log.d(TAG, "Search cleared, showing all items")
+                        viewModel.clearSearch()
+                    }
+                    trimmedText.length < MIN_SEARCH_LENGTH -> {
+                        Log.d(TAG, "Search text too short (${trimmedText.length} < $MIN_SEARCH_LENGTH)")
+                        // 最小文字数未満の場合は検索しない
+                        return@launch
+                    }
+                    trimmedText.length > MAX_SEARCH_LENGTH -> {
+                        Log.d(TAG, "Search text too long (${trimmedText.length} > $MAX_SEARCH_LENGTH), truncating")
+                        // 最大文字数で切り詰めて検索
+                        val truncatedText = trimmedText.substring(0, MAX_SEARCH_LENGTH)
+                        viewModel.performSearch(truncatedText)
+                    }
+                    else -> {
+                        Log.d(TAG, "Performing search for: '$trimmedText'")
+                        viewModel.performSearch(trimmedText)
+                    }
+                }
+                
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                Log.d(TAG, "Search debounce cancelled (expected behavior)")
+                // @Suppress("SwallowedException")
+                // キャンセルは正常な動作なので例外を再スローしない
+                // CancellationExceptionはユーザーが素早く入力した時のデバウンス処理での
+                // 正常なキャンセルなので、この例外は無視すべき（処理不要）
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "Error during debounced search", e)
+                // エラー時は検索を無効化しない（継続利用可能）
+            }
+        }
+    }
 
     /**
      * ViewModelの監視設定
@@ -706,6 +869,11 @@ class GalleryFragment : Fragment() {
         // Task7: フィルターUI用定数
         private const val DISABLED_ALPHA = 0.5f
         private const val ENABLED_ALPHA = 1.0f
+        
+        // Task8: 検索機能用定数
+        private const val SEARCH_DEBOUNCE_DELAY_MS = 300L
+        private const val MIN_SEARCH_LENGTH = 2
+        private const val MAX_SEARCH_LENGTH = 50 // パフォーマンス考慮
         
         /**
          * GalleryFragmentの新しいインスタンスを作成
