@@ -310,6 +310,39 @@ interface ClothDao {
     @Query("SELECT DISTINCT category FROM cloth_items ORDER BY category")
     suspend fun getDistinctCategories(): List<String>
 
+    // ===== Task 12: パフォーマンス最適化機能 =====
+
+    /**
+     * ページネーション付きで複合フィルター条件で衣服アイテムを検索
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param offset 取得開始位置
+     * @param limit 取得件数
+     * @return フィルター条件に合致するアイテムのFlow
+     */
+    @Query("""
+        SELECT * FROM cloth_items 
+        WHERE (:sizeFilters IS NULL OR size IN (:sizeFilters))
+        AND (:colorFilters IS NULL OR color IN (:colorFilters))
+        AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
+        AND (:searchText IS NULL OR :searchText = '' OR 
+             color LIKE '%' || :searchText || '%' OR 
+             category LIKE '%' || :searchText || '%')
+        ORDER BY createdAt DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun searchItemsWithPagination(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>>
+
     // ===== メンテナンス操作 =====
     // 注意: PRAGMA、VACUUM、ANALYZEはRoomでサポートされていないため
     // これらの操作は上位層で直接SQLiteDatabaseインスタンスを使用して実装する

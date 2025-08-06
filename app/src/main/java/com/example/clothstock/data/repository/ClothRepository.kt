@@ -238,4 +238,26 @@ interface ClothRepository {
      * @throws RuntimeException データアクセスエラーの場合
      */
     suspend fun getAvailableFilterOptions(): FilterOptions
+
+    // ===== Task 12: パフォーマンス最適化機能 =====
+
+    /**
+     * ページネーション付きで複合フィルター条件で衣服アイテムを検索
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param offset 取得開始位置
+     * @param limit 取得件数
+     * @return フィルター条件に合致するアイテムのFlow
+     */
+    fun searchItemsWithPagination(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>>
 }
