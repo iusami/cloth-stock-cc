@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.example.clothstock.data.model.FilterState
 import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.data.repository.FilterManager
+import com.example.clothstock.data.preferences.FilterPreferencesManager
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +35,7 @@ class GalleryViewModelStatePersistenceTest {
     private lateinit var mockRepository: ClothRepository
     private lateinit var mockFilterManager: FilterManager
     private lateinit var mockSavedStateHandle: SavedStateHandle
+    private lateinit var mockFilterPreferencesManager: FilterPreferencesManager
     private lateinit var viewModel: GalleryViewModel
 
     // テストデータファクトリー
@@ -69,6 +71,7 @@ class GalleryViewModelStatePersistenceTest {
         mockRepository = mockk(relaxed = true)
         mockFilterManager = mockk(relaxed = true)
         mockSavedStateHandle = mockk(relaxed = true)
+        mockFilterPreferencesManager = mockk(relaxed = true)
         
         // デフォルトの動作を設定
         every { mockFilterManager.getCurrentState() } returns FilterState()
@@ -81,7 +84,7 @@ class GalleryViewModelStatePersistenceTest {
 
     // ヘルパーメソッド
     private fun createViewModelWithMocks(): GalleryViewModel {
-        return GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        return GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, mockFilterPreferencesManager)
     }
 
     private fun setupSavedStateForRestore(filterState: FilterState?, searchText: String?) {
@@ -193,22 +196,26 @@ class GalleryViewModelStatePersistenceTest {
         // When: フィルター設定を永続化する
         viewModel.saveFilterPreferences()
         
-        // Then: SharedPreferencesに保存される
-        // 注意: この時点では実装されていないため失敗する
-        fail("saveFilterPreferences method not implemented yet")
+        // Then: FilterPreferencesManagerのsaveFilterStateが呼ばれる
+        verify { mockFilterPreferencesManager.saveFilterState(filterState) }
     }
 
     @Test
     fun `should load filter preferences from SharedPreferences`() {
         // Given: SharedPreferencesに保存された設定がある
+        val savedFilterState = createTestFilterState2()
+        every { mockFilterPreferencesManager.hasFilterPreferences() } returns true
+        every { mockFilterPreferencesManager.loadFilterState() } returns savedFilterState
+        
         viewModel = createViewModelWithMocks()
         
         // When: フィルター設定を読み込む
         viewModel.loadFilterPreferences()
         
         // Then: 保存された設定が復元される
-        // 注意: この時点では実装されていないため失敗する
-        fail("loadFilterPreferences method not implemented yet")
+        verify { mockFilterPreferencesManager.hasFilterPreferences() }
+        verify { mockFilterPreferencesManager.loadFilterState() }
+        verify { mockFilterManager.restoreState(savedFilterState) }
     }
 
     @Test
@@ -219,8 +226,7 @@ class GalleryViewModelStatePersistenceTest {
         // When: フィルター設定をクリアする
         viewModel.clearFilterPreferences()
         
-        // Then: SharedPreferencesから設定が削除される
-        // 注意: この時点では実装されていないため失敗する
-        fail("clearFilterPreferences method not implemented yet")
+        // Then: FilterPreferencesManagerのclearFilterStateが呼ばれる
+        verify { mockFilterPreferencesManager.clearFilterState() }
     }
 }
