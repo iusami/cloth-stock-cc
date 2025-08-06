@@ -353,9 +353,12 @@ class GalleryFragment : Fragment() {
                         showFilterLoadingError("フィルターオプションの読み込み中です。しばらくお待ちください。")
                     }
                     
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error during filter bottom sheet display", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "IllegalStateException during filter bottom sheet display", e)
                     showComprehensiveFilterError("フィルター表示中にエラーが発生しました", e)
+                } catch (e: UninitializedPropertyAccessException) {
+                    Log.e(TAG, "UninitializedPropertyAccessException during filter bottom sheet display", e)
+                    showComprehensiveFilterError("フィルター初期化エラーが発生しました", e)
                 }
             }
             
@@ -769,12 +772,13 @@ class GalleryFragment : Fragment() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d(TAG, "Optimized search debounce cancelled (expected behavior)")
                 // キャンセルは正常な動作なので例外を再スローしない
+                throw e // CancellationExceptionは再スロー（Detekt SwallowedException回避）
             } catch (e: IllegalStateException) {
-                Log.e(TAG, "Error during optimized debounced search", e)
+                Log.e(TAG, "IllegalStateException during optimized debounced search", e)
                 showComprehensiveSearchError("検索処理中にエラーが発生しました", e)
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error during search", e)
-                showComprehensiveSearchError("予期しないエラーが発生しました", e)
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.e(TAG, "UninitializedPropertyAccessException during search", e)
+                showComprehensiveSearchError("検索初期化エラーが発生しました", e)
             }
         }
     }
