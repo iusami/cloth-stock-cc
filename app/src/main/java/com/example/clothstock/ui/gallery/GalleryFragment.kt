@@ -29,6 +29,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
 
 /**
  * ギャラリー画面Fragment
@@ -339,14 +340,16 @@ class GalleryFragment : Fragment() {
                     val filterOptions = viewModel.availableFilterOptions.value
                     
                     if (filterOptions != null) {
-                        // フィルターチップを効率的に並行更新（UI応答性向上）
-                        launch { setupSizeFilterChips(filterOptions) }
-                        launch { setupColorFilterChips(filterOptions) }
-                        launch { setupCategoryFilterChips(filterOptions) }
+                        // フィルターチップを構造化された並行性で安全に更新（レースコンディション回避）
+                        coroutineScope {
+                            launch { setupSizeFilterChips(filterOptions) }
+                            launch { setupColorFilterChips(filterOptions) }
+                            launch { setupCategoryFilterChips(filterOptions) }
+                        }
                         
-                        // ボトムシート表示（最適化済み）
+                        // 全てのフィルターチップ更新完了後にボトムシート表示（同期保証）
                         filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-                        Log.d(TAG, "Filter bottom sheet displayed with optimized performance")
+                        Log.d(TAG, "Filter bottom sheet displayed with synchronized performance")
                         
                     } else {
                         Log.w(TAG, "Filter options not available, showing error feedback")

@@ -1,13 +1,14 @@
 package com.example.clothstock.ui.gallery
 
 import android.util.Log
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.model.FilterState
 import com.example.clothstock.data.model.FilterType
 import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 /**
@@ -109,7 +110,7 @@ class FilterUIManager(
      * フィルターボトムシート表示
      */
     fun showFilterBottomSheet() {
-        fragmentRef.get()?.let { fragment ->
+        fragmentRef.get()?.let { fragment: GalleryFragment ->
             fragment.viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val filterOptions = viewModel.availableFilterOptions.value

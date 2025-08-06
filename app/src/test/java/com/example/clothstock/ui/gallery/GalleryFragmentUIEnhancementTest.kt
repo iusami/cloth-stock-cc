@@ -3,10 +3,8 @@ package com.example.clothstock.ui.gallery
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
 import com.example.clothstock.data.model.FilterState
-import com.example.clothstock.data.model.FilterOptions
 import org.junit.*
 import org.junit.runner.RunWith
-import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
@@ -24,12 +22,6 @@ class GalleryFragmentUIEnhancementTest {
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var fragment: GalleryFragment
-    
-    @Mock
-    private lateinit var mockViewModel: GalleryViewModel
-    
-    @Mock
-    private lateinit var mockFilterUIManager: FilterUIManager
 
     @Before
     fun setUp() {
