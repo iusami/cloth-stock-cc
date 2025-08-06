@@ -1,8 +1,13 @@
 package com.example.clothstock.ui.gallery
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.MutableLiveData
+import com.example.clothstock.data.model.FilterState
+import com.example.clothstock.data.model.FilterOptions
 import org.junit.*
 import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
 
@@ -19,6 +24,12 @@ class GalleryFragmentUIEnhancementTest {
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var fragment: GalleryFragment
+    
+    @Mock
+    private lateinit var mockViewModel: GalleryViewModel
+    
+    @Mock
+    private lateinit var mockFilterUIManager: FilterUIManager
 
     @Before
     fun setUp() {
@@ -35,12 +46,14 @@ class GalleryFragmentUIEnhancementTest {
 
     @Test
     fun observeViewModel_フィルター状態LiveDataの監視が追加される() {
-        // Given: GalleryFragment with implemented observeViewModel
-        // When: observeViewModelメソッドが実装されている
-        // Then: フィルター状態LiveDataが監視される機能が存在する
+        // Given: GalleryFragment with mocked ViewModel
+        val mockViewModel = mock(GalleryViewModel::class.java)
+        val filterStateLiveData = MutableLiveData<FilterState>()
+        `when`(mockViewModel.currentFilters).thenReturn(filterStateLiveData)
         
-        // 実装済みなのでテストをパス
-        Assert.assertTrue("フィルター状態LiveData監視機能が実装されている", true)
+        // When: observeViewModelメソッドが呼ばれる
+        // Then: フィルター状態LiveDataが実際に監視される
+        verify(mockViewModel, atLeastOnce()).currentFilters
     }
 
     @Test
