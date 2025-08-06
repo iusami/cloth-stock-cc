@@ -2,6 +2,7 @@ package com.example.clothstock.ui.gallery
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clothstock.data.model.ClothItem
@@ -10,6 +11,7 @@ import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.data.repository.FilterManager
 import com.example.clothstock.data.model.FilterState
 import com.example.clothstock.data.model.FilterType
+import com.example.clothstock.data.preferences.FilterPreferencesManager
 import com.example.clothstock.ui.common.LoadingStateManager
 import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.flow.catch
@@ -27,7 +29,9 @@ import android.util.Log
  */
 class GalleryViewModel(
     private val clothRepository: ClothRepository,
-    private val filterManager: FilterManager
+    private val filterManager: FilterManager,
+    private val savedStateHandle: SavedStateHandle? = null,
+    private val filterPreferencesManager: FilterPreferencesManager? = null
 ) : ViewModel() {
 
     companion object {
@@ -84,10 +88,13 @@ class GalleryViewModel(
         _errorMessage.value = null
         _isEmpty.value = true // 初期状態は空
 
+        // Task 10: 保存された状態を復元
+        restoreFilterStateFromSavedState()
+
         // フィルター・検索機能の初期化
         _currentFilters.value = filterManager.getCurrentState()
-        _isFiltersActive.value = false
-        _currentSearchText.value = ""
+        _isFiltersActive.value = filterManager.getCurrentState().hasActiveFilters()
+        _currentSearchText.value = filterManager.getCurrentState().searchText
 
         // 初期データ読み込み
         Log.d(TAG, "Starting initial data load")
@@ -479,6 +486,83 @@ class GalleryViewModel(
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+    
+    // ===== Task 10: 状態保存・復元機能 =====
+    
+    /**
+     * ViewModelがクリアされる際に状態を保存
+     */
+    override fun onCleared() {
+        super.onCleared()
+        saveStateToSavedStateHandle()
+    }
+    
+    /**
+     * テスト用：状態をSavedStateHandleに保存
+     */
+    fun saveStateToSavedStateHandle() {
+        savedStateHandle?.let { handle ->
+            val currentState = filterManager.getCurrentState()
+            handle.set("filter_state", currentState)
+            handle.set("search_text", currentState.searchText)
+        }
+    }
+    
+    /**
+     * SavedStateHandleから状態を復元
+     */
+    private fun restoreFilterStateFromSavedState() {
+        savedStateHandle?.let { handle ->
+            try {
+                val savedFilterState = handle.get<FilterState>("filter_state")
+                val savedSearchText = handle.get<String>("search_text")
+                
+                if (savedFilterState != null) {
+                    filterManager.restoreState(savedFilterState)
+                } else if (savedSearchText != null) {
+                    filterManager.updateSearchText(savedSearchText)
+                }
+            } catch (e: ClassCastException) {
+                // 型キャストエラーの場合は無視してデフォルト状態を使用
+                Log.w(TAG, "Failed to restore filter state from SavedStateHandle", e)
+            }
+        }
+    }
+    
+    /**
+     * フィルター設定をSharedPreferencesに保存
+     */
+    fun saveFilterPreferences() {
+        filterPreferencesManager?.let { manager ->
+            val currentState = filterManager.getCurrentState()
+            manager.saveFilterState(currentState)
+        }
+    }
+    
+    /**
+     * SharedPreferencesからフィルター設定を読み込み
+     */
+    fun loadFilterPreferences() {
+        filterPreferencesManager?.let { manager ->
+            if (manager.hasFilterPreferences()) {
+                val savedState = manager.loadFilterState()
+                filterManager.restoreState(savedState)
+                _currentFilters.value = savedState
+                _isFiltersActive.value = savedState.hasActiveFilters()
+                _currentSearchText.value = savedState.searchText
+                applyCurrentFiltersAndSearch()
+            }
+        }
+    }
+    
+    /**
+     * SharedPreferencesからフィルター設定をクリア
+     */
+    fun clearFilterPreferences() {
+        filterPreferencesManager?.let { manager ->
+            manager.clearFilterState()
         }
     }
 }
