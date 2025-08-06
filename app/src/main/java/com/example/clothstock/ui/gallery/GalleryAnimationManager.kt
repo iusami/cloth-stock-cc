@@ -60,8 +60,12 @@ class GalleryAnimationManager(
                     animateToDataState(fadeOut, fadeIn)
                 }
                 
-            } catch (e: Exception) {
-                Log.e(TAG, "Error animating filtered state change", e)
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException during filtered state animation", e)
+                // フォールバック: 即座に状態変更
+                setStateWithoutAnimation(isEmpty)
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.e(TAG, "UninitializedPropertyAccessException during filtered state animation", e)
                 // フォールバック: 即座に状態変更
                 setStateWithoutAnimation(isEmpty)
             }
@@ -71,7 +75,10 @@ class GalleryAnimationManager(
     /**
      * 空状態へのアニメーション
      */
-    private fun animateToEmptyState(fadeOut: android.view.animation.Animation, fadeIn: android.view.animation.Animation) {
+    private fun animateToEmptyState(
+        fadeOut: android.view.animation.Animation, 
+        fadeIn: android.view.animation.Animation
+    ) {
         binding.recyclerViewGallery.startAnimation(fadeOut)
         binding.recyclerViewGallery.visibility = View.GONE
         
@@ -82,7 +89,10 @@ class GalleryAnimationManager(
     /**
      * データ表示状態へのアニメーション
      */
-    private fun animateToDataState(fadeOut: android.view.animation.Animation, fadeIn: android.view.animation.Animation) {
+    private fun animateToDataState(
+        fadeOut: android.view.animation.Animation, 
+        fadeIn: android.view.animation.Animation
+    ) {
         binding.layoutEmptyState.startAnimation(fadeOut)
         binding.layoutEmptyState.visibility = View.GONE
         
@@ -116,8 +126,10 @@ class GalleryAnimationManager(
                 } else {
                     hideLoadingAnimation(context)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error animating filter loading state", e)
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException during filter loading animation", e)
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.e(TAG, "UninitializedPropertyAccessException during filter loading animation", e)
                 // フォールバック: 即座に表示/非表示
                 binding.layoutLoading.visibility = if (shouldShow) View.VISIBLE else View.GONE
             }
@@ -144,8 +156,12 @@ class GalleryAnimationManager(
             val fadeOut = AnimationUtils.loadAnimation(context, android.R.anim.fade_out)
             fadeOut.duration = FILTER_LOADING_ANIMATION_DURATION
             fadeOut.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {
+                    // アニメーション開始時の処理は不要
+                }
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {
+                    // アニメーションリピート時の処理は不要
+                }
                 override fun onAnimationEnd(animation: android.view.animation.Animation?) {
                     binding.layoutLoading.visibility = View.GONE
                 }
@@ -164,8 +180,10 @@ class GalleryAnimationManager(
                 val slideIn = AnimationUtils.loadAnimation(context, android.R.anim.slide_in_left)
                 slideIn.duration = FILTER_ANIMATION_DURATION
                 binding.recyclerViewGallery.startAnimation(slideIn)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error animating RecyclerView entry", e)
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException during RecyclerView entry animation", e)
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.e(TAG, "UninitializedPropertyAccessException during RecyclerView entry animation", e)
                 binding.recyclerViewGallery.visibility = View.VISIBLE
             }
         }

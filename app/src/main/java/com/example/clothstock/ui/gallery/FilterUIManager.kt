@@ -42,8 +42,11 @@ class FilterUIManager(
             setupFilterButton()
             setupFilterChipListeners()
             
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting up filter UI", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during filter UI setup", e)
+            disableFilterUI()
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException during filter UI setup", e)
             disableFilterUI()
         }
     }
@@ -120,8 +123,11 @@ class FilterUIManager(
                     } else {
                         showFilterLoadingError()
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error showing filter bottom sheet", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "IllegalStateException during filter bottom sheet display", e)
+                    showFilterError(e)
+                } catch (e: UninitializedPropertyAccessException) {
+                    Log.e(TAG, "UninitializedPropertyAccessException during filter bottom sheet display", e)
                     showFilterError(e)
                 }
             }
@@ -142,7 +148,10 @@ class FilterUIManager(
     /**
      * サイズチップの更新
      */
-    private fun updateSizeChips(filterOptions: FilterOptions, currentState: FilterState?) {
+    private fun updateSizeChips(
+        @Suppress("UNUSED_PARAMETER") filterOptions: FilterOptions, 
+        currentState: FilterState?
+    ) {
         val chipGroup = binding.includeBottomSheetFilter.chipGroupSize
         
         for (i in 0 until chipGroup.childCount) {
@@ -173,7 +182,10 @@ class FilterUIManager(
     /**
      * 色チップの更新
      */
-    private fun updateColorChips(filterOptions: FilterOptions, currentState: FilterState?) {
+    private fun updateColorChips(
+        @Suppress("UNUSED_PARAMETER") filterOptions: FilterOptions, 
+        currentState: FilterState?
+    ) {
         val chipGroup = binding.includeBottomSheetFilter.chipGroupColor
         
         for (i in 0 until chipGroup.childCount) {
@@ -202,7 +214,10 @@ class FilterUIManager(
     /**
      * カテゴリチップの更新
      */
-    private fun updateCategoryChips(filterOptions: FilterOptions, currentState: FilterState?) {
+    private fun updateCategoryChips(
+        @Suppress("UNUSED_PARAMETER") filterOptions: FilterOptions, 
+        currentState: FilterState?
+    ) {
         val chipGroup = binding.includeBottomSheetFilter.chipGroupCategory
         
         for (i in 0 until chipGroup.childCount) {
@@ -289,7 +304,7 @@ class FilterUIManager(
     /**
      * フィルターエラー表示
      */
-    private fun showFilterError(error: Exception) {
+    private fun showFilterError(@Suppress("UNUSED_PARAMETER") error: Exception) {
         fragmentRef.get()?.let { fragment ->
             // エラーハンドリングをGalleryErrorHandlerに委譲
         }

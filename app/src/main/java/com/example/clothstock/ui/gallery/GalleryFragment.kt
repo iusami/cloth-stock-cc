@@ -1402,23 +1402,3 @@ class GalleryViewModelFactory(
     }
 }
 
-// ===== Task9 REFACTOR: 検索バリデーション用データクラス =====
-
-/**
- * Task9 REFACTOR: 検索バリデーション状態
- */
-enum class SearchValidationStatus {
-    VALID,      // 有効な検索テキスト
-    EMPTY,      // 空の検索テキスト
-    TOO_SHORT,  // 短すぎる検索テキスト
-    TOO_LONG,   // 長すぎる検索テキスト
-    INVALID     // 無効な文字を含む検索テキスト
-}
-
-/**
- * Task9 REFACTOR: 検索バリデーション結果
- */
-data class SearchValidationResult(
-    val status: SearchValidationStatus,
-    val processedText: String
-)
