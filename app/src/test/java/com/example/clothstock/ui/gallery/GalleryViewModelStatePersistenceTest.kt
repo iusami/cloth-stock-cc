@@ -3,7 +3,6 @@ package com.example.clothstock.ui.gallery
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
 import com.example.clothstock.data.model.FilterState
-import com.example.clothstock.data.model.FilterType
 import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.data.repository.FilterManager
 import io.mockk.*

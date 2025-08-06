@@ -128,7 +128,9 @@ class FilterPreferencesManagerTest {
     @Test
     fun `loadFilterState should handle invalid size values gracefully`() {
         // Given: 無効なサイズ値が保存されている
-        every { mockSharedPreferences.getStringSet("filter_sizes", emptySet()) } returns setOf("100", "invalid", "110", "")
+        every { mockSharedPreferences.getStringSet("filter_sizes", emptySet()) } returns setOf(
+            "100", "invalid", "110", ""
+        )
         every { mockSharedPreferences.getStringSet("filter_colors", emptySet()) } returns emptySet()
         every { mockSharedPreferences.getStringSet("filter_categories", emptySet()) } returns emptySet()
         every { mockSharedPreferences.getString("filter_search_text", "") } returns ""
