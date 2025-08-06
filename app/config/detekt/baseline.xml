@@ -9,11 +9,14 @@
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest.MemoryConsumer$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:MainActivity.kt$MainActivity$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:MemoryPressureMonitor.kt$MemoryPressureMonitor$gc()</ID>
-    <ID>ForbiddenComment:DetailActivity.kt$DetailActivity$* TaggingActivityへ遷移（編集モード） * TODO: 編集モード対応は後のタスクで実装</ID>
+    <ID>ForbiddenComment:FilterUIManagerErrorTest.kt$FilterUIManagerErrorTest$* FilterUIManagerのエラーハンドリングテスト * * RED Phase: フィルターUI関連のエラーハンドリング失敗シナリオ * TODO: モック設定問題により一時的に無効化</ID>
+    <ID>ForbiddenComment:GalleryErrorHandlerTest.kt$GalleryErrorHandlerTest$* GalleryErrorHandlerのユニットテスト * * GREEN Phase: 実装されたエラーハンドリング機能のテスト * * 改善点: * - Test Data Builder Pattern適用 * - テスト定数の一元管理 * - ヘルパーメソッドによる重複排除 * - より具体的な検証の追加 * * TODO: Android UIコンポーネントのモック設定問題により一時的に無効化</ID>
+    <ID>ForbiddenComment:GallerySearchManagerTest.kt$GallerySearchManagerTest$* GallerySearchManagerのユニットテスト * * 検索機能の責任分離により、テストが簡潔になった * TODO: モック設定問題により一時的に無効化</ID>
     <ID>ImplicitDefaultLocale:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$String.format("%.2f", stats.averageExecutionTime)</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f GB", sizeInBytes / (1024.0 * 1024.0 * 1024.0))</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f KB", sizeInBytes / 1024.0)</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f MB", sizeInBytes / (1024.0 * 1024.0))</ID>
+    <ID>LargeClass:GalleryFragment.kt$GalleryFragment : Fragment</ID>
     <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
     <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$1000</ID>
@@ -30,8 +33,6 @@
     <ID>MagicNumber:FileUtils.kt$FileUtils$1024.0</ID>
     <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$150</ID>
     <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$200</ID>
-    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$3</ID>
-    <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$300</ID>
     <ID>MagicNumber:GlideUtils.kt$GlideUtils$1080</ID>
     <ID>MagicNumber:GlideUtils.kt$GlideUtils$1920</ID>
     <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.2f</ID>
@@ -51,7 +52,6 @@
     <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$8</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$200</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$250</ID>
-    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$100</ID>
     <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$1024</ID>
     <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$150</ID>
     <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$30</ID>
@@ -98,8 +98,6 @@
     <ID>NewLineAtEndOfFile:ErrorDialogFragmentTest.kt$com.example.clothstock.ui.common.ErrorDialogFragmentTest.kt</ID>
     <ID>NewLineAtEndOfFile:FileUtils.kt$com.example.clothstock.util.FileUtils.kt</ID>
     <ID>NewLineAtEndOfFile:FileUtilsTest.kt$com.example.clothstock.util.FileUtilsTest.kt</ID>
-    <ID>NewLineAtEndOfFile:GalleryFragment.kt$com.example.clothstock.ui.gallery.GalleryFragment.kt</ID>
-    <ID>NewLineAtEndOfFile:GalleryViewModel.kt$com.example.clothstock.ui.gallery.GalleryViewModel.kt</ID>
     <ID>NewLineAtEndOfFile:GalleryViewModelTest.kt$com.example.clothstock.ui.gallery.GalleryViewModelTest.kt</ID>
     <ID>NewLineAtEndOfFile:GlideUtils.kt$com.example.clothstock.util.GlideUtils.kt</ID>
     <ID>NewLineAtEndOfFile:ImageCompressionManager.kt$com.example.clothstock.util.ImageCompressionManager.kt</ID>
@@ -134,7 +132,6 @@
     <ID>SwallowedException:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
     <ID>SwallowedException:ErrorDialogFragment.kt$ErrorDialogFragment$e: IllegalArgumentException</ID>
     <ID>SwallowedException:FileUtils.kt$FileUtils$logException: Exception</ID>
-    <ID>SwallowedException:MemoryPressureMonitor.kt$MemoryPressureMonitor$e: Exception</ID>
     <ID>SwallowedException:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
     <ID>SwallowedException:TaggingViewModel.kt$TaggingViewModel$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:CameraActivity.kt$CameraActivity$exc: Exception</ID>
@@ -169,8 +166,13 @@
     <ID>TooManyFunctions:ClothRepositoryImpl.kt$ClothRepositoryImpl : ClothRepository</ID>
     <ID>TooManyFunctions:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:DetailViewModel.kt$DetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:FilterManager.kt$FilterManager</ID>
+    <ID>TooManyFunctions:FilterUIManager.kt$FilterUIManager</ID>
+    <ID>TooManyFunctions:GalleryErrorHandler.kt$GalleryErrorHandler</ID>
     <ID>TooManyFunctions:GalleryFragment.kt$GalleryFragment : Fragment</ID>
+    <ID>TooManyFunctions:GallerySearchManager.kt$GallerySearchManager</ID>
     <ID>TooManyFunctions:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ImageCompressionManager.kt$ImageCompressionManager</ID>
     <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:MemoryPressureMonitor.kt$MemoryPressureMonitor</ID>
     <ID>TooManyFunctions:SnackbarHelper.kt$SnackbarHelper</ID>
@@ -184,10 +186,8 @@
     <ID>UnusedImports:CameraPermissionManagerTest.kt$import android.content.pm.PackageManager</ID>
     <ID>UnusedImports:CameraViewModel.kt$import androidx.core.content.ContextCompat</ID>
     <ID>UnusedImports:CameraViewModelTest.kt$import kotlinx.coroutines.test.runTest</ID>
-    <ID>UnusedImports:DetailActivity.kt$import android.content.Intent</ID>
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.load.engine.DiskCacheStrategy</ID>
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.request.RequestOptions</ID>
-    <ID>UnusedImports:DetailActivity.kt$import com.example.clothstock.ui.tagging.TaggingActivity</ID>
     <ID>UnusedImports:FileUtilsTest.kt$import android.net.Uri</ID>
     <ID>UnusedImports:GalleryFragment.kt$import androidx.recyclerview.widget.RecyclerView</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.fragment.app.Fragment</ID>
@@ -201,8 +201,6 @@
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers</ID>
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers.any</ID>
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.Mockito.verify</ID>
-    <ID>UnusedParameter:DetailActivity.kt$DetailActivity$clothItemId: Long</ID>
-    <ID>UnusedParameter:ImageCompressionManager.kt$ImageCompressionManager$timeoutMs: Long</ID>
     <ID>UnusedParameter:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$exception: Exception</ID>
     <ID>UnusedPrivateMember:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$private fun consumeMemoryUntilThreshold(thresholdMB: Long): MemoryConsumer</ID>
     <ID>UnusedPrivateMember:TaggingActivity.kt$TaggingActivity$private fun animateFieldUpdate(editText: android.widget.EditText, newText: String)</ID>

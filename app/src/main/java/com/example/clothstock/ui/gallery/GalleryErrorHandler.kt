@@ -12,6 +12,7 @@ import java.lang.ref.WeakReference
  * 
  * Strategy Patternを適用
  * エラー表示とユーザーフィードバックを一元管理
+ * パフォーマンス最適化と包括的ログ記録を実装
  */
 class GalleryErrorHandler(
     context: Context,
@@ -20,14 +21,46 @@ class GalleryErrorHandler(
 ) {
     private val contextRef = WeakReference(context)
     
+    // パフォーマンス最適化: エラー頻度制限
+    private var lastErrorTime = 0L
+    private var errorCount = 0
+    
+    // 定数定義
     companion object {
         private const val TAG = "GalleryErrorHandler"
+        private const val ERROR_THROTTLE_MS = 1000L // 1秒間に1回まで
+        private const val MAX_ERRORS_PER_MINUTE = 10
+        private const val TIMEOUT_DURATION = 5000L
+        private const val ONE_MINUTE_IN_TIMEOUT_UNITS = 12L
     }
     
+    private val errorThrottleMs = ERROR_THROTTLE_MS
+    private val maxErrorsPerMinute = MAX_ERRORS_PER_MINUTE
+    
+    // 包括的ログ記録
+    private val errorMetrics = mutableMapOf<String, ErrorMetric>()
+    
+    
     /**
-     * 基本的なエラーメッセージ表示
+     * エラーメトリクス追跡用データクラス
+     */
+    private data class ErrorMetric(
+        var count: Int = 0,
+        var lastOccurrence: Long = 0L,
+        var totalDuration: Long = 0L
+    )
+    
+    /**
+     * 基本的なエラーメッセージ表示（パフォーマンス最適化付き）
      */
     fun showBasicError(message: String) {
+        if (!shouldShowError()) {
+            Log.d(TAG, "Error throttled: $message")
+            return
+        }
+        
+        val startTime = System.currentTimeMillis()
+        
         try {
             contextRef.get()?.let { context ->
                 Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
@@ -36,10 +69,16 @@ class GalleryErrorHandler(
                     .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
                     .show()
             }
+            
+            // メトリクス記録
+            recordErrorMetric("BASIC_ERROR", startTime)
+            
         } catch (e: IllegalStateException) {
             Log.e(TAG, "IllegalStateException showing basic error", e)
+            recordErrorMetric("BASIC_ERROR_EXCEPTION", startTime)
         } catch (e: UninitializedPropertyAccessException) {
             Log.e(TAG, "UninitializedPropertyAccessException showing basic error", e)
+            recordErrorMetric("BASIC_ERROR_EXCEPTION", startTime)
         }
     }
     
@@ -121,9 +160,223 @@ class GalleryErrorHandler(
     }
     
     /**
+     * フィルター読み込みエラー表示
+     */
+    fun showFilterLoadingError(message: String, error: Exception) {
+        Log.e(TAG, "Filter loading error: $message", error)
+        
+        try {
+            val errorDetail = getErrorDetail(error)
+            contextRef.get()?.let { context ->
+                Snackbar.make(rootView, "$message: $errorDetail", Snackbar.LENGTH_LONG)
+                    .setAction("再試行") { onRetry() }
+                    .setActionTextColor(context.getColor(android.R.color.holo_red_light))
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException showing filter loading error", e)
+            showBasicError(message)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException showing filter loading error", e)
+            showBasicError(message)
+        }
+    }
+    
+    /**
+     * 検索タイムアウトエラー表示
+     */
+    fun showSearchTimeoutError(message: String, error: Exception) {
+        Log.e(TAG, "Search timeout error: $message", error)
+        
+        try {
+            contextRef.get()?.let { context ->
+                Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
+                    .setAction("再試行") { onRetry() }
+                    .setActionTextColor(context.getColor(android.R.color.holo_orange_light))
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException showing search timeout error", e)
+            showBasicError(message)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException showing search timeout error", e)
+            showBasicError(message)
+        }
+    }
+    
+    /**
+     * 検索キャンセル処理
+     */
+    fun handleSearchCancellation(message: String) {
+        Log.d(TAG, "Search cancelled: $message")
+        
+        try {
+            Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT)
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .show()
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException handling search cancellation", e)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException handling search cancellation", e)
+        }
+    }
+    
+    /**
+     * リトライダイアログ表示
+     */
+    fun showRetryDialog(message: String, error: Exception, retryCallback: () -> Unit) {
+        Log.e(TAG, "Showing retry dialog: $message", error)
+        
+        try {
+            contextRef.get()?.let { context ->
+                Snackbar.make(rootView, message, Snackbar.LENGTH_INDEFINITE)
+                    .setAction("再試行") { retryCallback() }
+                    .setActionTextColor(context.getColor(android.R.color.holo_blue_light))
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException showing retry dialog", e)
+            showBasicError(message)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException showing retry dialog", e)
+            showBasicError(message)
+        }
+    }
+    
+    /**
+     * グレースフルデグラデーション処理
+     */
+    fun handleGracefulDegradation(message: String, error: Exception) {
+        Log.w(TAG, "Graceful degradation: $message", error)
+        
+        try {
+            contextRef.get()?.let { context ->
+                Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
+                    .setActionTextColor(context.getColor(android.R.color.holo_orange_light))
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException handling graceful degradation", e)
+            showBasicError(message)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException handling graceful degradation", e)
+            showBasicError(message)
+        }
+    }
+    
+    /**
+     * バックオフ付きリトライ表示
+     */
+    fun showRetryWithBackoff(message: String, error: Exception, retryCount: Int, retryCallback: () -> Unit) {
+        Log.e(TAG, "Showing retry with backoff (attempt $retryCount): $message", error)
+        
+        try {
+            val backoffMessage = "$message (試行回数: $retryCount)"
+            contextRef.get()?.let { context ->
+                Snackbar.make(rootView, backoffMessage, Snackbar.LENGTH_INDEFINITE)
+                    .setAction("再試行") { retryCallback() }
+                    .setActionTextColor(context.getColor(android.R.color.holo_red_light))
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException showing retry with backoff", e)
+            showBasicError(message)
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.e(TAG, "UninitializedPropertyAccessException showing retry with backoff", e)
+            showBasicError(message)
+        }
+    }
+    
+    /**
+     * コンテキスト付きエラーログ記録
+     */
+    fun logErrorWithContext(error: Exception, context: Map<String, Any>) {
+        val contextString = context.entries.joinToString(", ") { "${it.key}=${it.value}" }
+        Log.e(TAG, "Error with context [$contextString]", error)
+    }
+    
+    /**
+     * エラーメトリクス追跡
+     */
+    fun trackErrorMetrics(errorType: String, errorCount: Int, errorDuration: Long) {
+        Log.i(TAG, "Error metrics - Type: $errorType, Count: $errorCount, Duration: ${errorDuration}ms")
+    }
+    
+    /**
+     * エラー表示頻度制限チェック
+     */
+    private fun shouldShowError(): Boolean {
+        val currentTime = System.currentTimeMillis()
+        
+        // 短時間での連続エラーとエラー回数上限をチェック
+        val shouldLimit = isWithinThrottleTime(currentTime) || isErrorCountExceeded(currentTime)
+        
+        if (!shouldLimit) {
+            updateErrorTracking(currentTime)
+        }
+        
+        return !shouldLimit
+    }
+    
+    private fun isWithinThrottleTime(currentTime: Long): Boolean {
+        return currentTime - lastErrorTime < errorThrottleMs
+    }
+    
+    private fun isErrorCountExceeded(currentTime: Long): Boolean {
+        if (errorCount < maxErrorsPerMinute) return false
+        
+        val oneMinuteAgo = currentTime - TIMEOUT_DURATION * ONE_MINUTE_IN_TIMEOUT_UNITS
+        val shouldReset = lastErrorTime <= oneMinuteAgo
+        
+        if (shouldReset) {
+            errorCount = 0 // リセット
+        }
+        
+        return !shouldReset
+    }
+    
+    private fun updateErrorTracking(currentTime: Long) {
+        lastErrorTime = currentTime
+        errorCount++
+    }
+    
+    /**
+     * エラーメトリクス記録
+     */
+    private fun recordErrorMetric(errorType: String, startTime: Long) {
+        val duration = System.currentTimeMillis() - startTime
+        val metric = errorMetrics.getOrPut(errorType) { ErrorMetric() }
+        
+        metric.count++
+        metric.lastOccurrence = System.currentTimeMillis()
+        metric.totalDuration += duration
+        
+        // 定期的にメトリクスをログ出力
+        if (metric.count % MAX_ERRORS_PER_MINUTE / 2 == 0) {
+            Log.i(TAG, "Error metrics - Type: $errorType, Count: ${metric.count}, " +
+                    "Avg Duration: ${metric.totalDuration / metric.count}ms")
+        }
+    }
+    
+    /**
+     * エラーメトリクス取得（テスト用）
+     */
+    fun getErrorMetrics(): Map<String, Int> {
+        return errorMetrics.mapValues { it.value.count }
+    }
+    
+    /**
      * リソースクリーンアップ
      */
     fun cleanup() {
         contextRef.clear()
+        errorMetrics.clear()
+        errorCount = 0
+        lastErrorTime = 0L
     }
 }
