@@ -171,6 +171,20 @@ class FilterManager {
         return currentState
     }
     
+    /**
+     * 保存されたフィルター状態を復元します
+     * Task 10: 状態復元機能
+     * 
+     * @param savedState 復元するFilterState
+     * @return 復元後の新しいFilterState
+     */
+    fun restoreState(savedState: FilterState): FilterState {
+        return synchronized(stateLock) {
+            currentState = savedState
+            savedState
+        }
+    }
+    
     // ========== プライベートヘルパーメソッド ==========
     
     /**

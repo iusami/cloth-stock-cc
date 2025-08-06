@@ -286,4 +286,71 @@ class FilterManagerTest {
         assertEquals("同一の内容であること", state1, state2)
         assertEquals("サイズフィルターが同じであること", state1.sizeFilters, state2.sizeFilters)
     }
+    
+    // ========== Task 10: 状態復元機能のテスト ==========
+    
+    @Test
+    fun `restoreState should restore all filter types`() {
+        // Given: 保存された状態がある
+        val savedState = com.example.clothstock.data.model.FilterState(
+            sizeFilters = setOf(100, 110),
+            colorFilters = setOf("赤", "青"),
+            categoryFilters = setOf("トップス", "ボトムス"),
+            searchText = "復元テスト"
+        )
+        
+        // When: 状態を復元
+        filterManager.restoreState(savedState)
+        val restoredState = filterManager.getCurrentState()
+        
+        // Then: 全ての状態が復元されること
+        assertEquals("サイズフィルターが復元されること", setOf(100, 110), restoredState.sizeFilters)
+        assertEquals("色フィルターが復元されること", setOf("赤", "青"), restoredState.colorFilters)
+        assertEquals("カテゴリフィルターが復元されること", setOf("トップス", "ボトムス"), restoredState.categoryFilters)
+        assertEquals("検索テキストが復元されること", "復元テスト", restoredState.searchText)
+        assertTrue("アクティブフィルターがあること", restoredState.hasActiveFilters())
+    }
+    
+    @Test
+    fun `restoreState should handle empty state`() {
+        // Given: 既存のフィルターが設定されている
+        filterManager.updateFilter(FilterType.SIZE, setOf("100"))
+        filterManager.updateSearchText("既存検索")
+        
+        // When: 空の状態を復元
+        val emptyState = com.example.clothstock.data.model.FilterState()
+        filterManager.restoreState(emptyState)
+        val restoredState = filterManager.getCurrentState()
+        
+        // Then: 全てがクリアされること
+        assertTrue("サイズフィルターがクリアされること", restoredState.sizeFilters.isEmpty())
+        assertTrue("色フィルターがクリアされること", restoredState.colorFilters.isEmpty())
+        assertTrue("カテゴリフィルターがクリアされること", restoredState.categoryFilters.isEmpty())
+        assertEquals("検索テキストがクリアされること", "", restoredState.searchText)
+        assertFalse("アクティブフィルターがないこと", restoredState.hasActiveFilters())
+    }
+    
+    @Test
+    fun `restoreState should overwrite existing state`() {
+        // Given: 既存のフィルターが設定されている
+        filterManager.updateFilter(FilterType.SIZE, setOf("100"))
+        filterManager.updateFilter(FilterType.COLOR, setOf("赤"))
+        filterManager.updateSearchText("既存検索")
+        
+        // When: 異なる状態を復元
+        val newState = com.example.clothstock.data.model.FilterState(
+            sizeFilters = setOf(120, 130),
+            colorFilters = setOf("青", "緑"),
+            categoryFilters = setOf("アウター"),
+            searchText = "新しい検索"
+        )
+        filterManager.restoreState(newState)
+        val restoredState = filterManager.getCurrentState()
+        
+        // Then: 新しい状態で上書きされること
+        assertEquals("サイズフィルターが上書きされること", setOf(120, 130), restoredState.sizeFilters)
+        assertEquals("色フィルターが上書きされること", setOf("青", "緑"), restoredState.colorFilters)
+        assertEquals("カテゴリフィルターが上書きされること", setOf("アウター"), restoredState.categoryFilters)
+        assertEquals("検索テキストが上書きされること", "新しい検索", restoredState.searchText)
+    }
 }
