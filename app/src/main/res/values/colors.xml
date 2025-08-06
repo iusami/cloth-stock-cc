@@ -66,4 +66,7 @@
     <color name="snackbar_warning_text">#FFFFFF</color>
     <color name="snackbar_info_background">@color/md_theme_light_surfaceVariant</color>
     <color name="snackbar_info_text">@color/md_theme_light_onSurfaceVariant</color>
+    
+    <!-- Filter UI colors -->
+    <color name="filter_active_color">@color/md_theme_light_primaryContainer</color>
 </resources>

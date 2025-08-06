@@ -16,6 +16,7 @@ import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.example.clothstock.ui.camera.CameraActivity
 import com.example.clothstock.ui.detail.DetailActivity
+import com.example.clothstock.data.model.FilterState
 import com.google.android.material.snackbar.Snackbar
 import android.util.Log
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -150,33 +151,99 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * RecyclerViewの設定（最適化済み）
+     * RecyclerViewの設定（Task9フィルター結果対応最適化済み）
      */
     private fun setupRecyclerView() {
+        Log.d(TAG, "Setting up RecyclerView with filter support (Task9 enhanced)")
+        
         // GridLayoutManagerを設定（列数は画面サイズに応じて調整）
         val spanCount = calculateSpanCount()
         val layoutManager = GridLayoutManager(requireContext(), spanCount)
         binding.recyclerViewGallery.layoutManager = layoutManager
 
-        // RecyclerViewパフォーマンス最適化
+        // Task9: フィルター結果対応RecyclerViewパフォーマンス最適化
         binding.recyclerViewGallery.apply {
             setHasFixedSize(true) // サイズ固定でパフォーマンス向上
+            
+            // Task9: フィルター結果変更に対応したアニメーション設定
             itemAnimator = DefaultItemAnimator().apply {
-                addDuration = 200
-                removeDuration = 200
-                moveDuration = 200
-                changeDuration = 200
+                addDuration = FILTER_ANIMATION_DURATION // フィルター結果追加時
+                removeDuration = FILTER_TRANSITION_DURATION // フィルター結果削除時
+                moveDuration = FILTER_TRANSITION_DURATION // フィルター結果移動時
+                changeDuration = FILTER_ANIMATION_DURATION // フィルター結果変更時
+                
+                // フィルター操作時のスムーズなアニメーション設定
+                supportsChangeAnimations = true // アイテム変更アニメーション有効化
             }
-            // ViewHolderプールサイズの最適化
-            recycledViewPool.setMaxRecycledViews(0, spanCount * 3)
+            
+            // Task9: フィルター結果に対応したViewHolderプールサイズの動的最適化
+            recycledViewPool.apply {
+                setMaxRecycledViews(0, spanCount * RECYCLERVIEW_POOL_SIZE_MULTIPLIER) // フィルター結果用に拡張
+                // フィルター操作での頻繁な表示切り替えに対応
+                clear() // 初期化時にプールをクリア
+            }
+            
+            // Task9: フィルター結果変更時のスクロール位置保持設定
+            preserveFocusAfterLayout = false // フィルター結果変更時は先頭に戻る
         }
 
-        // Adapterを設定
-        adapter = ClothItemAdapter { clothItem ->
-            // DetailActivityに遷移
-            navigateToDetailActivity(clothItem.id)
-        }
+        // Task9: フィルター結果対応Adapterを設定（強化版）
+        adapter = createFilterAwareClothItemAdapter()
         binding.recyclerViewGallery.adapter = adapter
+        
+        Log.d(TAG, "RecyclerView setup completed with filter support")
+    }
+
+    /**
+     * Task9: フィルター結果対応ClothItemAdapterの作成（強化版）
+     */
+    private fun createFilterAwareClothItemAdapter(): ClothItemAdapter {
+        Log.d(TAG, "Creating filter-aware ClothItemAdapter")
+        
+        return ClothItemAdapter { clothItem ->
+            Log.d(TAG, "Filter-aware adapter: Item clicked - ID: ${clothItem.id}")
+            
+            try {
+                // DetailActivityに遷移（フィルター状態情報付き）
+                navigateToDetailActivityWithFilterContext(clothItem.id)
+                
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "Failed to navigate to detail with filter context", e)
+                // フォールバック: 通常のナビゲーション
+                navigateToDetailActivity(clothItem.id)
+            }
+        }.apply {
+            // Task9: フィルター結果変更時のDiffUtil最適化
+            // ListAdapterのDiffUtilがフィルター結果変更を効率的に処理
+            Log.d(TAG, "Filter-aware adapter configured with DiffUtil optimization")
+        }
+    }
+
+    /**
+     * Task9: フィルター状態情報付きDetailActivity遷移（強化版）
+     */
+    private fun navigateToDetailActivityWithFilterContext(clothItemId: Long) {
+        Log.d(TAG, "Navigating to detail with filter context for item: $clothItemId")
+        
+        val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+            putExtra(DetailActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
+            
+            // Task9: 現在のフィルター状態を詳細画面に引き継ぎ（拡張機能）
+            val currentFilters = viewModel.currentFilters.value
+            val currentSearchText = viewModel.currentSearchText.value
+            
+            if (currentFilters?.hasActiveFilters() == true) {
+                putExtra("EXTRA_FILTER_STATE", currentFilters.toString())
+                Log.d(TAG, "Added filter state to detail intent: ${currentFilters}")
+            }
+            
+            if (!currentSearchText.isNullOrBlank()) {
+                putExtra("EXTRA_SEARCH_TEXT", currentSearchText)
+                Log.d(TAG, "Added search text to detail intent: '$currentSearchText'")
+            }
+        }
+        
+        startActivity(intent)
     }
 
     /**
@@ -259,23 +326,43 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * Task7: フィルターボトムシートを表示
+     * Task7: フィルターボトムシートを表示 (Task9 REFACTOR: UI応答性最適化版)
      */
     private fun showFilterBottomSheet() {
-        Log.d(TAG, "Showing filter bottom sheet")
+        Log.d(TAG, "Showing filter bottom sheet (Task9 optimized)")
         
-        // ViewModelから利用可能なフィルターオプションを取得
-        viewModel.availableFilterOptions.value?.let { filterOptions ->
-            // フィルターチップを動的に更新
-            setupSizeFilterChips(filterOptions)
-            setupColorFilterChips(filterOptions)
-            setupCategoryFilterChips(filterOptions)
+        try {
+            // Task9 REFACTOR: UI応答性最適化 - フィルター表示前のプリロード
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    // ViewModelから利用可能なフィルターオプションを最適化して取得
+                    val filterOptions = viewModel.availableFilterOptions.value
+                    
+                    if (filterOptions != null) {
+                        // フィルターチップを効率的に並行更新（UI応答性向上）
+                        launch { setupSizeFilterChips(filterOptions) }
+                        launch { setupColorFilterChips(filterOptions) }
+                        launch { setupCategoryFilterChips(filterOptions) }
+                        
+                        // ボトムシート表示（最適化済み）
+                        filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                        Log.d(TAG, "Filter bottom sheet displayed with optimized performance")
+                        
+                    } else {
+                        Log.w(TAG, "Filter options not available, showing error feedback")
+                        showFilterLoadingError("フィルターオプションの読み込み中です。しばらくお待ちください。")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during filter bottom sheet display", e)
+                    showComprehensiveFilterError("フィルター表示中にエラーが発生しました", e)
+                }
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException showing filter bottom sheet", e)
+            showComprehensiveFilterError("フィルター機能が利用できません", e)
         }
-        
-        // ボトムシートを表示
-        filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-        
-        Log.d(TAG, "Filter bottom sheet displayed")
     }
 
     /**
@@ -630,120 +717,174 @@ class GalleryFragment : Fragment() {
     }
     
     /**
-     * Task8: デバウンス付き検索実行 (300ms遅延 + REFACTOR強化版)
+     * Task8: デバウンス付き検索実行 (Task9 REFACTOR: UI応答性最適化 + 包括的エラーフィードバック強化版)
      */
     private fun performDebouncedSearch(searchText: String) {
-        Log.d(TAG, "Starting debounced search for: '$searchText'")
+        Log.d(TAG, "Starting optimized debounced search for: '$searchText'")
         
         // 前の検索ジョブをキャンセル（パフォーマンス最適化）
         searchJob?.cancel()
         
         searchJob = lifecycleScope.launch {
             try {
-                // 300ms待機（デバウンス）
-                delay(SEARCH_DEBOUNCE_DELAY_MS)
+                // Task9 REFACTOR: UI応答性最適化 - 動的デバウンス調整
+                val adaptiveDelay = if (searchText.length > MIN_SEARCH_LENGTH * 2) {
+                    SEARCH_DEBOUNCE_DELAY_MS / 2 // 長いテキストは早めに反応
+                } else {
+                    SEARCH_DEBOUNCE_DELAY_MS
+                }
                 
-                // 検索テキストのバリデーション（強化版）
+                delay(adaptiveDelay)
+                
+                // Task9 REFACTOR: 検索テキストバリデーション強化版
                 val trimmedText = searchText.trim()
+                val validationResult = validateSearchText(trimmedText)
                 
-                when {
-                    trimmedText.isEmpty() -> {
-                        Log.d(TAG, "Search cleared, showing all items")
+                when (validationResult.status) {
+                    SearchValidationStatus.VALID -> {
+                        Log.d(TAG, "Performing optimized search for: '${validationResult.processedText}'")
+                        viewModel.performSearch(validationResult.processedText)
+                    }
+                    SearchValidationStatus.EMPTY -> {
+                        Log.d(TAG, "Search cleared with UI feedback")
                         viewModel.clearSearch()
                     }
-                    trimmedText.length < MIN_SEARCH_LENGTH -> {
-                        Log.d(TAG, "Search text too short (${trimmedText.length} < $MIN_SEARCH_LENGTH)")
-                        // 最小文字数未満の場合は検索しない
+                    SearchValidationStatus.TOO_SHORT -> {
+                        Log.d(TAG, "Search text too short, showing user feedback")
+                        showSearchValidationFeedback("検索は${MIN_SEARCH_LENGTH}文字以上で入力してください")
                         return@launch
                     }
-                    trimmedText.length > MAX_SEARCH_LENGTH -> {
-                        Log.d(TAG, "Search text too long (${trimmedText.length} > $MAX_SEARCH_LENGTH), truncating")
-                        // 最大文字数で切り詰めて検索
-                        val truncatedText = trimmedText.substring(0, MAX_SEARCH_LENGTH)
-                        viewModel.performSearch(truncatedText)
+                    SearchValidationStatus.TOO_LONG -> {
+                        Log.d(TAG, "Search text truncated with user notification")
+                        showSearchValidationFeedback("検索テキストを${MAX_SEARCH_LENGTH}文字に短縮しました")
+                        viewModel.performSearch(validationResult.processedText)
                     }
-                    else -> {
-                        Log.d(TAG, "Performing search for: '$trimmedText'")
-                        viewModel.performSearch(trimmedText)
+                    SearchValidationStatus.INVALID -> {
+                        Log.w(TAG, "Invalid search text detected")
+                        showSearchValidationFeedback("検索テキストに無効な文字が含まれています")
+                        return@launch
                     }
                 }
                 
             } catch (e: kotlinx.coroutines.CancellationException) {
-                Log.d(TAG, "Search debounce cancelled (expected behavior)")
-                // @Suppress("SwallowedException")
+                Log.d(TAG, "Optimized search debounce cancelled (expected behavior)")
                 // キャンセルは正常な動作なので例外を再スローしない
-                // CancellationExceptionはユーザーが素早く入力した時のデバウンス処理での
-                // 正常なキャンセルなので、この例外は無視すべき（処理不要）
             } catch (e: IllegalStateException) {
-                Log.e(TAG, "Error during debounced search", e)
-                // エラー時は検索を無効化しない（継続利用可能）
+                Log.e(TAG, "Error during optimized debounced search", e)
+                showComprehensiveSearchError("検索処理中にエラーが発生しました", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error during search", e)
+                showComprehensiveSearchError("予期しないエラーが発生しました", e)
             }
         }
     }
 
     /**
-     * ViewModelの監視設定
+     * ViewModelの監視設定 (Task9強化版: フィルター・検索状態監視追加)
      */
     private fun observeViewModel() {
-        Log.d(TAG, "Setting up ViewModel observers")
+        Log.d(TAG, "Setting up ViewModel observers (Task9 enhanced)")
         
-        // 衣服アイテムの監視（アニメーション付き）
+        // 基本的なViewModel監視を設定
+        observeBasicViewModelStates()
+        
+        // Task7&9: フィルター・検索関連のViewModel監視を設定
+        observeFilterAndSearchStates()
+    }
+
+    /**
+     * Task9: 基本的なViewModelの状態監視（分割版）
+     */
+    private fun observeBasicViewModelStates() {
+        // 衣服アイテムの監視（フィルター対応アニメーション付き）
         viewModel.clothItems.observe(viewLifecycleOwner) { items ->
-            Log.d(TAG, "clothItems observer: Received ${items.size} items")
+            Log.d(TAG, "clothItems observer: Received ${items.size} items (filtered)")
             adapter.submitList(items) {
-                Log.d(TAG, "clothItems observer: List submitted to adapter")
-                // リスト更新完了後のコールバック
+                Log.d(TAG, "clothItems observer: Filtered list submitted to adapter")
+                // フィルター結果のスムーズなトランジション
                 if (items.isNotEmpty() && binding.recyclerViewGallery.visibility == View.GONE) {
-                    Log.d(TAG, "clothItems observer: Animating RecyclerView entry")
-                    animateRecyclerViewEntry()
+                    Log.d(TAG, "clothItems observer: Animating filtered RecyclerView entry")
+                    animateFilteredRecyclerViewEntry()
                 }
             }
         }
 
-        // 空状態の監視（アニメーション付き）
+        // 空状態の監視（フィルター結果対応アニメーション付き）
         viewModel.isEmpty.observe(viewLifecycleOwner) { isEmpty ->
-            Log.d(TAG, "isEmpty observer: isEmpty = $isEmpty")
-            animateStateChange(isEmpty)
+            Log.d(TAG, "isEmpty observer: isEmpty = $isEmpty (after filter/search)")
+            animateFilteredStateChange(isEmpty)
         }
 
-        // ローディング状態の監視（改善版）
+        // ローディング状態の監視（フィルター操作対応改善版）
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            Log.d(TAG, "isLoading observer: isLoading = $isLoading, adapter.itemCount = ${adapter.itemCount}")
+            Log.d(TAG, "isLoading observer: isLoading = $isLoading (filter/search operation)")
             
             // SwipeRefreshLayoutの状態更新
             if (binding.swipeRefreshLayout.isRefreshing != isLoading) {
                 binding.swipeRefreshLayout.isRefreshing = isLoading
-                Log.d(TAG, "isLoading observer: Updated SwipeRefreshLayout to $isLoading")
+                Log.d(TAG, "isLoading observer: Updated SwipeRefreshLayout for filter operation")
             }
             
-            // 初回ローディング時のみフルスクリーンローディング表示
+            // フィルター・検索操作時のローディングインジケーター表示
             val shouldShowFullLoading = isLoading && adapter.itemCount == 0
-            Log.d(TAG, "isLoading observer: shouldShowFullLoading = $shouldShowFullLoading")
-            animateLoadingState(shouldShowFullLoading)
+            Log.d(TAG, "isLoading observer: shouldShowFilterLoading = $shouldShowFullLoading")
+            animateFilterLoadingState(shouldShowFullLoading)
         }
 
-        // エラーメッセージの監視（改善版）
+        // エラーメッセージの監視（包括的エラーフィードバック強化版）
         viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
             if (errorMessage != null) {
-                Log.e(TAG, "errorMessage observer: Error received - $errorMessage")
-                showEnhancedErrorMessage(errorMessage)
+                Log.e(TAG, "errorMessage observer: Filter/search error received - $errorMessage")
+                showComprehensiveErrorFeedback(errorMessage)
                 viewModel.clearErrorMessage()
             } else {
-                Log.d(TAG, "errorMessage observer: Error cleared")
+                Log.d(TAG, "errorMessage observer: Filter/search error cleared")
             }
         }
+    }
 
+    /**
+     * Task9: フィルター・検索状態のViewModel監視（分割版）
+     */
+    private fun observeFilterAndSearchStates() {
         // Task7: 利用可能フィルターオプションの監視（UI状態管理）
         viewModel.availableFilterOptions.observe(viewLifecycleOwner) { filterOptions ->
             if (filterOptions != null) {
                 Log.d(TAG, "availableFilterOptions observer: Options available, enabling filter UI")
-                // フィルターオプションが利用可能になったらUIを有効化
                 enableFilterUI()
             } else {
                 Log.d(TAG, "availableFilterOptions observer: No options available, disabling filter UI")
-                // フィルターオプションが利用不可の場合はUIを無効化
                 disableFilterUI()
             }
+        }
+
+        // Task9: フィルター状態LiveDataの監視（強化版observeViewModel）
+        viewModel.currentFilters.observe(viewLifecycleOwner) { filterState ->
+            Log.d(TAG, "currentFilters observer: Filter state updated")
+            if (filterState != null) {
+                Log.d(TAG, "currentFilters observer: Active size filters: ${filterState.sizeFilters}")
+                Log.d(TAG, "currentFilters observer: Active color filters: ${filterState.colorFilters}")
+                Log.d(TAG, "currentFilters observer: Active category filters: ${filterState.categoryFilters}")
+                
+                // フィルター状態変更時のUIフィードバック
+                updateFilterUIState(filterState)
+            }
+        }
+
+        // Task9: 検索状態LiveDataの監視（強化版observeViewModel）
+        viewModel.currentSearchText.observe(viewLifecycleOwner) { searchText ->
+            Log.d(TAG, "currentSearchText observer: Search text updated to: '$searchText'")
+            
+            // 検索状態変更時のUIフィードバック
+            updateSearchUIState(searchText ?: "")
+        }
+
+        // Task9: フィルターアクティブ状態LiveDataの監視（強化版observeViewModel）
+        viewModel.isFiltersActive.observe(viewLifecycleOwner) { isActive ->
+            Log.d(TAG, "isFiltersActive observer: Filter active state = $isActive")
+            
+            // フィルターアクティブ状態に応じたUI表示調整
+            updateFilterActiveIndicator(isActive)
         }
     }
 
@@ -789,14 +930,37 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * RecyclerView表示アニメーション
+     * Task9: 包括的エラーフィードバック表示（強化版）
      */
-    private fun animateRecyclerViewEntry() {
-        binding.recyclerViewGallery.visibility = View.VISIBLE
-        val animation = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
-        animation.duration = 300
-        binding.recyclerViewGallery.startAnimation(animation)
+    private fun showComprehensiveErrorFeedback(message: String) {
+        Log.d(TAG, "Showing comprehensive error feedback: $message")
+        
+        try {
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+                .setAction("再試行") {
+                    Log.d(TAG, "Error feedback retry button clicked")
+                    viewModel.refreshData()
+                }
+                .setActionTextColor(requireContext().getColor(android.R.color.holo_blue_light))
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .addCallback(object : Snackbar.Callback() {
+                    override fun onShown(sb: Snackbar?) {
+                        Log.d(TAG, "Error feedback snackbar shown")
+                    }
+                    
+                    override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                        Log.d(TAG, "Error feedback snackbar dismissed with event: $event")
+                    }
+                })
+                .show()
+                
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show comprehensive error feedback", e)
+            // フォールバック: 基本的なエラー表示
+            showEnhancedErrorMessage(message)
+        }
     }
+
 
     /**
      * 状態変更アニメーション（空状態⇔データ表示）
@@ -863,6 +1027,329 @@ class GalleryFragment : Fragment() {
         }
     }
 
+    // ===== Task9: フィルター対応アニメーション関数群（スムーズなトランジション対応） =====
+
+    /**
+     * Task9: フィルター結果のRecyclerView表示アニメーション（強化版）
+     */
+    private fun animateFilteredRecyclerViewEntry() {
+        Log.d(TAG, "animateFilteredRecyclerViewEntry: Starting filtered RecyclerView entry animation")
+        
+        try {
+            binding.recyclerViewGallery.visibility = View.VISIBLE
+            val slideIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.slide_in_left)
+            slideIn.duration = FILTER_ANIMATION_DURATION
+            binding.recyclerViewGallery.startAnimation(slideIn)
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to animate filtered RecyclerView entry", e)
+            // フォールバック: 基本的な表示
+            binding.recyclerViewGallery.visibility = View.VISIBLE
+        }
+    }
+
+    /**
+     * Task9: フィルター結果の状態変更アニメーション（空状態⇔フィルター結果表示）
+     */
+    private fun animateFilteredStateChange(isEmpty: Boolean) {
+        Log.d(TAG, "animateFilteredStateChange: isEmpty = $isEmpty (filtered state)")
+        
+        try {
+            val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+            val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+            
+            fadeOut.duration = FILTER_TRANSITION_DURATION
+            fadeIn.duration = FILTER_TRANSITION_DURATION
+            
+            if (isEmpty) {
+                // フィルター結果→空状態（スムーズなトランジション）
+                binding.recyclerViewGallery.startAnimation(fadeOut)
+                binding.recyclerViewGallery.visibility = View.GONE
+                
+                binding.layoutEmptyState.visibility = View.VISIBLE
+                binding.layoutEmptyState.startAnimation(fadeIn)
+                Log.d(TAG, "animateFilteredStateChange: Filtered data to empty state transition")
+            } else {
+                // 空状態→フィルター結果（スムーズなトランジション）
+                binding.layoutEmptyState.startAnimation(fadeOut)
+                binding.layoutEmptyState.visibility = View.GONE
+                
+                binding.recyclerViewGallery.visibility = View.VISIBLE
+                binding.recyclerViewGallery.startAnimation(fadeIn)
+                Log.d(TAG, "animateFilteredStateChange: Empty state to filtered data transition")
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to animate filtered state change", e)
+            // フォールバック: 基本的な状態変更
+            animateStateChange(isEmpty)
+        }
+    }
+
+    /**
+     * Task9: フィルター操作時のローディング状態アニメーション（強化版）
+     */
+    private fun animateFilterLoadingState(shouldShow: Boolean) {
+        Log.d(TAG, "animateFilterLoadingState: shouldShow = $shouldShow (filter operation)")
+        
+        try {
+            if (shouldShow) {
+                if (binding.layoutLoading.visibility != View.VISIBLE) {
+                    Log.d(TAG, "animateFilterLoadingState: Showing filter loading indicator")
+                    binding.layoutLoading.visibility = View.VISIBLE
+                    val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+                    fadeIn.duration = FILTER_LOADING_ANIMATION_DURATION
+                    binding.layoutLoading.startAnimation(fadeIn)
+                }
+            } else {
+                if (binding.layoutLoading.visibility == View.VISIBLE) {
+                    Log.d(TAG, "animateFilterLoadingState: Hiding filter loading indicator")
+                    val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+                    fadeOut.duration = FILTER_LOADING_ANIMATION_DURATION
+                    fadeOut.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                        override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                        override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                        override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                            binding.layoutLoading.visibility = View.GONE
+                            Log.d(TAG, "animateFilterLoadingState: Filter loading animation completed")
+                        }
+                    })
+                    binding.layoutLoading.startAnimation(fadeOut)
+                }
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to animate filter loading state", e)
+            // フォールバック: 基本的なローディング表示
+            animateLoadingState(shouldShow)
+        }
+    }
+
+    // ===== Task9: フィルター・検索UIフィードバック関数群（UI応答性最適化対応） =====
+
+    /**
+     * Task9: フィルター状態変更時のUIフィードバック更新
+     */
+    private fun updateFilterUIState(filterState: FilterState) {
+        Log.d(TAG, "updateFilterUIState: Updating UI for filter state changes")
+        
+        try {
+            // フィルター状態に応じたチップ選択状態の更新（UI応答性最適化）
+            viewLifecycleOwner.lifecycleScope.launch {
+                // フィルターチップの選択状態を効率的に更新
+                updateSizeChipSelections(filterState.sizeFilters)
+                updateColorChipSelections(filterState.colorFilters)
+                updateCategoryChipSelections(filterState.categoryFilters)
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to update filter UI state", e)
+        }
+    }
+
+    /**
+     * Task9: 検索状態変更時のUIフィードバック更新
+     */
+    private fun updateSearchUIState(searchText: String) {
+        Log.d(TAG, "updateSearchUIState: Updating UI for search text: '$searchText'")
+        
+        try {
+            // 検索バーの状態更新（UI応答性最適化）
+            if (binding.searchView.query.toString() != searchText) {
+                binding.searchView.setQuery(searchText, false)
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to update search UI state", e)
+        }
+    }
+
+    /**
+     * Task9: フィルターアクティブ状態インジケーター更新
+     */
+    private fun updateFilterActiveIndicator(isActive: Boolean) {
+        Log.d(TAG, "updateFilterActiveIndicator: Filter active = $isActive")
+        
+        try {
+            // フィルターボタンの見た目を更新（アクティブ状態表示）
+            if (isActive) {
+                binding.buttonFilter.setBackgroundColor(requireContext().getColor(R.color.filter_active_color))
+                binding.buttonFilter.alpha = FILTER_ACTIVE_ALPHA
+            } else {
+                binding.buttonFilter.setBackgroundColor(requireContext().getColor(android.R.color.transparent))
+                binding.buttonFilter.alpha = ENABLED_ALPHA
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to update filter active indicator", e)
+        } catch (e: android.content.res.Resources.NotFoundException) {
+            Log.e(TAG, "Filter active color resource not found, using fallback", e)
+            // フォールバック: デフォルトのアルファ値のみ変更
+            binding.buttonFilter.alpha = if (isActive) FILTER_ACTIVE_ALPHA else ENABLED_ALPHA
+        }
+    }
+
+    // ===== Task9: フィルターチップ選択状態更新ヘルパー関数群 =====
+
+    /**
+     * Task9: サイズチップ選択状態の効率的更新
+     */
+    private fun updateSizeChipSelections(activeSizes: Set<Int>) {
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupSize
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val sizeText = chipView.text.toString()
+                val size = sizeText.toIntOrNull()
+                if (size != null) {
+                    chipView.isChecked = activeSizes.contains(size)
+                }
+            }
+        }
+    }
+
+    /**
+     * Task9: 色チップ選択状態の効率的更新
+     */
+    private fun updateColorChipSelections(activeColors: Set<String>) {
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupColor
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val colorText = chipView.text.toString()
+                chipView.isChecked = activeColors.contains(colorText)
+            }
+        }
+    }
+
+    /**
+     * Task9: カテゴリチップ選択状態の効率的更新
+     */
+    private fun updateCategoryChipSelections(activeCategories: Set<String>) {
+        val chipGroup = binding.includeBottomSheetFilter.chipGroupCategory
+        for (i in 0 until chipGroup.childCount) {
+            val chip = chipGroup.getChildAt(i) as? Chip
+            chip?.let { chipView ->
+                val categoryText = chipView.text.toString()
+                chipView.isChecked = activeCategories.contains(categoryText)
+            }
+        }
+    }
+
+    // ===== Task9 REFACTOR: UI応答性最適化 + 包括的エラーフィードバック関数群 =====
+
+    /**
+     * Task9 REFACTOR: 検索テキストバリデーション（包括的）
+     */
+    private fun validateSearchText(text: String): SearchValidationResult {
+        return when {
+            text.isEmpty() -> SearchValidationResult(SearchValidationStatus.EMPTY, text)
+            text.length < MIN_SEARCH_LENGTH -> SearchValidationResult(SearchValidationStatus.TOO_SHORT, text)
+            text.length > MAX_SEARCH_LENGTH -> SearchValidationResult(
+                SearchValidationStatus.TOO_LONG,
+                text.substring(0, MAX_SEARCH_LENGTH)
+            )
+            text.contains(Regex("[<>&\"']")) -> SearchValidationResult(SearchValidationStatus.INVALID, text)
+            else -> SearchValidationResult(SearchValidationStatus.VALID, text)
+        }
+    }
+
+    /**
+     * Task9 REFACTOR: 検索バリデーションフィードバック表示
+     */
+    private fun showSearchValidationFeedback(message: String) {
+        try {
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT)
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .show()
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show search validation feedback", e)
+        }
+    }
+
+    /**
+     * Task9 REFACTOR: 包括的検索エラーフィードバック
+     */
+    private fun showComprehensiveSearchError(message: String, error: Exception) {
+        Log.e(TAG, "Comprehensive search error: $message", error)
+        
+        try {
+            val errorDetail = when (error) {
+                is kotlinx.coroutines.TimeoutCancellationException -> "検索がタイムアウトしました"
+                is IllegalStateException -> "検索機能の状態エラー"
+                is SecurityException -> "検索権限エラー"
+                else -> "検索処理エラー"
+            }
+            
+            Snackbar.make(binding.root, "$message: $errorDetail", Snackbar.LENGTH_LONG)
+                .setAction("再試行") {
+                    Log.d(TAG, "Search error retry requested")
+                    // 検索バーをクリアして再開可能状態にする
+                    binding.searchView.setQuery("", false)
+                    viewModel.clearSearch()
+                }
+                .setActionTextColor(requireContext().getColor(android.R.color.holo_orange_light))
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .show()
+                
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show comprehensive search error", e)
+        }
+    }
+
+    /**
+     * Task9 REFACTOR: フィルター読み込みエラーフィードバック
+     */
+    private fun showFilterLoadingError(message: String) {
+        try {
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+                .setAction("更新") {
+                    Log.d(TAG, "Filter loading error refresh requested")
+                    viewModel.refreshData()
+                }
+                .setActionTextColor(requireContext().getColor(android.R.color.holo_blue_light))
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .show()
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show filter loading error", e)
+        }
+    }
+
+    /**
+     * Task9 REFACTOR: 包括的フィルターエラーフィードバック
+     */
+    private fun showComprehensiveFilterError(message: String, error: Exception) {
+        Log.e(TAG, "Comprehensive filter error: $message", error)
+        
+        try {
+            val errorDetail = when (error) {
+                is IllegalStateException -> "フィルター状態エラー"
+                is UninitializedPropertyAccessException -> "フィルター初期化エラー"
+                is SecurityException -> "フィルター権限エラー"
+                is android.content.res.Resources.NotFoundException -> "フィルターリソースエラー"
+                else -> "フィルター機能エラー"
+            }
+            
+            Snackbar.make(binding.root, "$message: $errorDetail", Snackbar.LENGTH_LONG)
+                .setAction("リセット") {
+                    Log.d(TAG, "Filter error reset requested")
+                    // フィルターをクリアして再開可能状態にする
+                    viewModel.clearAllFilters()
+                    try {
+                        filterBottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+                    } catch (e: IllegalStateException) {
+                        Log.e(TAG, "Failed to hide bottom sheet during reset", e)
+                    }
+                }
+                .setActionTextColor(requireContext().getColor(android.R.color.holo_red_light))
+                .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                .show()
+                
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show comprehensive filter error", e)
+        }
+    }
+
     companion object {
         private const val TAG = "GalleryFragment"
         
@@ -874,6 +1361,13 @@ class GalleryFragment : Fragment() {
         private const val SEARCH_DEBOUNCE_DELAY_MS = 300L
         private const val MIN_SEARCH_LENGTH = 2
         private const val MAX_SEARCH_LENGTH = 50 // パフォーマンス考慮
+        
+        // Task9: フィルター対応アニメーション用定数（スムーズなトランジション）
+        private const val FILTER_ANIMATION_DURATION = 250L // フィルター結果表示アニメーション時間
+        private const val FILTER_TRANSITION_DURATION = 200L // フィルター状態変更トランジション時間
+        private const val FILTER_LOADING_ANIMATION_DURATION = 150L // フィルター操作ローディング表示時間
+        private const val FILTER_ACTIVE_ALPHA = 0.8f // フィルターアクティブ時のアルファ値
+        private const val RECYCLERVIEW_POOL_SIZE_MULTIPLIER = 5 // RecyclerViewプールサイズ乗数
         
         /**
          * GalleryFragmentの新しいインスタンスを作成
@@ -900,3 +1394,24 @@ class GalleryViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
+// ===== Task9 REFACTOR: 検索バリデーション用データクラス =====
+
+/**
+ * Task9 REFACTOR: 検索バリデーション状態
+ */
+enum class SearchValidationStatus {
+    VALID,      // 有効な検索テキスト
+    EMPTY,      // 空の検索テキスト
+    TOO_SHORT,  // 短すぎる検索テキスト
+    TOO_LONG,   // 長すぎる検索テキスト
+    INVALID     // 無効な文字を含む検索テキスト
+}
+
+/**
+ * Task9 REFACTOR: 検索バリデーション結果
+ */
+data class SearchValidationResult(
+    val status: SearchValidationStatus,
+    val processedText: String
+)
