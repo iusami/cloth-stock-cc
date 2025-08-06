@@ -311,6 +311,102 @@ class FilterUIManager(
     }
     
     /**
+     * フィルター読み込み失敗処理
+     */
+    fun handleFilterLoadingFailure(error: Exception, message: String) {
+        Log.e(TAG, "Filter loading failure: $message", error)
+        disableFilterUI()
+    }
+    
+    /**
+     * フィルター読み込みリトライ表示
+     */
+    fun showFilterLoadingRetry(message: String, retryCallback: () -> Unit) {
+        Log.d(TAG, "Showing filter loading retry: $message")
+        // 基本的なリトライ機能の実装
+        retryCallback()
+    }
+    
+    /**
+     * 空のフィルターオプション処理
+     */
+    fun handleEmptyFilterOptions(message: String) {
+        Log.w(TAG, "Empty filter options: $message")
+        disableFilterUI()
+    }
+    
+    /**
+     * フィルター適用失敗処理
+     */
+    fun handleFilterApplicationFailure(filterType: String, filterValues: List<String>, error: Exception) {
+        Log.e(TAG, "Filter application failure - Type: $filterType, Values: $filterValues", error)
+        // フィルター状態をリセット
+        clearAllFilters()
+    }
+    
+    /**
+     * フィルター競合解決表示
+     */
+    fun showFilterConflictResolution(conflictingFilters: Map<String, List<String>>, message: String) {
+        Log.w(TAG, "Filter conflict resolution: $message, Conflicts: $conflictingFilters")
+        // 競合するフィルターをクリア
+        clearAllFilters()
+    }
+    
+    /**
+     * フィルターフォールバックモード有効化
+     */
+    fun enableFilterFallbackMode(reason: String, message: String) {
+        Log.w(TAG, "Enabling filter fallback mode: $reason - $message")
+        // 基本的なフィルター機能のみ有効化
+        enableFilterUI()
+    }
+    
+    /**
+     * フィルターUI無効化処理
+     */
+    fun handleFilterUIDisabling(reason: String, message: String) {
+        Log.w(TAG, "Disabling filter UI: $reason - $message")
+        disableFilterUI()
+    }
+    
+    /**
+     * フィルター操作リトライ
+     */
+    fun retryFilterOperation(operationType: String, operationParams: Map<String, Any>, maxRetries: Int) {
+        Log.d(TAG, "Retrying filter operation: $operationType (max retries: $maxRetries)")
+        Log.d(TAG, "Operation params: $operationParams")
+        
+        // 基本的なリトライ実装
+        when (operationType) {
+            "APPLY_SIZE_FILTER" -> {
+                // サイズフィルター適用のリトライ
+            }
+            "LOAD_FILTER_OPTIONS" -> {
+                // フィルターオプション読み込みのリトライ
+                fragmentRef.get()?.let { fragment ->
+                    fragment.viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            // 基本的なリトライ実装（実際のメソッドは別途実装が必要）
+                            Log.d(TAG, "Retrying filter options loading")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Retry failed for filter operation", e)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * フィルターリトライ上限処理
+     */
+    fun handleFilterRetryExhaustion(operationType: String, error: Exception, message: String) {
+        Log.e(TAG, "Filter retry exhaustion - Operation: $operationType, Message: $message", error)
+        disableFilterUI()
+    }
+    
+    /**
      * リソースクリーンアップ
      */
     fun cleanup() {
