@@ -274,7 +274,9 @@ class DetailActivity : AppCompatActivity() {
                 putExtra(TaggingActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
             }
             startActivity(intent)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            showError("編集画面の起動に失敗しました: ${e.message}")
+        } catch (e: UninitializedPropertyAccessException) {
             showError("編集画面の起動に失敗しました: ${e.message}")
         }
     }

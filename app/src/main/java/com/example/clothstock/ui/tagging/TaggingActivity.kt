@@ -98,7 +98,10 @@ class TaggingActivity : AppCompatActivity() {
             
             // ViewModelに編集モードを設定
             viewModel.setEditMode(clothItemId)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            showError("編集モードの初期化に失敗しました: ${e.message}")
+            finish()
+        } catch (e: UninitializedPropertyAccessException) {
             showError("編集モードの初期化に失敗しました: ${e.message}")
             finish()
         }
