@@ -485,8 +485,7 @@ class GalleryViewModel(
                 val currentState = filterManager.getCurrentState()
                 
                 // キャッシュから結果を確認
-                val cachedItems: List<ClothItem>? = searchCache.get(currentState)
-                if (cachedItems != null) {
+                searchCache.get(currentState)?.let { cachedItems ->
                     _clothItems.value = cachedItems
                     _isEmpty.value = cachedItems.isEmpty()
                     _isLoading.value = false

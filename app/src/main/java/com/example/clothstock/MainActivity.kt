@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         
         // MemoryPressureMonitorの初期化
-        memoryPressureMonitor = MemoryPressureMonitor.getInstance(this)
+        memoryPressureMonitor = MemoryPressureMonitor(this)
         
         // 状態復元
         restoreState(savedInstanceState)
@@ -255,10 +255,8 @@ class MainActivity : AppCompatActivity() {
         
         Log.d(TAG, "MainActivity onTrimMemory called with level: $level")
         
-        // MemoryPressureMonitorに通知（統合有効化も確認）
-        if (memoryPressureMonitor.isSystemIntegrationEnabled()) {
-            memoryPressureMonitor.handleSystemTrimMemory(level)
-        }
+        // メモリ圧迫状況を確認
+        Log.d(TAG, "Current memory pressure level: ${memoryPressureMonitor.getCurrentMemoryPressureLevel()}")
         
         when (level) {
             // UIがバックグラウンドに移行
@@ -312,8 +310,8 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "Gallery fragment memory cleared")
             }
             
-            // MemoryPressureMonitorのキャッシュクリア
-            memoryPressureMonitor.getCacheManager().clearCache()
+            // MemoryPressureMonitorでメモリクリア
+            memoryPressureMonitor.forceGarbageCollection()
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during UI hidden cleanup", e)
@@ -328,14 +326,13 @@ class MainActivity : AppCompatActivity() {
         
         try {
             // MemoryPressureMonitorに状況を通知
-            if (!memoryPressureMonitor.isMonitoring()) {
-                memoryPressureMonitor.startMonitoring()
-                Log.d(TAG, "Started MemoryPressureMonitor")
+            if (memoryPressureMonitor.isMemoryPressureMedium()) {
+                Log.d(TAG, "Medium memory pressure detected during cleanup")
             }
             
             // 低メモリ状況の場合は追加のクリーンアップ
             if (isLowMemory) {
-                memoryPressureMonitor.getCacheManager().clearCache()
+                memoryPressureMonitor.forceGarbageCollection()
                 
                 // ギャラリー表示中の場合、一部の画像キャッシュをクリア
                 val galleryFragment = supportFragmentManager.findFragmentByTag(FRAGMENT_GALLERY)
@@ -367,8 +364,9 @@ class MainActivity : AppCompatActivity() {
             System.gc()
             
             // MemoryPressureMonitorを緊急モードで開始
-            if (!memoryPressureMonitor.isMonitoring()) {
-                memoryPressureMonitor.startMonitoring()
+            // メモリ使用状況を監視
+            if (memoryPressureMonitor.isMemoryPressureHigh()) {
+                Log.w(TAG, "High memory pressure detected")
             }
             
             Log.w(TAG, "Critical memory cleanup completed")
@@ -387,7 +385,7 @@ class MainActivity : AppCompatActivity() {
         try {
             // バックグラウンドなので安全に包括的クリーンアップが可能
             Glide.get(this).clearMemory()
-            memoryPressureMonitor.getCacheManager().clearCache()
+            memoryPressureMonitor.forceGarbageCollection()
             
             // バックグラウンドディスクキャッシュクリアも実行
             Thread {

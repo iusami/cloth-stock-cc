@@ -5,6 +5,7 @@
     <ID>EmptyFunctionBlock:GalleryFragment.kt$GalleryFragment.&lt;no name provided&gt;${}</ID>
     <ID>EmptyFunctionBlock:TaggingActivity.kt$TaggingActivity.&lt;no name provided&gt;${}</ID>
     <ID>ExplicitGarbageCollectionCall:ClothStockApplication.kt$ClothStockApplication$gc()</ID>
+    <ID>ExplicitGarbageCollectionCall:GalleryViewModel.kt$GalleryViewModel$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest.MemoryConsumer$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:MainActivity.kt$MainActivity$gc()</ID>
@@ -17,11 +18,15 @@
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f KB", sizeInBytes / 1024.0)</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f MB", sizeInBytes / (1024.0 * 1024.0))</ID>
     <ID>LargeClass:GalleryFragment.kt$GalleryFragment : Fragment</ID>
+    <ID>LongParameterList:ClothDao.kt$ClothDao$( sizeFilters: List&lt;Int&gt;?, colorFilters: List&lt;String&gt;?, categoryFilters: List&lt;String&gt;?, searchText: String?, offset: Int, limit: Int )</ID>
+    <ID>LongParameterList:ClothRepository.kt$ClothRepository$( sizeFilters: List&lt;Int&gt;?, colorFilters: List&lt;String&gt;?, categoryFilters: List&lt;String&gt;?, searchText: String?, offset: Int, limit: Int )</ID>
     <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
     <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$1000</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$3</ID>
     <ID>MagicNumber:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$1024</ID>
+    <ID>MagicNumber:DatabaseQueryAnalyzer.kt$DatabaseQueryAnalyzer$100</ID>
+    <ID>MagicNumber:DatabaseQueryAnalyzer.kt$DatabaseQueryAnalyzer$10000</ID>
     <ID>MagicNumber:DetailActivity.kt$DetailActivity$150</ID>
     <ID>MagicNumber:DetailActivity.kt$DetailActivity$300</ID>
     <ID>MagicNumber:DetailViewModel.kt$DetailViewModel$1000L</ID>
@@ -33,6 +38,7 @@
     <ID>MagicNumber:FileUtils.kt$FileUtils$1024.0</ID>
     <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$150</ID>
     <ID>MagicNumber:GalleryFragment.kt$GalleryFragment$200</ID>
+    <ID>MagicNumber:GalleryViewModel.kt$GalleryViewModel$100</ID>
     <ID>MagicNumber:GlideUtils.kt$GlideUtils$1080</ID>
     <ID>MagicNumber:GlideUtils.kt$GlideUtils$1920</ID>
     <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$0.2f</ID>
@@ -52,23 +58,24 @@
     <ID>MagicNumber:ImageCompressionManager.kt$ImageCompressionManager$8</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$200</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$250</ID>
-    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$1024</ID>
-    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$150</ID>
-    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$30</ID>
-    <ID>MagicNumber:MemoryPressureMonitor.kt$MemoryPressureMonitor$400</ID>
     <ID>MagicNumber:RetryMechanism.kt$RetryMechanism.DefaultRetryPolicy$3</ID>
+    <ID>MagicNumber:SearchCache.kt$SearchCache$3</ID>
+    <ID>MagicNumber:SearchCache.kt$SearchCache.&lt;no name provided&gt;$0.75f</ID>
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$0.3f</ID>
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$150</ID>
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$600</ID>
     <ID>MagicNumber:TaggingActivity.kt$TaggingActivity$800</ID>
     <ID>MaxLineLength:DatabasePerformanceMonitor.kt$DatabasePerformanceMonitor$Log.d(TAG, "クエリ実行: $operationName (${executionTime}ms, 平均: ${String.format("%.2f", stats.averageExecutionTime)}ms)")</ID>
     <ID>MaxLineLength:GalleryFragment.kt$GalleryFragment$Log.d(TAG, "animateLoadingState: shouldShow = $shouldShow, current visibility = ${binding.layoutLoading.visibility}")</ID>
+    <ID>MaxLineLength:ProgressiveLoadingTest.kt$ProgressiveLoadingTest$every { repository.searchItemsWithPagination(any(), any(), any(), any(), eq(batchSize), eq(batchSize)) }</ID>
+    <ID>MaxLineLength:SearchCacheTest.kt$SearchCacheTest$val items = listOf(ClothItem(index.toLong(), "/path$index.jpg", 100, "Color", "Category", System.currentTimeMillis()))</ID>
     <ID>MaxLineLength:TaggingActivity.kt$TaggingActivity$inputMethodManager.showSoftInput(binding.editTextColor, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_errorMessage.value = getApplication&lt;Application&gt;().getString(R.string.error_data_load_failed, e.message ?: "")</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(getApplication&lt;Application&gt;().getString(R.string.error_update_target_not_found))</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: getApplication&lt;Application&gt;().getString(R.string.error_validation))</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}") }</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}") }</ID>
+    <ID>NestedBlockDepth:DatabaseQueryAnalyzer.kt$DatabaseQueryAnalyzer$fun analyzeQuery(query: String): QueryAnalysisResult</ID>
     <ID>NewLineAtEndOfFile:CameraActivity.kt$com.example.clothstock.ui.camera.CameraActivity.kt</ID>
     <ID>NewLineAtEndOfFile:CameraPermissionManager.kt$com.example.clothstock.ui.camera.CameraPermissionManager.kt</ID>
     <ID>NewLineAtEndOfFile:CameraPermissionManagerTest.kt$com.example.clothstock.ui.camera.CameraPermissionManagerTest.kt</ID>
@@ -90,6 +97,7 @@
     <ID>NewLineAtEndOfFile:CountResult.kt$com.example.clothstock.data.model.CountResult.kt</ID>
     <ID>NewLineAtEndOfFile:DatabaseMigrations.kt$com.example.clothstock.data.database.DatabaseMigrations.kt</ID>
     <ID>NewLineAtEndOfFile:DatabasePerformanceMonitor.kt$com.example.clothstock.data.database.DatabasePerformanceMonitor.kt</ID>
+    <ID>NewLineAtEndOfFile:DatabaseQueryAnalyzer.kt$com.example.clothstock.util.DatabaseQueryAnalyzer.kt</ID>
     <ID>NewLineAtEndOfFile:DetailActivity.kt$com.example.clothstock.ui.detail.DetailActivity.kt</ID>
     <ID>NewLineAtEndOfFile:DetailViewModel.kt$com.example.clothstock.ui.detail.DetailViewModel.kt</ID>
     <ID>NewLineAtEndOfFile:DetailViewModelFactory.kt$com.example.clothstock.ui.detail.DetailViewModelFactory.kt</ID>
@@ -98,6 +106,7 @@
     <ID>NewLineAtEndOfFile:ErrorDialogFragmentTest.kt$com.example.clothstock.ui.common.ErrorDialogFragmentTest.kt</ID>
     <ID>NewLineAtEndOfFile:FileUtils.kt$com.example.clothstock.util.FileUtils.kt</ID>
     <ID>NewLineAtEndOfFile:FileUtilsTest.kt$com.example.clothstock.util.FileUtilsTest.kt</ID>
+    <ID>NewLineAtEndOfFile:GallerySearchPerformanceTest.kt$com.example.clothstock.ui.gallery.GallerySearchPerformanceTest.kt</ID>
     <ID>NewLineAtEndOfFile:GalleryViewModelTest.kt$com.example.clothstock.ui.gallery.GalleryViewModelTest.kt</ID>
     <ID>NewLineAtEndOfFile:GlideUtils.kt$com.example.clothstock.util.GlideUtils.kt</ID>
     <ID>NewLineAtEndOfFile:ImageCompressionManager.kt$com.example.clothstock.util.ImageCompressionManager.kt</ID>
@@ -108,10 +117,14 @@
     <ID>NewLineAtEndOfFile:MainActivity.kt$com.example.clothstock.MainActivity.kt</ID>
     <ID>NewLineAtEndOfFile:MemoryPressureMonitor.kt$com.example.clothstock.util.MemoryPressureMonitor.kt</ID>
     <ID>NewLineAtEndOfFile:MemoryPressureTest.kt$com.example.clothstock.ui.common.MemoryPressureTest.kt</ID>
+    <ID>NewLineAtEndOfFile:PerformanceTypes.kt$com.example.clothstock.ui.gallery.PerformanceTypes.kt</ID>
     <ID>NewLineAtEndOfFile:PermissionRationaleDialog.kt$com.example.clothstock.ui.camera.PermissionRationaleDialog.kt</ID>
     <ID>NewLineAtEndOfFile:PermissionRationaleDialogTest.kt$com.example.clothstock.ui.camera.PermissionRationaleDialogTest.kt</ID>
+    <ID>NewLineAtEndOfFile:ProgressiveLoadingTest.kt$com.example.clothstock.ui.gallery.ProgressiveLoadingTest.kt</ID>
     <ID>NewLineAtEndOfFile:RetryMechanism.kt$com.example.clothstock.ui.common.RetryMechanism.kt</ID>
     <ID>NewLineAtEndOfFile:RetryMechanismTest.kt$com.example.clothstock.ui.common.RetryMechanismTest.kt</ID>
+    <ID>NewLineAtEndOfFile:SearchCache.kt$com.example.clothstock.data.repository.SearchCache.kt</ID>
+    <ID>NewLineAtEndOfFile:SearchCacheTest.kt$com.example.clothstock.data.repository.SearchCacheTest.kt</ID>
     <ID>NewLineAtEndOfFile:SnackbarHelper.kt$com.example.clothstock.ui.common.SnackbarHelper.kt</ID>
     <ID>NewLineAtEndOfFile:TagData.kt$com.example.clothstock.data.model.TagData.kt</ID>
     <ID>NewLineAtEndOfFile:TagDataTest.kt$com.example.clothstock.data.model.TagDataTest.kt</ID>
@@ -144,7 +157,7 @@
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockApplication.kt$ClothStockApplication$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DatabaseQueryAnalyzer.kt$DatabaseQueryAnalyzer$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$e: Exception</ID>
@@ -152,7 +165,6 @@
     <ID>TooGenericExceptionCaught:GalleryViewModel.kt$GalleryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ImageCompressionManager.kt$ImageCompressionManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MainActivity.kt$MainActivity$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:MemoryPressureMonitor.kt$MemoryPressureMonitor$e: Exception</ID>
     <ID>TooGenericExceptionCaught:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RetryMechanism.kt$RetryMechanism.Companion$e: Exception</ID>
     <ID>TooGenericExceptionCaught:TaggingViewModel.kt$TaggingViewModel$e: Exception</ID>
@@ -174,13 +186,15 @@
     <ID>TooManyFunctions:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
     <ID>TooManyFunctions:ImageCompressionManager.kt$ImageCompressionManager</ID>
     <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
-    <ID>TooManyFunctions:MemoryPressureMonitor.kt$MemoryPressureMonitor</ID>
     <ID>TooManyFunctions:SnackbarHelper.kt$SnackbarHelper</ID>
     <ID>TooManyFunctions:TaggingActivity.kt$TaggingActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:TaggingViewModel.kt$TaggingViewModel : AndroidViewModel</ID>
     <ID>UnnecessaryParentheses:DetailViewModel.kt$DetailViewModel$(2.0.pow(retryCount - 1))</ID>
+    <ID>UnnecessaryParentheses:GallerySearchPerformanceTest.kt$GallerySearchPerformanceTest$(index % 6)</ID>
     <ID>UnnecessaryParentheses:ImageCompressionTest.kt$ImageCompressionTest$(resolutionRatio * 0.6f)</ID>
     <ID>UnnecessaryParentheses:ImageCompressionTest.kt$ImageCompressionTest$(sizeRatio * 0.4f)</ID>
+    <ID>UnnecessaryParentheses:ProgressiveLoadingTest.kt$ProgressiveLoadingTest$(index % 6)</ID>
+    <ID>UnnecessaryParentheses:ProgressiveLoadingTest.kt$ProgressiveLoadingTest$(index * 1000)</ID>
     <ID>UnusedImports:CameraActivity.kt$import com.example.clothstock.R</ID>
     <ID>UnusedImports:CameraActivity.kt$import java.io.File</ID>
     <ID>UnusedImports:CameraPermissionManagerTest.kt$import android.content.pm.PackageManager</ID>
@@ -190,9 +204,15 @@
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.request.RequestOptions</ID>
     <ID>UnusedImports:FileUtilsTest.kt$import android.net.Uri</ID>
     <ID>UnusedImports:GalleryFragment.kt$import androidx.recyclerview.widget.RecyclerView</ID>
+    <ID>UnusedImports:GallerySearchPerformanceTest.kt$import com.example.clothstock.data.repository.ClothRepository</ID>
+    <ID>UnusedImports:GalleryViewModel.kt$import java.util.LinkedHashMap</ID>
+    <ID>UnusedImports:GalleryViewModel.kt$import java.util.concurrent.ConcurrentHashMap</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.fragment.app.Fragment</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.ViewModelProvider</ID>
-    <ID>UnusedImports:MemoryPressureMonitor.kt$import kotlin.math.max</ID>
+    <ID>UnusedImports:MemoryPressureMonitor.kt$import android.os.Debug</ID>
+    <ID>UnusedImports:ProgressiveLoadingTest.kt$import com.example.clothstock.data.repository.ClothRepository</ID>
+    <ID>UnusedImports:ProgressiveLoadingTest.kt$import com.example.clothstock.ui.gallery.GalleryViewModelTestBase</ID>
+    <ID>UnusedImports:SearchCacheTest.kt$import kotlinx.coroutines.flow.flowOf</ID>
     <ID>UnusedImports:TaggingActivity.kt$import android.content.DialogInterface</ID>
     <ID>UnusedImports:TaggingActivity.kt$import android.widget.NumberPicker</ID>
     <ID>UnusedImports:TaggingViewModel.kt$import com.example.clothstock.data.model.ValidationResult</ID>
@@ -201,7 +221,10 @@
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers</ID>
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.ArgumentMatchers.any</ID>
     <ID>UnusedImports:TaggingViewModelTest.kt$import org.mockito.Mockito.verify</ID>
+    <ID>UnusedParameter:GalleryViewModel.kt$GalleryViewModel$pageSize: Int</ID>
+    <ID>UnusedParameter:GalleryViewModel.kt$GalleryViewModel$searchText: String</ID>
     <ID>UnusedParameter:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$exception: Exception</ID>
+    <ID>UnusedPrivateMember:ClothStockGlideModule.kt$ClothStockGlideModule$private fun handleMemoryPressure(glide: Glide, memoryPressureMonitor: MemoryPressureMonitor)</ID>
     <ID>UnusedPrivateMember:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$private fun consumeMemoryUntilThreshold(thresholdMB: Long): MemoryConsumer</ID>
     <ID>UnusedPrivateMember:TaggingActivity.kt$TaggingActivity$private fun animateFieldUpdate(editText: android.widget.EditText, newText: String)</ID>
     <ID>UnusedPrivateMember:TaggingActivity.kt$TaggingActivity$private fun setEditModeFocus()</ID>
@@ -209,6 +232,8 @@
     <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$@Mock private lateinit var mockContext: Context</ID>
     <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$@Mock private lateinit var mockFile: File</ID>
     <ID>UnusedPrivateProperty:CameraViewModelTest.kt$CameraViewModelTest$private val testDispatcher = TestCoroutineDispatcher()</ID>
+    <ID>UnusedPrivateProperty:GallerySearchPerformanceTest.kt$GallerySearchPerformanceTest.Companion$private const val PAGE_SIZE = 20</ID>
+    <ID>UnusedPrivateProperty:GallerySearchPerformanceTest.kt$GallerySearchPerformanceTest.Companion$private const val TOTAL_ITEMS = 100</ID>
     <ID>UseCheckOrError:ErrorDialogFragment.kt$ErrorDialogFragment$throw IllegalStateException("Arguments must be provided")</ID>
     <ID>UseRequire:ClothRepositoryImpl.kt$ClothRepositoryImpl$throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")</ID>
     <ID>WildcardImport:CameraActivity.kt$import androidx.camera.core.*</ID>

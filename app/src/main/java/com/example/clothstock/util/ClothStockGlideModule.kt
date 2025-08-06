@@ -166,34 +166,13 @@ class ClothStockGlideModule : AppGlideModule() {
         try {
             // trim-basedメモリ管理の準備
             // MemoryPressureMonitorとの連携準備
-            val memoryPressureMonitor = MemoryPressureMonitor.getInstance(context)
+            val memoryPressureMonitor = MemoryPressureMonitor(context)
             
-            // Glideとの連携コールバック設定
-            val memoryCallback = object : MemoryPressureMonitor.PressureCallback {
-                override fun onPressureLevelChanged(level: MemoryPressureMonitor.PressureLevel) {
-                    handleMemoryPressureLevel(glide, level)
-                }
-                
-                override fun onLowMemoryWarning() {
-                    Log.w(TAG, "Low memory warning - clearing Glide caches")
-                    glide.clearMemory()
-                }
-                
-                override fun onCriticalMemoryError() {
-                    Log.e(TAG, "Critical memory error - emergency cleanup")
-                    glide.clearMemory()
-                    // バックグラウンドでディスクキャッシュもクリア
-                    Thread {
-                        try {
-                            glide.clearDiskCache()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error clearing disk cache", e)
-                        }
-                    }.start()
-                }
+            // メモリ状況に応じたGlideキャッシュ管理
+            if (memoryPressureMonitor.isMemoryPressureHigh()) {
+                Log.w(TAG, "High memory pressure - clearing Glide memory cache")
+                glide.clearMemory()
             }
-            
-            memoryPressureMonitor.setPressureCallback(memoryCallback)
             Log.d(TAG, "Memory management components setup completed")
             
         } catch (e: Exception) {
@@ -204,31 +183,26 @@ class ClothStockGlideModule : AppGlideModule() {
     /**
      * メモリプレッシャーレベル別の処理
      */
-    private fun handleMemoryPressureLevel(glide: Glide, level: MemoryPressureMonitor.PressureLevel) {
-        Log.d(TAG, "Handling memory pressure level: $level")
+    private fun handleMemoryPressure(glide: Glide, memoryPressureMonitor: MemoryPressureMonitor) {
+        Log.d(TAG, "Handling memory pressure")
         
-        when (level) {
-            MemoryPressureMonitor.PressureLevel.HIGH -> {
-                // 高負荷: メモリキャッシュクリア
-                glide.clearMemory()
-                Log.d(TAG, "Cleared memory cache due to HIGH pressure")
-            }
-            MemoryPressureMonitor.PressureLevel.CRITICAL -> {
-                // クリティカル: 完全クリーンアップ
-                glide.clearMemory()
-                Thread {
-                    try {
-                        glide.clearDiskCache()
-                        Log.d(TAG, "Cleared disk cache due to CRITICAL pressure")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error clearing disk cache", e)
-                    }
-                }.start()
-            }
-            else -> {
-                // LOW, MODERATE: 特別な処理なし
-                Log.d(TAG, "Memory pressure level $level - no action needed")
-            }
+        if (memoryPressureMonitor.isMemoryPressureHigh()) {
+            // 高負荷: メモリキャッシュクリア
+            glide.clearMemory()
+            Log.d(TAG, "Cleared memory cache due to HIGH pressure")
+        }
+        
+        if (memoryPressureMonitor.isLowMemory()) {
+            // 低メモリ: 完全クリーンアップ
+            glide.clearMemory()
+            Thread {
+                try {
+                    glide.clearDiskCache()
+                    Log.d(TAG, "Cleared disk cache due to low memory")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error clearing disk cache", e)
+                }
+            }.start()
         }
     }
 

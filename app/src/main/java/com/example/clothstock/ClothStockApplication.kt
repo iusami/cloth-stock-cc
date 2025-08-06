@@ -41,11 +41,10 @@ class ClothStockApplication : Application() {
         Log.d(TAG, "ClothStockApplication starting up")
         
         // MemoryPressureMonitorの初期化
-        memoryPressureMonitor = MemoryPressureMonitor.getInstance(this)
+        memoryPressureMonitor = MemoryPressureMonitor(this)
         
-        // Android Q+対応: システム統合を有効化
-        memoryPressureMonitor.enableSystemIntegration()
-        Log.d(TAG, "MemoryPressureMonitor system integration enabled")
+        // メモリプレッシャー監視開始
+        Log.d(TAG, "MemoryPressureMonitor initialized")
         
         Log.d(TAG, "Application initialized successfully")
     }
@@ -60,8 +59,8 @@ class ClothStockApplication : Application() {
         
         Log.d(TAG, "onTrimMemory called with level: $level (API ${android.os.Build.VERSION.SDK_INT})")
         
-        // MemoryPressureMonitorに通知
-        memoryPressureMonitor.handleSystemTrimMemory(level)
+        // メモリ使用状況をログ出力
+        Log.d(TAG, "Current memory pressure level: ${memoryPressureMonitor.getCurrentMemoryPressureLevel()}")
         
         when (level) {
             // Android Q+でも有効なレベル
@@ -114,8 +113,11 @@ class ClothStockApplication : Application() {
         super.onLowMemory()
         Log.w(TAG, "onLowMemory called - 緊急メモリクリーンアップを実行")
         
-        // MemoryPressureMonitorに通知
-        memoryPressureMonitor.handleSystemLowMemory()
+        // 低メモリ状態をチェック
+        if (memoryPressureMonitor.isLowMemory()) {
+            Log.w(TAG, "System is in low memory state")
+            memoryPressureMonitor.forceGarbageCollection()
+        }
         
         // 緊急時の包括的メモリクリーンアップ
         performEmergencyMemoryCleanup()
@@ -160,7 +162,7 @@ class ClothStockApplication : Application() {
             }
             
             // MemoryPressureMonitorの軽度クリーンアップ
-            memoryPressureMonitor.getCacheManager().clearCache() // キャッシュクリア
+            memoryPressureMonitor.forceGarbageCollection() // メモリクリア
             
             Log.d(TAG, "Light anti-pinning cleanup completed")
             
@@ -180,7 +182,7 @@ class ClothStockApplication : Application() {
             performLightAntiPinningCleanup()
             
             // より積極的なメモリ管理
-            memoryPressureMonitor.getCacheManager().clearCache()
+            memoryPressureMonitor.forceGarbageCollection()
             
             // pinning非推奨対応: native heap管理
             if (isAndroidQPlus()) {
@@ -237,10 +239,10 @@ class ClothStockApplication : Application() {
             performBackgroundAntiPinningCleanup()
             
             // より徹底的なクリーンアップ
-            memoryPressureMonitor.getCacheManager().clearCache()
+            memoryPressureMonitor.forceGarbageCollection()
             
-            // システム統合を再有効化
-            memoryPressureMonitor.enableSystemIntegration()
+            // メモリ監視を継続
+            Log.d(TAG, "Memory cleanup completed")
             
             // 緊急時のGC（Android Q+対応）
             if (isAndroidQPlus()) {
@@ -263,11 +265,11 @@ class ClothStockApplication : Application() {
         
         try {
             // UIに影響を与えない軽度なクリーンアップ
-            memoryPressureMonitor.getCacheManager().clearCache() // キャッシュクリア
+            memoryPressureMonitor.forceGarbageCollection() // メモリクリア
             
-            // MemoryPressureMonitorの監視を開始
-            if (!memoryPressureMonitor.isMonitoring()) {
-                memoryPressureMonitor.startMonitoring()
+            // メモリ使用状況をチェック
+            if (memoryPressureMonitor.isMemoryPressureHigh()) {
+                Log.w(TAG, "High memory pressure detected during cleanup")
             }
             
             // Glideの軽度クリーンアップ（UIスレッドで安全）
@@ -290,9 +292,10 @@ class ClothStockApplication : Application() {
             // 最も徹底的なクリーンアップを実行
             performCompleteAntiPinningCleanup()
             
-            // MemoryPressureMonitorを緊急モードで起動
-            if (!memoryPressureMonitor.isMonitoring()) {
-                memoryPressureMonitor.startMonitoring()
+            // MemoryPressureMonitorを緊急時チェック
+            if (memoryPressureMonitor.isMemoryPressureHigh()) {
+                Log.w(TAG, "High memory pressure detected during emergency cleanup")
+                memoryPressureMonitor.forceGarbageCollection()
             }
             
             Log.w(TAG, "Emergency anti-pinning memory cleanup completed")
