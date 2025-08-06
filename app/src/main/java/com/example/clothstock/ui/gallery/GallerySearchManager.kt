@@ -6,6 +6,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import java.lang.ref.WeakReference
 
 /**
@@ -36,8 +37,8 @@ class GallerySearchManager(
         private const val MIN_SEARCH_LENGTH = 2
         private const val MAX_SEARCH_LENGTH = 50
         private const val DISABLED_ALPHA = 0.5f
-        private const val SEARCH_TIMEOUT_MS = 5000L
-        private const val MAX_RETRY_COUNT = 3
+        private const val RETRY_DELAY_BASE_MS = 1000L
+        private const val METRICS_LOG_INTERVAL = 10
     }
     
     /**
@@ -203,8 +204,14 @@ class GallerySearchManager(
                 } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
                     Log.e(TAG, "Search timeout after ${timeoutMs}ms", e)
                     handleSearchError(searchText, RuntimeException("Search timeout", e))
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error during timeout search", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "IllegalState during timeout search", e)
+                    handleSearchError(searchText, e)
+                } catch (e: CancellationException) {
+                    Log.e(TAG, "CancellationException during timeout search", e)
+                    handleSearchError(searchText, RuntimeException("Search cancelled", e))
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "SecurityException during timeout search", e) 
                     handleSearchError(searchText, e)
                 }
             }
@@ -230,7 +237,7 @@ class GallerySearchManager(
         fragmentRef.get()?.let { fragment ->
             searchJob = fragment.viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    delay(retryCount * 1000L) // 指数バックオフ
+                    delay(retryCount * RETRY_DELAY_BASE_MS) // 指数バックオフ
                     
                     val validationResult = validateSearchText(searchText.trim())
                     
@@ -245,8 +252,14 @@ class GallerySearchManager(
                             Log.w(TAG, "Invalid search text for retry")
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error during search retry", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "IllegalState during search retry", e)
+                    handleSearchError(searchText, e)
+                } catch (e: CancellationException) {
+                    Log.e(TAG, "CancellationException during search retry", e)
+                    handleSearchError(searchText, RuntimeException("Retry cancelled", e))
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "SecurityException during search retry", e)
                     handleSearchError(searchText, e)
                 }
             }
@@ -263,8 +276,10 @@ class GallerySearchManager(
         try {
             // 基本的なエラーハンドリング
             viewModel.clearSearch()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during search error handling", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalState during search error handling", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException during search error handling", e)
         }
     }
     
@@ -290,7 +305,7 @@ class GallerySearchManager(
         searchCount++
         
         // 定期的にメトリクスをログ出力
-        if (searchCount % 10 == 0) {
+        if (searchCount % METRICS_LOG_INTERVAL == 0) {
             Log.i(TAG, "Search metrics - Total searches: $searchCount")
             searchMetrics.forEach { (type, totalDuration) ->
                 Log.i(TAG, "  $type: ${totalDuration}ms total")

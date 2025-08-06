@@ -389,8 +389,10 @@ class FilterUIManager(
                         try {
                             // 基本的なリトライ実装（実際のメソッドは別途実装が必要）
                             Log.d(TAG, "Retrying filter options loading")
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Retry failed for filter operation", e)
+                        } catch (e: IllegalStateException) {
+                            Log.e(TAG, "IllegalStateException in filter retry", e)
+                        } catch (e: SecurityException) {
+                            Log.e(TAG, "SecurityException in filter retry", e)
                         }
                     }
                 }

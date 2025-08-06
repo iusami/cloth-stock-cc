@@ -24,15 +24,22 @@ class GalleryErrorHandler(
     // パフォーマンス最適化: エラー頻度制限
     private var lastErrorTime = 0L
     private var errorCount = 0
-    private val errorThrottleMs = 1000L // 1秒間に1回まで
-    private val maxErrorsPerMinute = 10
+    
+    // 定数定義
+    companion object {
+        private const val TAG = "GalleryErrorHandler"
+        private const val ERROR_THROTTLE_MS = 1000L // 1秒間に1回まで
+        private const val MAX_ERRORS_PER_MINUTE = 10
+        private const val TIMEOUT_DURATION = 5000L
+        private const val ONE_MINUTE_IN_TIMEOUT_UNITS = 12L
+    }
+    
+    private val errorThrottleMs = ERROR_THROTTLE_MS
+    private val maxErrorsPerMinute = MAX_ERRORS_PER_MINUTE
     
     // 包括的ログ記録
     private val errorMetrics = mutableMapOf<String, ErrorMetric>()
     
-    companion object {
-        private const val TAG = "GalleryErrorHandler"
-    }
     
     /**
      * エラーメトリクス追跡用データクラス
@@ -306,24 +313,36 @@ class GalleryErrorHandler(
     private fun shouldShowError(): Boolean {
         val currentTime = System.currentTimeMillis()
         
-        // 1秒以内の連続エラーを制限
-        if (currentTime - lastErrorTime < errorThrottleMs) {
-            return false
+        // 短時間での連続エラーとエラー回数上限をチェック
+        val shouldLimit = isWithinThrottleTime(currentTime) || isErrorCountExceeded(currentTime)
+        
+        if (!shouldLimit) {
+            updateErrorTracking(currentTime)
         }
         
-        // 1分間のエラー回数制限
-        if (errorCount >= maxErrorsPerMinute) {
-            val oneMinuteAgo = currentTime - 60000L
-            if (lastErrorTime > oneMinuteAgo) {
-                return false
-            } else {
-                errorCount = 0 // リセット
-            }
+        return !shouldLimit
+    }
+    
+    private fun isWithinThrottleTime(currentTime: Long): Boolean {
+        return currentTime - lastErrorTime < errorThrottleMs
+    }
+    
+    private fun isErrorCountExceeded(currentTime: Long): Boolean {
+        if (errorCount < maxErrorsPerMinute) return false
+        
+        val oneMinuteAgo = currentTime - TIMEOUT_DURATION * ONE_MINUTE_IN_TIMEOUT_UNITS
+        val shouldReset = lastErrorTime <= oneMinuteAgo
+        
+        if (shouldReset) {
+            errorCount = 0 // リセット
         }
         
+        return !shouldReset
+    }
+    
+    private fun updateErrorTracking(currentTime: Long) {
         lastErrorTime = currentTime
         errorCount++
-        return true
     }
     
     /**
@@ -338,7 +357,7 @@ class GalleryErrorHandler(
         metric.totalDuration += duration
         
         // 定期的にメトリクスをログ出力
-        if (metric.count % 5 == 0) {
+        if (metric.count % MAX_ERRORS_PER_MINUTE / 2 == 0) {
             Log.i(TAG, "Error metrics - Type: $errorType, Count: ${metric.count}, " +
                     "Avg Duration: ${metric.totalDuration / metric.count}ms")
         }

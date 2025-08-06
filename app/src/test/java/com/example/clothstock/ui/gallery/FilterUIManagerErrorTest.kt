@@ -11,7 +11,6 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.Mockito.*
-import kotlin.test.assertFailsWith
 
 /**
  * FilterUIManagerのエラーハンドリングテスト
@@ -36,8 +35,6 @@ class FilterUIManagerErrorTest {
     @Mock
     private lateinit var mockViewModel: GalleryViewModel
 
-    @Mock
-    private lateinit var mockErrorHandler: GalleryErrorHandler
 
     private lateinit var filterUIManager: FilterUIManager
 
@@ -177,4 +174,5 @@ class FilterUIManagerErrorTest {
         
         // Then: リトライ上限が処理される
     }
+
 }
