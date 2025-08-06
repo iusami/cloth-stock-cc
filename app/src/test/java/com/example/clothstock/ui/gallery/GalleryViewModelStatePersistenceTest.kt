@@ -37,6 +37,32 @@ class GalleryViewModelStatePersistenceTest {
     private lateinit var mockSavedStateHandle: SavedStateHandle
     private lateinit var viewModel: GalleryViewModel
 
+    // テストデータファクトリー
+    companion object {
+        private const val TEST_SEARCH_TEXT = "シャツ"
+        private const val TEST_SEARCH_TEXT_2 = "パンツ"
+        private const val TEST_SEARCH_TEXT_3 = "保存された検索"
+        
+        private fun createTestFilterState() = FilterState(
+            sizeFilters = setOf(100, 110),
+            colorFilters = setOf("赤", "青"),
+            categoryFilters = setOf("トップス"),
+            searchText = TEST_SEARCH_TEXT
+        )
+        
+        private fun createTestFilterState2() = FilterState(
+            sizeFilters = setOf(120, 130),
+            colorFilters = setOf("緑"),
+            categoryFilters = setOf("ボトムス"),
+            searchText = TEST_SEARCH_TEXT_2
+        )
+        
+        private fun createTestFilterState3() = FilterState(
+            sizeFilters = setOf(140, 150),
+            colorFilters = setOf("黒", "白")
+        )
+    }
+
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
@@ -54,21 +80,26 @@ class GalleryViewModelStatePersistenceTest {
         Dispatchers.resetMain()
     }
 
+    // ヘルパーメソッド
+    private fun createViewModelWithMocks(): GalleryViewModel {
+        return GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+    }
+
+    private fun setupSavedStateForRestore(filterState: FilterState?, searchText: String?) {
+        every { mockSavedStateHandle.get<FilterState>("filter_state") } returns filterState
+        every { mockSavedStateHandle.get<String>("search_text") } returns searchText
+    }
+
     // ===== RED: ViewModel onCleared での状態保存テスト =====
 
     @Test
     fun `onCleared should save current filter state to SavedStateHandle`() {
         // Given: フィルター状態が設定されている
-        val filterState = FilterState(
-            sizeFilters = setOf(100, 110),
-            colorFilters = setOf("赤", "青"),
-            categoryFilters = setOf("トップス"),
-            searchText = "シャツ"
-        )
+        val filterState = createTestFilterState()
         every { mockFilterManager.getCurrentState() } returns filterState
         
         // ViewModelを作成（SavedStateHandle付き）
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: 状態保存メソッドが呼ばれる
         viewModel.saveStateToSavedStateHandle()
@@ -84,7 +115,7 @@ class GalleryViewModelStatePersistenceTest {
         val filterState = FilterState(searchText = searchText)
         every { mockFilterManager.getCurrentState() } returns filterState
         
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: 状態保存メソッドが呼ばれる
         viewModel.saveStateToSavedStateHandle()
@@ -99,7 +130,7 @@ class GalleryViewModelStatePersistenceTest {
         val emptyState = FilterState()
         every { mockFilterManager.getCurrentState() } returns emptyState
         
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: 状態保存メソッドが呼ばれる
         viewModel.saveStateToSavedStateHandle()
@@ -114,17 +145,11 @@ class GalleryViewModelStatePersistenceTest {
     @Test
     fun `should restore filter state from SavedStateHandle on initialization`() {
         // Given: SavedStateHandleに保存された状態がある
-        val savedFilterState = FilterState(
-            sizeFilters = setOf(120, 130),
-            colorFilters = setOf("緑"),
-            categoryFilters = setOf("ボトムス"),
-            searchText = "パンツ"
-        )
-        every { mockSavedStateHandle.get<FilterState>("filter_state") } returns savedFilterState
-        every { mockSavedStateHandle.get<String>("search_text") } returns "パンツ"
+        val savedFilterState = createTestFilterState2()
+        setupSavedStateForRestore(savedFilterState, TEST_SEARCH_TEXT_2)
         
         // When: ViewModelが初期化される
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // Then: FilterManagerに状態が復元される
         verify { mockFilterManager.restoreState(savedFilterState) }
@@ -133,25 +158,22 @@ class GalleryViewModelStatePersistenceTest {
     @Test
     fun `should restore search text from SavedStateHandle on initialization`() {
         // Given: SavedStateHandleに検索テキストが保存されている
-        val savedSearchText = "保存された検索"
-        every { mockSavedStateHandle.get<String>("search_text") } returns savedSearchText
-        every { mockSavedStateHandle.get<FilterState>("filter_state") } returns null
+        setupSavedStateForRestore(null, TEST_SEARCH_TEXT_3)
         
         // When: ViewModelが初期化される
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // Then: 検索テキストが復元される
-        verify { mockFilterManager.updateSearchText(savedSearchText) }
+        verify { mockFilterManager.updateSearchText(TEST_SEARCH_TEXT_3) }
     }
 
     @Test
     fun `should handle null saved state gracefully`() {
         // Given: SavedStateHandleに何も保存されていない
-        every { mockSavedStateHandle.get<FilterState>("filter_state") } returns null
-        every { mockSavedStateHandle.get<String>("search_text") } returns null
+        setupSavedStateForRestore(null, null)
         
         // When: ViewModelが初期化される
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // Then: デフォルト状態で初期化される（エラーが発生しない）
         // FilterManagerの初期化は正常に完了する
@@ -164,13 +186,10 @@ class GalleryViewModelStatePersistenceTest {
     @Test
     fun `should save filter preferences to SharedPreferences`() {
         // Given: フィルター設定がある
-        val filterState = FilterState(
-            sizeFilters = setOf(140, 150),
-            colorFilters = setOf("黒", "白")
-        )
+        val filterState = createTestFilterState3()
         every { mockFilterManager.getCurrentState() } returns filterState
         
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: フィルター設定を永続化する
         viewModel.saveFilterPreferences()
@@ -183,7 +202,7 @@ class GalleryViewModelStatePersistenceTest {
     @Test
     fun `should load filter preferences from SharedPreferences`() {
         // Given: SharedPreferencesに保存された設定がある
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: フィルター設定を読み込む
         viewModel.loadFilterPreferences()
@@ -196,7 +215,7 @@ class GalleryViewModelStatePersistenceTest {
     @Test
     fun `should clear filter preferences from SharedPreferences`() {
         // Given: SharedPreferencesに保存された設定がある
-        viewModel = GalleryViewModel(mockRepository, mockFilterManager, mockSavedStateHandle, null)
+        viewModel = createViewModelWithMocks()
         
         // When: フィルター設定をクリアする
         viewModel.clearFilterPreferences()
