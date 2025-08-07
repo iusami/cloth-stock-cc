@@ -141,4 +141,86 @@ object TestDataHelper {
             createTestClothItem(5, tagData = createTestTagData(color = "グリーン", category = "ジャケット"))
         )
     }
+
+    // ===== Task 13: エンドツーエンドテスト用データセット =====
+
+    /**
+     * カテゴリバランスの取れたテストデータ生成
+     * 各カテゴリ5件ずつ、サイズと色も均等に配置
+     */
+    fun createCategoryBalancedTestData(): List<ClothItem> {
+        val categories = listOf("シャツ", "パンツ", "ジャケット", "ドレス", "スカート")
+        val colors = listOf("ブルー", "レッド", "グリーン", "イエロー", "ブラック")
+        val sizes = listOf(80, 90, 100, 110, 120)
+        
+        val items = mutableListOf<ClothItem>()
+        var id = 1L
+        
+        categories.forEachIndexed { categoryIndex, category ->
+            repeat(5) { itemIndex ->
+                items.add(
+                    createTestClothItem(
+                        id = id++,
+                        tagData = createTestTagData(
+                            size = sizes[itemIndex % sizes.size],
+                            color = colors[itemIndex % colors.size], 
+                            category = category
+                        ),
+                        createdAt = Date(System.currentTimeMillis() - (id * 3600000L)) // 1時間ずつ過去
+                    )
+                )
+            }
+        }
+        
+        return items
+    }
+
+    /**
+     * 検索可能なテストデータ生成
+     * 検索キーワードに対応した名前とカテゴリを持つデータ
+     */
+    fun createSearchableTestData(): List<ClothItem> {
+        return listOf(
+            createTestClothItem(1, tagData = createTestTagData(category = "シャツ", color = "ブルー", size = 100)),
+            createTestClothItem(2, tagData = createTestTagData(category = "シャツ", color = "レッド", size = 110)),
+            createTestClothItem(3, tagData = createTestTagData(category = "パンツ", color = "ブルー", size = 120)),
+            createTestClothItem(4, tagData = createTestTagData(category = "ジャケット", color = "ブラック", size = 100)),
+            createTestClothItem(5, tagData = createTestTagData(category = "ドレス", color = "グリーン", size = 90)),
+            createTestClothItem(6, tagData = createTestTagData(category = "スカート", color = "イエロー", size = 80)),
+            createTestClothItem(7, tagData = createTestTagData(category = "シャツ", color = "ホワイト", size = 110)),
+            createTestClothItem(8, tagData = createTestTagData(category = "パンツ", color = "グレー", size = 100))
+        )
+    }
+
+    /**
+     * リアルなボリュームを想定した大量データセット
+     * パフォーマンステスト用
+     */
+    fun createRealisticLargeDataSet(count: Int): List<ClothItem> {
+        val categories = listOf(
+            "シャツ", "ブラウス", "Tシャツ", "ポロシャツ", "タンクトップ",
+            "パンツ", "ジーンズ", "ショーツ", "レギンス", "チノパン",
+            "ジャケット", "コート", "カーディガン", "パーカー", "ベスト",
+            "ドレス", "ワンピース", "スカート", "キュロット"
+        )
+        val colors = listOf(
+            "ブラック", "ホワイト", "グレー", "ネイビー", "ベージュ",
+            "ブルー", "レッド", "グリーン", "イエロー", "ピンク",
+            "パープル", "オレンジ", "ブラウン", "カーキ", "マゼンタ"
+        )
+        val sizes = listOf(70, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130)
+        
+        return (1..count).map { index ->
+            createTestClothItem(
+                id = index.toLong(),
+                imagePath = "content://media/external/images/media/realistic_test_$index.jpg",
+                tagData = createTestTagData(
+                    size = sizes[index % sizes.size],
+                    color = colors[index % colors.size],
+                    category = categories[index % categories.size]
+                ),
+                createdAt = Date(System.currentTimeMillis() - (index * 1800000L)) // 30分ずつ過去
+            )
+        }
+    }
 }

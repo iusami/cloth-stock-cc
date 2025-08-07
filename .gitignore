@@ -1,6 +1,3 @@
-# Kiro AI assistant files
-.kiro
-
 # Android specific
 *.iml
 .gradle/
