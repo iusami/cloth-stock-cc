@@ -179,6 +179,40 @@ class ClothRepositoryImpl(
         // 現在は何もしない
     }
 
+    // ===== Task 12: プログレッシブローディング対応 =====
+
+    override fun searchItemsWithPagination(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>> {
+        return clothDao.searchItemsWithPagination(
+            sizeFilters = sizeFilters,
+            colorFilters = colorFilters,
+            categoryFilters = categoryFilters,
+            searchText = searchText,
+            offset = offset,
+            limit = limit
+        )
+    }
+
+    override suspend fun getFilteredItemCount(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Int {
+        return clothDao.getFilteredItemCount(
+            sizeFilters = sizeFilters,
+            colorFilters = colorFilters,
+            categoryFilters = categoryFilters,
+            searchText = searchText
+        )
+    }
+
     // ===== プライベートヘルパーメソッド =====
 
     /**

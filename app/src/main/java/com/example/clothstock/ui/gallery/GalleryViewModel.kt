@@ -20,6 +20,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import android.util.Log
+import android.annotation.SuppressLint
+// Task 12: プログレッシブローディング用import
+import com.example.clothstock.data.repository.SearchCache
 
 /**
  * ギャラリー画面のViewModel
@@ -37,6 +40,7 @@ class GalleryViewModel(
     companion object {
         private const val TAG = "GalleryViewModel"
         private const val SEARCH_DEBOUNCE_DELAY_MS = 300L
+        private const val PROGRESSIVE_BATCH_SIZE = 20
     }
 
     // ===== LiveData定義 =====
@@ -76,6 +80,36 @@ class GalleryViewModel(
     // 検索デバウンシング用
     private var searchJob: Job? = null
     private val searchDelayMs = SEARCH_DEBOUNCE_DELAY_MS
+    
+    // ===== Task 12: プログレッシブローディング用フィールド =====
+    
+    // 検索結果キャッシュ
+    private val searchCache = SearchCache(maxSize = 10)
+    
+    // プログレッシブローディング状態
+    private val _progressiveLoadingState = 
+        MutableLiveData<com.example.clothstock.ui.gallery.ProgressiveLoadingState>()
+    val progressiveLoadingState: 
+        LiveData<com.example.clothstock.ui.gallery.ProgressiveLoadingState> = _progressiveLoadingState
+    
+    // メモリプレッシャー状態
+    private val _memoryPressureLevel = MutableLiveData<com.example.clothstock.ui.gallery.MemoryPressureLevel>()
+    val memoryPressureLevel: LiveData<com.example.clothstock.ui.gallery.MemoryPressureLevel> = _memoryPressureLevel
+    
+    // 画像品質
+    private val _currentImageQuality = MutableLiveData<com.example.clothstock.ui.gallery.ImageQuality>()
+    val currentImageQuality: LiveData<com.example.clothstock.ui.gallery.ImageQuality> = _currentImageQuality
+    
+    // 追加データ有無
+    private val _hasMoreData = MutableLiveData<Boolean>()
+    val hasMoreData: LiveData<Boolean> = _hasMoreData
+    
+    // プログレッシブローディング一時停止状態
+    private val _isProgressiveLoadingPaused = MutableLiveData<Boolean>()
+    val isProgressiveLoadingPaused: LiveData<Boolean> = _isProgressiveLoadingPaused
+    
+    // プログレッシブローディング用ジョブ
+    private var progressiveLoadingJob: Job? = null
 
     // ===== 初期化 =====
 
@@ -87,6 +121,13 @@ class GalleryViewModel(
         _isLoading.value = false
         _errorMessage.value = null
         _isEmpty.value = true // 初期状態は空
+
+        // Task 12: プログレッシブローディング関連の初期化
+        _progressiveLoadingState.value = com.example.clothstock.ui.gallery.ProgressiveLoadingState()
+        _memoryPressureLevel.value = com.example.clothstock.ui.gallery.MemoryPressureLevel.LOW
+        _currentImageQuality.value = com.example.clothstock.ui.gallery.ImageQuality.HIGH
+        _hasMoreData.value = true
+        _isProgressiveLoadingPaused.value = false
 
         // Task 10: 保存された状態を復元
         restoreFilterStateFromSavedState()
@@ -565,4 +606,196 @@ class GalleryViewModel(
             manager.clearFilterState()
         }
     }
+    
+    // ===== Task 12: プログレッシブローディング機能 =====
+    
+    /**
+     * プログレッシブローディングを開始
+     * 
+     * @param searchQuery 検索クエリ（省略時は現在のフィルター状態を使用）
+     */
+    @SuppressLint("NullSafeMutableLiveData")
+    fun startProgressiveLoading(searchQuery: String? = null) {
+        progressiveLoadingJob?.cancel()
+        
+        progressiveLoadingJob = viewModelScope.launch {
+            try {
+                val currentState = if (searchQuery != null) {
+                    filterManager.updateSearchText(searchQuery)
+                    filterManager.getCurrentState()
+                } else {
+                    filterManager.getCurrentState()
+                }
+                
+                // キャッシュから結果を取得試行
+                val cachedItems = searchCache.get(currentState)
+                if (cachedItems != null) {
+                    Log.d(TAG, "プログレッシブローディング: キャッシュヒット（${cachedItems.size}件）")
+                    _clothItems.value = cachedItems // Non-null確認済みのためlint警告は無視可能
+                    _isEmpty.value = cachedItems.isEmpty()
+                    _hasMoreData.value = false // キャッシュからの場合は全件取得済み
+                    return@launch
+                }
+                
+                // 初期状態設定
+                _progressiveLoadingState.value = com.example.clothstock.ui.gallery.ProgressiveLoadingState(
+                    isLoading = true,
+                    currentOffset = 0,
+                    batchSize = PROGRESSIVE_BATCH_SIZE,
+                    hasMoreData = true,
+                    isPaused = false
+                )
+                _clothItems.value = emptyList()
+                _hasMoreData.value = true
+                _isLoading.value = true
+                
+                // 最初のバッチを読み込み
+                loadNextBatch()
+                
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "プログレッシブローディング開始エラー"
+                Log.e(TAG, "プログレッシブローディング開始エラー", e)
+            }
+        }
+    }
+    
+    /**
+     * 次のバッチを読み込み
+     */
+    fun loadNextBatch() {
+        // 条件チェックを1つのif文にまとめる
+        val currentLoadingState = _progressiveLoadingState.value
+        val isPaused = _isProgressiveLoadingPaused.value == true
+        val canLoad = currentLoadingState != null && 
+                     currentLoadingState.hasMoreData && 
+                     !currentLoadingState.isLoading && 
+                     !isPaused
+                     
+        if (!canLoad) {
+            Log.d(TAG, "プログレッシブローディング条件未満足のため、バッチ読み込みをスキップ")
+            return
+        }
+        
+        viewModelScope.launch {
+            try {
+                _progressiveLoadingState.value = currentLoadingState.copy(isLoading = true)
+                
+                val currentState = filterManager.getCurrentState()
+                val sizeFilters = if (currentState.sizeFilters.isNotEmpty()) {
+                    currentState.sizeFilters.toList()
+                } else null
+                val colorFilters = if (currentState.colorFilters.isNotEmpty()) {
+                    currentState.colorFilters.toList()
+                } else null  
+                val categoryFilters = if (currentState.categoryFilters.isNotEmpty()) {
+                    currentState.categoryFilters.toList()
+                } else null
+                val searchText = if (currentState.searchText.isNotBlank()) currentState.searchText else null
+                
+                val items = clothRepository.searchItemsWithPagination(
+                    sizeFilters = sizeFilters,
+                    colorFilters = colorFilters,
+                    categoryFilters = categoryFilters,
+                    searchText = searchText,
+                    offset = currentLoadingState.currentOffset,
+                    limit = currentLoadingState.batchSize
+                ).first()
+                
+                val currentItems = _clothItems.value ?: emptyList()
+                val newItems = currentItems + items
+                val hasMore = items.size == currentLoadingState.batchSize
+                
+                _clothItems.value = newItems
+                _isEmpty.value = newItems.isEmpty()
+                _hasMoreData.value = hasMore
+                
+                _progressiveLoadingState.value = currentLoadingState.copy(
+                    isLoading = false,
+                    currentOffset = currentLoadingState.currentOffset + items.size,
+                    hasMoreData = hasMore
+                )
+                
+                // 全件取得完了時にキャッシュに保存
+                if (!hasMore) {
+                    searchCache.put(currentState, newItems)
+                    Log.d(TAG, "プログレッシブローディング完了：${newItems.size}件をキャッシュに保存")
+                }
+                
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "バッチ読み込みエラー"
+                _progressiveLoadingState.value = currentLoadingState.copy(isLoading = false)
+                Log.e(TAG, "バッチ読み込みエラー", e)
+            } finally {
+                if (_progressiveLoadingState.value?.hasMoreData == false) {
+                    _isLoading.value = false
+                }
+            }
+        }
+    }
+    
+    /**
+     * メモリプレッシャー発生時の処理
+     * 
+     * @param level メモリプレッシャーレベル（省略時はHIGH）
+     */
+    fun onMemoryPressure(
+        level: com.example.clothstock.ui.gallery.MemoryPressureLevel = 
+            com.example.clothstock.ui.gallery.MemoryPressureLevel.HIGH
+    ) {
+        _memoryPressureLevel.value = level
+        
+        // キャッシュサイズを削減
+        searchCache.onMemoryPressure(level)
+        
+        // プログレッシブローディングを一時停止
+        if (level == com.example.clothstock.ui.gallery.MemoryPressureLevel.HIGH) {
+            _isProgressiveLoadingPaused.value = true
+            // 画像品質を下げる
+            _currentImageQuality.value = com.example.clothstock.ui.gallery.ImageQuality.LOW
+        } else if (level == com.example.clothstock.ui.gallery.MemoryPressureLevel.MEDIUM) {
+            _currentImageQuality.value = com.example.clothstock.ui.gallery.ImageQuality.MEDIUM
+        }
+        
+        Log.d(TAG, "メモリプレッシャー処理: レベル=$level, キャッシュサイズ=${searchCache.size()}")
+    }
+    
+    /**
+     * メモリプレッシャー解除時の処理
+     */
+    fun onMemoryPressureRelieved() {
+        _memoryPressureLevel.value = com.example.clothstock.ui.gallery.MemoryPressureLevel.LOW
+        _currentImageQuality.value = com.example.clothstock.ui.gallery.ImageQuality.HIGH
+        _isProgressiveLoadingPaused.value = false
+        
+        Log.d(TAG, "メモリプレッシャー解除")
+    }
+    
+    /**
+     * 検索結果をキャッシュに保存
+     * テスト用メソッド
+     */
+    fun cacheSearchResults(filterState: FilterState, items: List<ClothItem>) {
+        searchCache.put(filterState, items)
+    }
+    
+    /**
+     * 検索キャッシュサイズを取得
+     * テスト用メソッド
+     */
+    fun getSearchCacheSize(): Int = searchCache.size()
+    
+    /**
+     * メモリプレッシャーレベルを設定
+     * テスト用メソッド
+     */
+    fun setMemoryPressureLevel(level: com.example.clothstock.ui.gallery.MemoryPressureLevel) {
+        _memoryPressureLevel.value = level
+    }
+    
+    /**
+     * 現在の画像品質を取得
+     * テスト用メソッド
+     */
+    fun getCurrentImageQuality(): com.example.clothstock.ui.gallery.ImageQuality = 
+        _currentImageQuality.value ?: com.example.clothstock.ui.gallery.ImageQuality.HIGH
 }

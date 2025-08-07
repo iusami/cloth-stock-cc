@@ -310,6 +310,119 @@ interface ClothDao {
     @Query("SELECT DISTINCT category FROM cloth_items ORDER BY category")
     suspend fun getDistinctCategories(): List<String>
 
+    // ===== Task 12: プログレッシブローディング対応 =====
+
+    /**
+     * 複合フィルター条件で衣服アイテムをページネーションで検索
+     * プログレッシブローディング機能で使用される
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param offset 開始オフセット（0から開始）
+     * @param limit 取得件数
+     * @return フィルター条件に合致するアイテムのFlow（ページネーション適用済み）
+     */
+    @Query("""
+        SELECT * FROM cloth_items 
+        WHERE (:sizeFilters IS NULL OR size IN (:sizeFilters))
+        AND (:colorFilters IS NULL OR color IN (:colorFilters))
+        AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
+        AND (:searchText IS NULL OR :searchText = '' OR 
+             color LIKE '%' || :searchText || '%' OR 
+             category LIKE '%' || :searchText || '%')
+        ORDER BY createdAt DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun searchItemsWithPaginationInternal(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>>
+
+    /**
+     * 複合フィルター条件で衣服アイテムをページネーションで検索（空リスト対応版）
+     * 空のリストを適切にnullに変換してから内部メソッドを呼び出す
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param offset 開始オフセット（0から開始）
+     * @param limit 取得件数
+     * @return フィルター条件に合致するアイテムのFlow（ページネーション適用済み）
+     */
+    fun searchItemsWithPagination(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>> {
+        return searchItemsWithPaginationInternal(
+            sizeFilters = sizeFilters?.takeIf { it.isNotEmpty() },
+            colorFilters = colorFilters?.takeIf { it.isNotEmpty() },
+            categoryFilters = categoryFilters?.takeIf { it.isNotEmpty() },
+            searchText = searchText?.takeIf { it.isNotBlank() },
+            offset = offset,
+            limit = limit
+        )
+    }
+
+    /**
+     * 複合フィルター条件に合致する総アイテム数を取得
+     * プログレッシブローディングでの「残りデータ有無」判定に使用
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return 条件に合致する総アイテム数
+     */
+    @Query("""
+        SELECT COUNT(*) FROM cloth_items 
+        WHERE (:sizeFilters IS NULL OR size IN (:sizeFilters))
+        AND (:colorFilters IS NULL OR color IN (:colorFilters))
+        AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
+        AND (:searchText IS NULL OR :searchText = '' OR 
+             color LIKE '%' || :searchText || '%' OR 
+             category LIKE '%' || :searchText || '%')
+    """)
+    suspend fun getFilteredItemCountInternal(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Int
+
+    /**
+     * 複合フィルター条件に合致する総アイテム数を取得（空リスト対応版）
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return 条件に合致する総アイテム数
+     */
+    suspend fun getFilteredItemCount(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Int {
+        return getFilteredItemCountInternal(
+            sizeFilters = sizeFilters?.takeIf { it.isNotEmpty() },
+            colorFilters = colorFilters?.takeIf { it.isNotEmpty() },
+            categoryFilters = categoryFilters?.takeIf { it.isNotEmpty() },
+            searchText = searchText?.takeIf { it.isNotBlank() }
+        )
+    }
+
     // ===== メンテナンス操作 =====
     // 注意: PRAGMA、VACUUM、ANALYZEはRoomでサポートされていないため
     // これらの操作は上位層で直接SQLiteDatabaseインスタンスを使用して実装する

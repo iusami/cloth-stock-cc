@@ -238,4 +238,44 @@ interface ClothRepository {
      * @throws RuntimeException データアクセスエラーの場合
      */
     suspend fun getAvailableFilterOptions(): FilterOptions
+
+    // ===== Task 12: プログレッシブローディング対応 =====
+
+    /**
+     * 複合フィルター条件で衣服アイテムをページネーションで検索
+     * プログレッシブローディング機能で使用される
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param offset 開始オフセット（0から開始）
+     * @param limit 取得件数
+     * @return フィルター条件に合致するアイテムのFlow（ページネーション適用済み）
+     */
+    fun searchItemsWithPagination(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?,
+        offset: Int,
+        limit: Int
+    ): Flow<List<ClothItem>>
+
+    /**
+     * 複合フィルター条件に合致する総アイテム数を取得
+     * プログレッシブローディングでの「残りデータ有無」判定に使用
+     * 
+     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
+     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
+     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @return 条件に合致する総アイテム数
+     */
+    suspend fun getFilteredItemCount(
+        sizeFilters: List<Int>?,
+        colorFilters: List<String>?,
+        categoryFilters: List<String>?,
+        searchText: String?
+    ): Int
 }
