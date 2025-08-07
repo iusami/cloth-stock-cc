@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analyzer",
+  "description": "Monitors source code files for changes and provides automated code quality analysis including code smells detection, design pattern suggestions, and best practices recommendations",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.kt",
+      "**/*.java",
+      "**/*.xml",
+      "**/build.gradle.kts",
+      "**/build.gradle"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified code files for potential improvements. Focus on:\n\n1. **Code Smells Detection**: Identify any code smells such as long methods, large classes, duplicate code, or complex conditionals\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure (considering Android MVVM architecture)\n3. **Best Practices**: Review adherence to Kotlin/Android best practices, including:\n   - Proper null safety usage\n   - Coroutines usage for async operations\n   - Resource management\n   - Memory leak prevention\n   - Android lifecycle awareness\n4. **Readability**: Suggest improvements for code clarity and documentation\n5. **Maintainability**: Identify areas that could be refactored for better maintainability\n6. **Performance**: Highlight potential performance optimizations specific to Android development\n7. **Testing**: Suggest areas where test coverage could be improved following TDD principles\n\nProvide specific, actionable suggestions while maintaining existing functionality. Consider the cloth-stock Android app context and ensure suggestions align with Material Design guidelines and Android development standards."
+  }
+}
