@@ -25,7 +25,11 @@
             android:background="?attr/colorOutlineVariant"
             android:backgroundTint="?attr/colorOnSurfaceVariant"
             android:contentDescription="@string/filter_handle_description"
-            android:importantForAccessibility="yes" />
+            android:importantForAccessibility="yes"
+            android:focusable="true"
+            android:clickable="true"
+            android:minWidth="48dp"
+            android:minHeight="48dp" />
 
         <!-- フィルターヘッダー -->
         <LinearLayout
@@ -49,7 +53,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/filter_clear_all"
-                android:textColor="?attr/colorPrimary" />
+                android:textColor="?attr/colorPrimary"
+                android:contentDescription="@string/filter_clear_button_description"
+                android:focusable="true" />
 
         </LinearLayout>
 
@@ -82,6 +88,11 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="100"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusDown="@id/chipSize110"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -91,6 +102,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="110"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize100"
+                android:nextFocusDown="@id/chipSize120"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -100,6 +117,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="120"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize110"
+                android:nextFocusDown="@id/chipSize130"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -109,6 +132,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="130"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize120"
+                android:nextFocusDown="@id/chipSize140"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -118,6 +147,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="140"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize130"
+                android:nextFocusDown="@id/chipSize150"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -127,6 +162,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="150"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize140"
+                android:nextFocusDown="@id/chipSize160"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -136,6 +177,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="160"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize150"
+                android:nextFocusDown="@id/chipColorRed"
+                android:contentDescription="@string/chip_size_description"
                 tools:checked="false" />
 
         </com.google.android.material.chip.ChipGroup>
@@ -169,6 +216,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="赤"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize160"
+                android:nextFocusDown="@id/chipColorBlue"
+                android:contentDescription="@string/chip_color_red_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -178,6 +231,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="青"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorRed"
+                android:nextFocusDown="@id/chipColorGreen"
+                android:contentDescription="@string/chip_color_blue_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -187,6 +246,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="緑"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorBlue"
+                android:nextFocusDown="@id/chipColorYellow"
+                android:contentDescription="@string/chip_color_green_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -196,6 +261,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="黄"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorGreen"
+                android:nextFocusDown="@id/chipColorBlack"
+                android:contentDescription="@string/chip_color_yellow_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -205,6 +276,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="黒"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorYellow"
+                android:nextFocusDown="@id/chipColorWhite"
+                android:contentDescription="@string/chip_color_black_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -214,6 +291,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="白"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorBlack"
+                android:nextFocusDown="@id/chipColorPink"
+                android:contentDescription="@string/chip_color_white_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -223,6 +306,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="ピンク"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorWhite"
+                android:nextFocusDown="@id/chipColorPurple"
+                android:contentDescription="@string/chip_color_pink_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -232,6 +321,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="紫"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorPink"
+                android:nextFocusDown="@id/chipCategoryTops"
+                android:contentDescription="@string/chip_color_purple_description"
                 tools:checked="false" />
 
         </com.google.android.material.chip.ChipGroup>
@@ -265,6 +360,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="トップス"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorPurple"
+                android:nextFocusDown="@id/chipCategoryBottoms"
+                android:contentDescription="@string/chip_category_tops_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -274,6 +375,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="ボトムス"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryTops"
+                android:nextFocusDown="@id/chipCategoryOuterwear"
+                android:contentDescription="@string/chip_category_bottoms_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -283,6 +390,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="アウター"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryBottoms"
+                android:nextFocusDown="@id/chipCategoryShoes"
+                android:contentDescription="@string/chip_category_outerwear_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -292,6 +405,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="靴"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryOuterwear"
+                android:nextFocusDown="@id/chipCategoryAccessories"
+                android:contentDescription="@string/chip_category_shoes_description"
                 tools:checked="false" />
 
             <com.google.android.material.chip.Chip
@@ -301,6 +420,12 @@
                 android:layout_height="wrap_content"
                 android:checkable="true"
                 android:text="アクセサリー"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryShoes"
+                android:nextFocusDown="@id/buttonApplyFilter"
+                android:contentDescription="@string/chip_category_accessories_description"
                 tools:checked="false" />
 
         </com.google.android.material.chip.ChipGroup>
@@ -314,6 +439,8 @@
             android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"
             android:text="@string/filter_apply"
+            android:contentDescription="@string/filter_apply_button_description"
+            android:focusable="true"
             app:icon="@drawable/ic_filter_applied"
             app:iconGravity="start" />
 
