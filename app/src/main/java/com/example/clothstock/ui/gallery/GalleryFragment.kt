@@ -30,6 +30,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
+import com.example.clothstock.accessibility.AccessibilityHelper
 
 /**
  * ギャラリー画面Fragment
@@ -71,6 +72,7 @@ class GalleryFragment : Fragment() {
         setupFab()
         setupFilterUI() // Task7: フィルターUI初期化
         setupSearchBar() // Task8: 検索バー初期化
+        setupAccessibility() // Task14: アクセシビリティ設定
         observeViewModel()
     }
 
@@ -1356,6 +1358,235 @@ class GalleryFragment : Fragment() {
             Log.e(TAG, "Failed to show comprehensive filter error", e)
         }
     }
+    
+    // ===== Task 14: アクセシビリティ対応メソッド =====
+    
+    /**
+     * Task 14 GREEN: アクセシビリティ機能の初期設定
+     */
+    private fun setupAccessibility() {
+        Log.d(TAG, "Setting up accessibility features")
+        
+        try {
+            // フィルターボタンの初期contentDescription設定
+            updateFilterButtonAccessibility()
+            
+            // 検索バーの初期contentDescription設定
+            updateSearchViewAccessibility("")
+            
+            // ChipGroupアクセシビリティ設定
+            setupChipGroupAccessibility()
+            
+            // キーボードナビゲーション設定
+            setupKeyboardNavigation()
+            
+            // LiveRegion設定（動的コンテンツ変更通知用）
+            setupLiveRegions()
+            
+            // 高コントラストモード対応
+            enhanceForHighContrast()
+            
+            Log.d(TAG, "Accessibility setup completed")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException setting up accessibility", e)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "RuntimeException setting up accessibility", e)
+        }
+    }
+    
+    /**
+     * フィルターボタンのアクセシビリティ情報を更新
+     */
+    private fun updateFilterButtonAccessibility() {
+        val activeFilters = viewModel.currentFilters.value
+        val description = activeFilters?.let { filters ->
+            if (filters.hasActiveFilters()) {
+                val filterParts = mutableListOf<String>()
+                
+                if (filters.sizeFilters.isNotEmpty()) {
+                    filterParts.add("サイズ: ${filters.sizeFilters.joinToString(", ")}")
+                }
+                if (filters.colorFilters.isNotEmpty()) {
+                    filterParts.add("色: ${filters.colorFilters.joinToString(", ")}")
+                }
+                if (filters.categoryFilters.isNotEmpty()) {
+                    filterParts.add("カテゴリ: ${filters.categoryFilters.joinToString(", ")}")
+                }
+                
+                filterParts.joinToString(", ")
+            } else {
+                null
+            }
+        }
+        
+        AccessibilityHelper.updateFilterButtonDescription(binding.buttonFilter, description)
+    }
+    
+    /**
+     * 検索バーのアクセシビリティ情報を更新
+     */
+    private fun updateSearchViewAccessibility(currentQuery: String) {
+        AccessibilityHelper.updateSearchViewDescription(binding.searchView, currentQuery)
+    }
+    
+    /**
+     * ChipGroupのアクセシビリティ設定
+     */
+    private fun setupChipGroupAccessibility() {
+        // サイズChipGroup
+        AccessibilityHelper.setupChipGroupAccessibility(
+            binding.includeBottomSheetFilter.chipGroupSize,
+            getString(R.string.filter_size_group_description)
+        )
+        
+        // 色ChipGroup
+        AccessibilityHelper.setupChipGroupAccessibility(
+            binding.includeBottomSheetFilter.chipGroupColor,
+            getString(R.string.filter_color_group_description)
+        )
+        
+        // カテゴリChipGroup
+        AccessibilityHelper.setupChipGroupAccessibility(
+            binding.includeBottomSheetFilter.chipGroupCategory,
+            getString(R.string.filter_category_group_description)
+        )
+        
+        // 個別Chipの選択状態監視
+        setupIndividualChipAccessibility()
+    }
+    
+    /**
+     * 個別Chipのアクセシビリティ監視設定
+     */
+    private fun setupIndividualChipAccessibility() {
+        // サイズChip
+        val sizeChips = listOf(
+            binding.includeBottomSheetFilter.chipSize100 to SIZE_100,
+            binding.includeBottomSheetFilter.chipSize110 to SIZE_110,
+            binding.includeBottomSheetFilter.chipSize120 to SIZE_120,
+            binding.includeBottomSheetFilter.chipSize130 to SIZE_130,
+            binding.includeBottomSheetFilter.chipSize140 to SIZE_140,
+            binding.includeBottomSheetFilter.chipSize150 to SIZE_150,
+            binding.includeBottomSheetFilter.chipSize160 to SIZE_160
+        )
+        
+        sizeChips.forEach { (chip, size) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                AccessibilityHelper.updateSizeChipContentDescription(chip, size, isChecked)
+            }
+            // 初期状態設定
+            AccessibilityHelper.updateSizeChipContentDescription(chip, size, chip.isChecked)
+        }
+        
+        // 色Chip
+        val colorChips = mapOf(
+            binding.includeBottomSheetFilter.chipColorRed to R.string.chip_color_red_description,
+            binding.includeBottomSheetFilter.chipColorBlue to R.string.chip_color_blue_description,
+            binding.includeBottomSheetFilter.chipColorGreen to R.string.chip_color_green_description,
+            binding.includeBottomSheetFilter.chipColorYellow to R.string.chip_color_yellow_description,
+            binding.includeBottomSheetFilter.chipColorBlack to R.string.chip_color_black_description,
+            binding.includeBottomSheetFilter.chipColorWhite to R.string.chip_color_white_description,
+            binding.includeBottomSheetFilter.chipColorPink to R.string.chip_color_pink_description,
+            binding.includeBottomSheetFilter.chipColorPurple to R.string.chip_color_purple_description
+        )
+        
+        colorChips.forEach { (chip, descriptionResId) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                val baseDescription = getString(descriptionResId)
+                AccessibilityHelper.updateChipContentDescription(chip, baseDescription, isChecked)
+            }
+            // 初期状態設定
+            val baseDescription = getString(descriptionResId)
+            AccessibilityHelper.updateChipContentDescription(chip, baseDescription, chip.isChecked)
+        }
+        
+        // カテゴリChip
+        val categoryChips = mapOf(
+            binding.includeBottomSheetFilter.chipCategoryTops to R.string.chip_category_tops_description,
+            binding.includeBottomSheetFilter.chipCategoryBottoms to R.string.chip_category_bottoms_description,
+            binding.includeBottomSheetFilter.chipCategoryOuterwear to R.string.chip_category_outerwear_description,
+            binding.includeBottomSheetFilter.chipCategoryShoes to R.string.chip_category_shoes_description,
+            binding.includeBottomSheetFilter.chipCategoryAccessories to R.string.chip_category_accessories_description
+        )
+        
+        categoryChips.forEach { (chip, descriptionResId) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                val baseDescription = getString(descriptionResId)
+                AccessibilityHelper.updateChipContentDescription(chip, baseDescription, isChecked)
+            }
+            // 初期状態設定
+            val baseDescription = getString(descriptionResId)
+            AccessibilityHelper.updateChipContentDescription(chip, baseDescription, chip.isChecked)
+        }
+    }
+    
+    /**
+     * キーボードナビゲーション設定
+     */
+    private fun setupKeyboardNavigation() {
+        val keyboardInstructions = getString(R.string.keyboard_navigation_hint)
+        
+        // フィルターボトムシート全体にキーボードナビゲーション設定
+        AccessibilityHelper.setupKeyboardNavigationDelegate(
+            binding.includeBottomSheetFilter.bottomSheetFilter,
+            keyboardInstructions
+        )
+        
+        // Chip選択の説明
+        val chipInstructions = getString(R.string.chip_selection_hint)
+        
+        // 全Chipにキーボード操作説明を設定
+        binding.includeBottomSheetFilter.chipGroupSize.children.forEach { chip ->
+            AccessibilityHelper.setupKeyboardNavigationDelegate(chip, chipInstructions)
+        }
+        
+        binding.includeBottomSheetFilter.chipGroupColor.children.forEach { chip ->
+            AccessibilityHelper.setupKeyboardNavigationDelegate(chip, chipInstructions)
+        }
+        
+        binding.includeBottomSheetFilter.chipGroupCategory.children.forEach { chip ->
+            AccessibilityHelper.setupKeyboardNavigationDelegate(chip, chipInstructions)
+        }
+    }
+    
+    /**
+     * LiveRegion設定（動的コンテンツ変更通知）
+     */
+    private fun setupLiveRegions() {
+        // RecyclerViewをLiveRegionに設定（フィルター結果変更通知用）
+        AccessibilityHelper.setLiveRegion(binding.recyclerViewGallery)
+        
+        // 空状態レイアウトもLiveRegionに設定
+        AccessibilityHelper.setLiveRegion(binding.layoutEmptyState)
+    }
+    
+    /**
+     * 高コントラストモード対応
+     */
+    private fun enhanceForHighContrast() {
+        // フィルターボタンの高コントラスト対応
+        AccessibilityHelper.enhanceFocusForHighContrast(binding.buttonFilter)
+        
+        // 全Chipの高コントラスト対応
+        binding.includeBottomSheetFilter.chipGroupSize.children.forEach { chip ->
+            AccessibilityHelper.enhanceFocusForHighContrast(chip)
+        }
+        
+        binding.includeBottomSheetFilter.chipGroupColor.children.forEach { chip ->
+            AccessibilityHelper.enhanceFocusForHighContrast(chip)
+        }
+        
+        binding.includeBottomSheetFilter.chipGroupCategory.children.forEach { chip ->
+            AccessibilityHelper.enhanceFocusForHighContrast(chip)
+        }
+        
+        // ボタン類の高コントラスト対応
+        AccessibilityHelper.enhanceFocusForHighContrast(binding.includeBottomSheetFilter.buttonApplyFilter)
+        AccessibilityHelper.enhanceFocusForHighContrast(binding.includeBottomSheetFilter.buttonClearFilter)
+    }
+    
+    // Task 14: アクセシビリティ通知メソッドは将来の機能拡張時に使用予定
 
     companion object {
         private const val TAG = "GalleryFragment"
@@ -1375,6 +1606,15 @@ class GalleryFragment : Fragment() {
         private const val FILTER_LOADING_ANIMATION_DURATION = 150L // フィルター操作ローディング表示時間
         private const val FILTER_ACTIVE_ALPHA = 0.8f // フィルターアクティブ時のアルファ値
         private const val RECYCLERVIEW_POOL_SIZE_MULTIPLIER = 5 // RecyclerViewプールサイズ乗数
+        
+        // Task 14: アクセシビリティ用定数
+        private const val SIZE_100 = 100
+        private const val SIZE_110 = 110
+        private const val SIZE_120 = 120
+        private const val SIZE_130 = 130
+        private const val SIZE_140 = 140
+        private const val SIZE_150 = 150
+        private const val SIZE_160 = 160
         
         /**
          * GalleryFragmentの新しいインスタンスを作成

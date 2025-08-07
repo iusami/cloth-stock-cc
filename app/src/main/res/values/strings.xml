@@ -96,6 +96,48 @@
     <string name="filter_color_group_description">色フィルターの選択項目</string>
     <string name="filter_category_group_description">カテゴリフィルターの選択項目</string>
     
+    <!-- Task 14: 詳細アクセシビリティ文字列 -->
+    <string name="filter_button_description">フィルター設定を開く。現在のフィルター: %1$s</string>
+    <string name="filter_button_no_filters">フィルター設定を開く。フィルターは適用されていません</string>
+    <string name="search_view_description">衣服アイテムを検索。現在の検索キーワード: %1$s</string>
+    <string name="search_view_empty">衣服アイテムを検索。検索キーワードを入力してください</string>
+    
+    <!-- サイズChip詳細説明 -->
+    <string name="chip_size_description">サイズ %1$d センチメートル。%2$s</string>
+    <string name="chip_selected">選択中</string>
+    <string name="chip_not_selected">未選択</string>
+    
+    <!-- 色Chip詳細説明 -->
+    <string name="chip_color_red_description">色: 赤。%1$s</string>
+    <string name="chip_color_blue_description">色: 青。%1$s</string>
+    <string name="chip_color_green_description">色: 緑。%1$s</string>
+    <string name="chip_color_yellow_description">色: 黄。%1$s</string>
+    <string name="chip_color_black_description">色: 黒。%1$s</string>
+    <string name="chip_color_white_description">色: 白。%1$s</string>
+    <string name="chip_color_pink_description">色: ピンク。%1$s</string>
+    <string name="chip_color_purple_description">色: 紫。%1$s</string>
+    
+    <!-- カテゴリChip詳細説明 -->
+    <string name="chip_category_tops_description">カテゴリ: トップス。%1$s</string>
+    <string name="chip_category_bottoms_description">カテゴリ: ボトムス。%1$s</string>
+    <string name="chip_category_outerwear_description">カテゴリ: アウター。%1$s</string>
+    <string name="chip_category_shoes_description">カテゴリ: 靴。%1$s</string>
+    <string name="chip_category_accessories_description">カテゴリ: アクセサリー。%1$s</string>
+    
+    <!-- フィルター状態通知 -->
+    <string name="filter_applied_announcement">フィルターが適用されました。%1$d件の結果が表示されています</string>
+    <string name="filter_cleared_announcement">フィルターがクリアされました。全%1$d件のアイテムが表示されています</string>
+    <string name="search_results_announcement">検索結果: %1$d件のアイテムが見つかりました</string>
+    <string name="search_no_results_announcement">検索結果が見つかりませんでした</string>
+    
+    <!-- フィルターボタン状態表示 -->
+    <string name="filter_apply_button_description">選択したフィルター条件を適用する</string>
+    <string name="filter_clear_button_description">すべてのフィルター条件をクリアする</string>
+    
+    <!-- キーボードナビゲーション案内 -->
+    <string name="keyboard_navigation_hint">TABキーで次の項目へ、SHIFTキー+TABキーで前の項目へ移動できます</string>
+    <string name="chip_selection_hint">スペースキーまたはEnterキーで選択・選択解除できます</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
