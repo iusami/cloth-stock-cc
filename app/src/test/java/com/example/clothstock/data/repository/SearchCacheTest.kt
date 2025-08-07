@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.Assert.*
 import org.mockito.junit.MockitoJUnitRunner
 import java.util.Date
 
@@ -47,7 +48,7 @@ class SearchCacheTest {
         // Retrieve from cache
         val cachedItems = searchCache.get(filterState)
 
-        assert(cachedItems == testItems)
+        assertEquals(testItems, cachedItems)
     }
 
     @Test
@@ -56,7 +57,7 @@ class SearchCacheTest {
 
         val cachedItems = searchCache.get(filterState)
 
-        assert(cachedItems == null)
+        assertNull(cachedItems)
     }
 
     @Test
@@ -82,8 +83,8 @@ class SearchCacheTest {
         val firstEntry = smallCache.get(FilterState(searchText = "query0"))
         val lastEntry = smallCache.get(FilterState(searchText = "query${cacheSize + 1}"))
 
-        assert(firstEntry == null) // Should be evicted
-        assert(lastEntry != null) // Should still exist
+        assertNull("First entry should be evicted", firstEntry)
+        assertNotNull("Last entry should still exist", lastEntry)
     }
 
     @Test
@@ -99,14 +100,15 @@ class SearchCacheTest {
         )
 
         searchCache.put(filterState, testItems)
-        assert(searchCache.get(filterState) != null)
+        assertNotNull(searchCache.get(filterState))
 
         // Simulate memory pressure
         searchCache.onMemoryPressure()
 
         // Cache should be cleared or reduced
         val remainingItems = searchCache.get(filterState)
-        assert(remainingItems == null || searchCache.size() < 10 / 2)
+        assertTrue("Cache should be cleared or reduced after memory pressure", 
+                  remainingItems == null || searchCache.size() < 5)
     }
 
     @Test
@@ -125,7 +127,7 @@ class SearchCacheTest {
         val key1 = searchCache.generateKey(filterState1)
         val key2 = searchCache.generateKey(filterState2)
 
-        assert(key1 == key2) // Should generate same key regardless of order
+        assertEquals("Keys should be equal regardless of filter order", key1, key2)
     }
 
     @Test
@@ -142,13 +144,13 @@ class SearchCacheTest {
 
         // Miss
         searchCache.get(filterState)
-        assert(searchCache.getMissCount() == 1)
-        assert(searchCache.getHitCount() == 0)
+        assertEquals("Miss count should be 1", 1, searchCache.getMissCount())
+        assertEquals("Hit count should be 0", 0, searchCache.getHitCount())
 
         // Store and hit
         searchCache.put(filterState, testItems)
         searchCache.get(filterState)
-        assert(searchCache.getHitCount() == 1)
-        assert(searchCache.getMissCount() == 1)
+        assertEquals("Hit count should be 1", 1, searchCache.getHitCount())
+        assertEquals("Miss count should be 1", 1, searchCache.getMissCount())
     }
 }
