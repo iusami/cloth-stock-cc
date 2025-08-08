@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="viewModel"
+            type="com.example.clothstock.ui.gallery.GalleryViewModel" />
+        <variable
+            name="isEmpty"
+            type="Boolean" />
+        <variable
+            name="isLoading"
+            type="Boolean" />
+    </data>
+
+    <!-- Task 15: タブレット横画面対応 - 2カラムマスター/詳細レイアウト -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
+
+        <!-- SwipeRefreshLayout for pull-to-refresh -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <!-- 左カラム：フィルター・リスト -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/colorSurface">
+
+                    <!-- フィルター・検索ツールバー -->
+                    <com.google.android.material.appbar.MaterialToolbar
+                        android:id="@+id/toolbarFilter"
+                        android:layout_width="0dp"
+                        android:layout_height="?attr/actionBarSize"
+                        android:background="?attr/colorSurface"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingEnd="8dp">
+
+                            <!-- 検索バー -->
+                            <androidx.appcompat.widget.SearchView
+                                android:id="@+id/searchView"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
+                                app:iconifiedByDefault="false"
+                                app:queryBackground="@android:color/transparent"
+                                app:queryHint="@string/search_hint"
+                                app:searchIcon="@drawable/ic_search_24" />
+
+                            <!-- フィルターボタン -->
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/buttonFilter"
+                                style="@style/Widget.Material3.Button.IconButton"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:contentDescription="@string/filter_title"
+                                app:icon="@drawable/ic_filter_24"
+                                app:iconGravity="textStart"
+                                app:iconSize="20dp" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.appbar.MaterialToolbar>
+
+                    <!-- RecyclerView for photo grid - 左側に配置 -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerViewGallery"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:clipToPadding="false"
+                        android:padding="4dp"
+                        android:scrollbars="vertical"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                        tools:itemCount="8"
+                        tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                        tools:listitem="@layout/item_cloth_grid"
+                        tools:spanCount="3"
+                        tools:visibility="visible" />
+
+                    <!-- Empty state layout -->
+                    <LinearLayout
+                        android:id="@+id/layoutEmptyState"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="24dp"
+                        android:visibility="visible"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                        tools:visibility="gone">
+
+                        <!-- Empty state icon -->
+                        <ImageView
+                            android:id="@+id/imageEmptyIcon"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginBottom="16dp"
+                            android:alpha="0.6"
+                            android:contentDescription="@string/empty_gallery_icon"
+                            android:src="@drawable/ic_photo_library_24"
+                            app:tint="?attr/colorOnSurfaceVariant" />
+
+                        <!-- Empty state message -->
+                        <TextView
+                            android:id="@+id/textEmptyMessage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:gravity="center"
+                            android:text="@string/empty_gallery_message"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <!-- Empty state description -->
+                        <TextView
+                            android:id="@+id/textEmptyDescription"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:gravity="center"
+                            android:text="@string/empty_gallery_description"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <!-- Take photo button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonTakePhoto"
+                            style="@style/Widget.Material3.Button.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/button_take_photo"
+                            android:textSize="14sp"
+                            app:icon="@drawable/ic_camera_24"
+                            app:iconGravity="start"
+                            app:iconSize="20dp" />
+
+                    </LinearLayout>
+
+                    <!-- Loading state overlay -->
+                    <FrameLayout
+                        android:id="@+id/layoutLoading"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:background="?attr/colorSurface"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                        tools:visibility="gone">
+
+                        <ProgressBar
+                            android:id="@+id/progressBar"
+                            style="?android:attr/progressBarStyleLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:indeterminate="true" />
+
+                    </FrameLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- 中央分割線 -->
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <!-- 右カラム：詳細表示エリア（タブレット専用） -->
+                <FrameLayout
+                    android:id="@+id/detailContainer"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/colorSurfaceVariant">
+
+                    <!-- 詳細未選択時のプレースホルダー -->
+                    <LinearLayout
+                        android:id="@+id/layoutDetailPlaceholder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="32dp"
+                        android:visibility="visible">
+
+                        <ImageView
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:layout_marginBottom="24dp"
+                            android:alpha="0.4"
+                            android:contentDescription="詳細選択待ちアイコン"
+                            android:src="@drawable/ic_photo_placeholder"
+                            app:tint="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:gravity="center"
+                            android:text="アイテムを選択してください"
+                            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="左側のギャラリーからアイテムをタップすると詳細が表示されます"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+
+                </FrameLayout>
+
+            </LinearLayout>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- フィルターボトムシート（左カラム内に表示） -->
+        <include 
+            android:id="@+id/includeBottomSheetFilter"
+            layout="@layout/bottom_sheet_filter" />
+
+        <!-- FAB for quick camera access（右下に小さめ） -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="12dp"
+            android:contentDescription="@string/button_take_photo"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_camera_24" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</layout>

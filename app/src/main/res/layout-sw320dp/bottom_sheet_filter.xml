@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Task 15: 小画面対応フィルターボトムシート -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottomSheetFilter"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_background"
+    app:behavior_hideable="true"
+    app:behavior_peekHeight="0dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- ボトムシートハンドル（小画面用調整） -->
+        <View
+            android:layout_width="32dp"
+            android:layout_height="3dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:background="?attr/colorOutlineVariant"
+            android:backgroundTint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/filter_handle_description"
+            android:importantForAccessibility="yes"
+            android:focusable="true"
+            android:clickable="true"
+            android:minWidth="48dp"
+            android:minHeight="48dp" />
+
+        <!-- フィルターヘッダー（コンパクト） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/filter_title"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="?attr/colorOnSurface"
+                android:accessibilityHeading="true" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonClearFilter"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_clear_all"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp"
+                android:contentDescription="@string/filter_clear_button_description"
+                android:focusable="true"
+                android:minHeight="40dp" />
+
+        </LinearLayout>
+
+        <!-- サイズフィルター（コンパクト表示） -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="6dp"
+            android:text="@string/filter_size_title"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_size_group_description"
+            app:chipSpacingHorizontal="4dp"
+            app:chipSpacingVertical="2dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <!-- サイズChipをコンパクト表示 -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize100"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="100"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusDown="@id/chipSize110"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize110"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="110"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize100"
+                android:nextFocusDown="@id/chipSize120"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize120"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="120"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize110"
+                android:nextFocusDown="@id/chipSize130"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize130"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="130"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize120"
+                android:nextFocusDown="@id/chipSize140"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize140"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="140"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize130"
+                android:nextFocusDown="@id/chipSize150"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize150"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="150"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize140"
+                android:nextFocusDown="@id/chipSize160"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSize160"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="160"
+                android:textSize="12sp"
+                android:minWidth="44dp"
+                android:minHeight="36dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize150"
+                android:nextFocusDown="@id/chipColorRed"
+                android:contentDescription="@string/chip_size_description"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- 色フィルター（コンパクト表示） -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="6dp"
+            android:text="@string/filter_color_title"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <!-- 色Chipグループ（最小限表示） -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_color_group_description"
+            app:chipSpacingHorizontal="3dp"
+            app:chipSpacingVertical="2dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorRed"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="赤"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipSize160"
+                android:nextFocusDown="@id/chipColorBlue"
+                android:contentDescription="@string/chip_color_red_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorBlue"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="青"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorRed"
+                android:nextFocusDown="@id/chipColorGreen"
+                android:contentDescription="@string/chip_color_blue_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorGreen"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="緑"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorBlue"
+                android:nextFocusDown="@id/chipColorYellow"
+                android:contentDescription="@string/chip_color_green_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorYellow"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="黄"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorGreen"
+                android:nextFocusDown="@id/chipColorBlack"
+                android:contentDescription="@string/chip_color_yellow_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorBlack"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="黒"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorYellow"
+                android:nextFocusDown="@id/chipColorWhite"
+                android:contentDescription="@string/chip_color_black_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipColorWhite"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="白"
+                android:textSize="11sp"
+                android:minWidth="42dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorBlack"
+                android:nextFocusDown="@id/chipCategoryTops"
+                android:contentDescription="@string/chip_color_white_description"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- カテゴリフィルター（必須のみ表示） -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="6dp"
+            android:text="@string/filter_category_title"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:accessibilityHeading="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/filter_category_group_description"
+            app:chipSpacingHorizontal="3dp"
+            app:chipSpacingVertical="2dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryTops"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="トップス"
+                android:textSize="11sp"
+                android:minWidth="48dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipColorWhite"
+                android:nextFocusDown="@id/chipCategoryBottoms"
+                android:contentDescription="@string/chip_category_tops_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryBottoms"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="ボトムス"
+                android:textSize="11sp"
+                android:minWidth="48dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryTops"
+                android:nextFocusDown="@id/chipCategoryOuterwear"
+                android:contentDescription="@string/chip_category_bottoms_description"
+                tools:checked="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategoryOuterwear"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="アウター"
+                android:textSize="11sp"
+                android:minWidth="48dp"
+                android:minHeight="34dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/chipCategoryBottoms"
+                android:nextFocusDown="@id/buttonApplyFilter"
+                android:contentDescription="@string/chip_category_outerwear_description"
+                tools:checked="false" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- 適用ボタン（小画面調整） -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonApplyFilter"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/filter_apply"
+            android:textSize="14sp"
+            android:minHeight="44dp"
+            android:contentDescription="@string/filter_apply_button_description"
+            android:focusable="true"
+            app:icon="@drawable/ic_filter_applied"
+            app:iconGravity="start"
+            app:iconSize="20dp" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

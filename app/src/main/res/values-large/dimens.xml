@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Task 15: タブレット・大画面対応 -->
+    
+    <!-- タブレット表示用サイズ -->
+    <dimen name="empty_icon_size">160dp</dimen>
+    <dimen name="empty_padding">48dp</dimen>
+    <dimen name="fab_margin">24dp</dimen>
+    <dimen name="toolbar_padding_horizontal">24dp</dimen>
+    
+    <!-- フィルターボトムシート用調整 -->
+    <dimen name="bottom_sheet_padding">24dp</dimen>
+    <dimen name="chip_margin_horizontal">8dp</dimen>
+    <dimen name="chip_margin_vertical">6dp</dimen>
+    
+    <!-- グリッド間隔調整 -->
+    <dimen name="gallery_grid_padding">16dp</dimen>
+    <dimen name="item_spacing">12dp</dimen>
+    
+    <!-- テキストサイズ調整（大画面用） -->
+    <dimen name="large_text_size_headline">28sp</dimen>
+    <dimen name="large_text_size_body">18sp</dimen>
+    <dimen name="large_text_size_caption">16sp</dimen>
+    
+    <!-- タブレット詳細分割用 -->
+    <dimen name="detail_column_width">400dp</dimen>
+    <dimen name="divider_width">1dp</dimen>
+</resources>

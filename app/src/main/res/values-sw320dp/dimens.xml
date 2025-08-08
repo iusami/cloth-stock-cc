@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Task 15: 320dp以上の小画面対応 -->
+    
+    <!-- コンパクト表示用サイズ -->
+    <dimen name="empty_icon_size">80dp</dimen>
+    <dimen name="empty_padding">16dp</dimen>
+    <dimen name="fab_margin">12dp</dimen>
+    <dimen name="toolbar_padding_horizontal">8dp</dimen>
+    
+    <!-- フィルターボトムシート用調整 -->
+    <dimen name="bottom_sheet_padding">12dp</dimen>
+    <dimen name="chip_margin_horizontal">4dp</dimen>
+    <dimen name="chip_margin_vertical">2dp</dimen>
+    
+    <!-- グリッド間隔調整 -->
+    <dimen name="gallery_grid_padding">4dp</dimen>
+    <dimen name="item_spacing">4dp</dimen>
+    
+    <!-- テキストサイズ調整（小画面用） -->
+    <dimen name="compact_text_size_headline">18sp</dimen>
+    <dimen name="compact_text_size_body">14sp</dimen>
+    <dimen name="compact_text_size_caption">12sp</dimen>
+</resources>
