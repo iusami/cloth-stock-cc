@@ -13,6 +13,15 @@ import com.example.clothstock.data.model.PaginationSearchParameters
  * 
  * データアクセス層の具体的な実装を提供
  * DAOを使用してデータベース操作を実行し、バリデーションやエラーハンドリングを行う
+ * 
+ * 主要実装特徴:
+ * - ClothDaoへの委譲による効率的なデータアクセス
+ * - ClothItemのValidatableインターフェースを活用したバリデーション
+ * - エラーハンドリングとレスポンス形式の統一
+ * 
+ * メモ検索機能統合:
+ * Task 2でClothDaoにメモ検索機能が実装されたため、本リポジトリクラスも
+ * 自動的にメモ検索機能を持つ。追加の実装変更は不要で、DAOの機能を活用。
  */
 class ClothRepositoryImpl(
     private val clothDao: ClothDao
@@ -127,6 +136,8 @@ class ClothRepositoryImpl(
     // ===== Task4: フィルター・検索機能 =====
 
     override fun searchItemsByText(searchText: String?): Flow<List<ClothItem>> {
+        // DAOレイヤーのメモ検索機能を活用
+        // 色、カテゴリ、メモフィールドの部分一致検索を実行
         return clothDao.searchItemsByText(searchText)
     }
 
@@ -136,6 +147,8 @@ class ClothRepositoryImpl(
         categoryFilters: List<String>?,
         searchText: String?
     ): Flow<List<ClothItem>> {
+        // 複合フィルター検索でメモ検索機能を統合活用
+        // サイズ・色・カテゴリフィルター + テキスト検索（メモ含む）
         return clothDao.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText)
     }
 
@@ -194,6 +207,8 @@ class ClothRepositoryImpl(
         categoryFilters: List<String>?,
         searchText: String?
     ): Int {
+        // searchItemsWithFiltersと同じ条件でアイテム数をカウント
+        // メモ検索対応により、searchTextは色・カテゴリ・メモフィールドを対象
         return clothDao.getFilteredItemCount(
             sizeFilters = sizeFilters,
             colorFilters = colorFilters,

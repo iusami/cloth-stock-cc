@@ -608,4 +608,176 @@ class ClothRepositoryTest {
         
         verify(clothDao).searchItemsWithFilters(sizeFilters, null, null, null)
     }
+
+    // ===== 🔴 TDD Red: Task3 メモ検索機能特化テスト =====
+
+    @Test
+    fun `searchItemsByText_メモ内容で検索_正しく動作する`() = runTest {
+        // Given - メモ付きテストデータ
+        val searchText = "お気に入り"
+        val itemWithMemo = testClothItem.copy(memo = "お気に入りの一枚")
+        val expectedItems = listOf(itemWithMemo)
+
+        `when`(clothDao.searchItemsByText(searchText)).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText(searchText).first()
+
+        // Then
+        assertEquals(expectedItems, result)
+        assertTrue("メモにお気に入りを含む", result[0].memo.contains("お気に入り"))
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsByText_メモと既存フィールドの複合検索_正しく動作する`() = runTest {
+        // Given - 「シャツ」でカテゴリとメモ両方にヒット
+        val searchText = "シャツ"
+        val categoryShirt = testClothItem.copy(tagData = testTagData.copy(category = "シャツ"), memo = "")
+        val memoShirt = testClothItem.copy(
+            id = 2L, 
+            tagData = testTagData.copy(category = "パンツ"), 
+            memo = "シャツに合う"
+        )
+        val expectedItems = listOf(categoryShirt, memoShirt)
+
+        `when`(clothDao.searchItemsByText(searchText)).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText(searchText).first()
+
+        // Then
+        assertEquals(2, result.size)
+        assertTrue("カテゴリまたはメモにシャツを含む", 
+            result.any { it.tagData.category.contains("シャツ") || it.memo.contains("シャツ") }
+        )
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsByText_空メモの場合_適切に処理する`() = runTest {
+        // Given - 存在しないキーワードで検索（空メモアイテムでは引っかからない）
+        val searchText = "存在しないキーワード"
+        val expectedItems = emptyList<ClothItem>()
+
+        `when`(clothDao.searchItemsByText(searchText)).thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsByText(searchText).first()
+
+        // Then
+        assertTrue("空メモでは該当なし", result.isEmpty())
+        verify(clothDao).searchItemsByText(searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_メモ検索とフィルター組み合わせ_正しく動作する`() = runTest {
+        // Given - サイズフィルター + メモ検索
+        val sizeFilters = listOf(100)
+        val searchText = "お気に入り"
+        val expectedItem = testClothItem.copy(
+            tagData = testTagData.copy(size = 100),
+            memo = "お気に入りの服"
+        )
+        val expectedItems = listOf(expectedItem)
+
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, null, null, searchText))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(sizeFilters, null, null, searchText).first()
+
+        // Then
+        assertEquals(1, result.size)
+        assertEquals(100, result[0].tagData.size)
+        assertTrue("メモにお気に入りを含む", result[0].memo.contains("お気に入り"))
+        verify(clothDao).searchItemsWithFilters(sizeFilters, null, null, searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_複合条件とメモ検索_正しく動作する`() = runTest {
+        // Given - サイズ、色、カテゴリ + メモ検索
+        val sizeFilters = listOf(100, 110)
+        val colorFilters = listOf("赤")
+        val categoryFilters = listOf("シャツ")
+        val searchText = "フォーマル"
+        
+        val expectedItem = testClothItem.copy(
+            tagData = testTagData.copy(size = 100, color = "赤", category = "シャツ"),
+            memo = "フォーマル用途"
+        )
+        val expectedItems = listOf(expectedItem)
+
+        `when`(clothDao.searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(
+            sizeFilters, colorFilters, categoryFilters, searchText
+        ).first()
+
+        // Then
+        assertEquals(1, result.size)
+        val item = result[0]
+        assertTrue("サイズ条件に合致", sizeFilters.contains(item.tagData.size))
+        assertTrue("色条件に合致", colorFilters.contains(item.tagData.color))
+        assertTrue("カテゴリ条件に合致", categoryFilters.contains(item.tagData.category))
+        assertTrue("メモ検索条件に合致", item.memo.contains("フォーマル"))
+        
+        verify(clothDao).searchItemsWithFilters(sizeFilters, colorFilters, categoryFilters, searchText)
+    }
+
+    @Test
+    fun `searchItemsWithFilters_メモ特殊文字検索_正しく動作する`() = runTest {
+        // Given - 特殊文字を含むメモ検索
+        val searchText = "100%"
+        val expectedItem = testClothItem.copy(memo = "100%コットン素材")
+        val expectedItems = listOf(expectedItem)
+
+        `when`(clothDao.searchItemsWithFilters(null, null, null, searchText))
+            .thenReturn(flowOf(expectedItems))
+
+        // When
+        val result = clothRepository.searchItemsWithFilters(null, null, null, searchText).first()
+
+        // Then
+        assertEquals(1, result.size)
+        assertTrue("特殊文字を含むメモ検索", result[0].memo.contains("100%"))
+        verify(clothDao).searchItemsWithFilters(null, null, null, searchText)
+    }
+
+    @Test
+    fun `getFilteredItemCount_メモ検索条件_正しくカウントする`() = runTest {
+        // Given - メモ検索での総数取得
+        val searchText = "カウントテスト"
+        val expectedCount = 3
+
+        `when`(clothDao.getFilteredItemCount(null, null, null, searchText))
+            .thenReturn(expectedCount)
+
+        // When
+        val result = clothRepository.getFilteredItemCount(null, null, null, searchText)
+
+        // Then
+        assertEquals(3, result)
+        verify(clothDao).getFilteredItemCount(null, null, null, searchText)
+    }
+
+    @Test
+    fun `getFilteredItemCount_フィルターとメモ検索組み合わせ_正しくカウントする`() = runTest {
+        // Given - サイズフィルター + メモ検索での総数取得
+        val sizeFilters = listOf(100, 110)
+        val searchText = "カウントテスト"
+        val expectedCount = 2
+
+        `when`(clothDao.getFilteredItemCount(sizeFilters, null, null, searchText))
+            .thenReturn(expectedCount)
+
+        // When
+        val result = clothRepository.getFilteredItemCount(sizeFilters, null, null, searchText)
+
+        // Then
+        assertEquals(2, result)
+        verify(clothDao).getFilteredItemCount(sizeFilters, null, null, searchText)
+    }
 }
