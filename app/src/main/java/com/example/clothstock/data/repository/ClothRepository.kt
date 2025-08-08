@@ -10,6 +10,17 @@ import com.example.clothstock.data.model.PaginationSearchParameters
  * 
  * データアクセス層の抽象化を提供し、ビジネスロジックとデータソースを分離
  * ViewModelや他の上位層はこのインターフェースを通してデータアクセスを行う
+ * 
+ * 主要機能:
+ * - CRUD操作（作成・読取・更新・削除）
+ * - 高度な検索機能（色・カテゴリ・メモフィールド対象）
+ * - フィルター検索とテキスト検索の組み合わせ
+ * - プログレッシブローディング対応
+ * - データ統計・集計機能
+ * 
+ * メモ検索機能統合:
+ * Task 2で実装されたメモ検索機能により、全ての検索メソッドでメモ内容を対象とした
+ * 部分一致検索が可能。パフォーマンス最適化のため専用インデックスを活用。
  */
 interface ClothRepository {
 
@@ -207,7 +218,16 @@ interface ClothRepository {
 
     /**
      * テキスト検索で衣服アイテムを検索
-     * 色、カテゴリフィールドを対象に部分一致検索を実行
+     * 色、カテゴリ、メモフィールドを対象に部分一致検索を実行
+     * 
+     * 検索対象フィールド:
+     * - color: 色フィールドでの部分一致
+     * - category: カテゴリフィールドでの部分一致  
+     * - memo: メモフィールドでの部分一致（Task 2で追加）
+     * 
+     * パフォーマンス考慮:
+     * - OR条件による複数フィールド検索（短絡評価活用）
+     * - memoフィールド専用インデックスを活用（migration v1→v2で追加）
      * 
      * @param searchText 検索テキスト（空の場合は全件取得）
      * @return 検索条件に合致するアイテムのFlow
@@ -216,12 +236,21 @@ interface ClothRepository {
 
     /**
      * 複合フィルター条件で衣服アイテムを検索
-     * サイズ、色、カテゴリの複数条件とテキスト検索を組み合わせ
+     * サイズ、色、カテゴリの複数条件とテキスト検索（メモ含む）を組み合わせ
+     * 
+     * フィルター処理:
+     * - 各フィルターはAND条件で組み合わせ
+     * - searchTextは色、カテゴリ、メモフィールドをOR条件で検索
+     * - nullまたは空のフィルターは無視
+     * 
+     * 検索順序最適化:
+     * - 高頻度検索フィールド（color, category）を優先配置
+     * - memo検索は専用インデックスを活用
      * 
      * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
      * @param colorFilters 色フィルター（nullまたは空の場合は無視）
      * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
-     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（色・カテゴリ・メモ対象、nullまたは空の場合は無視）
      * @return フィルター条件に合致するアイテムのFlow
      */
     fun searchItemsWithFilters(
@@ -255,12 +284,17 @@ interface ClothRepository {
 
     /**
      * 複合フィルター条件に合致する総アイテム数を取得
-     * プログレッシブローディングでの「残りデータ有無」判定に使用
+     * プログレッシブローディングでの「残りデータ有無」判定に使用（メモ検索対応）
+     * 
+     * 検索条件:
+     * - searchItemsWithFilters()と同じ条件でカウント実行
+     * - searchTextは色、カテゴリ、メモフィールドを対象
+     * - フィルターとテキスト検索の組み合わせに対応
      * 
      * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
      * @param colorFilters 色フィルター（nullまたは空の場合は無視）
      * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
-     * @param searchText 検索テキスト（nullまたは空の場合は無視）
+     * @param searchText 検索テキスト（色・カテゴリ・メモ対象、nullまたは空の場合は無視）
      * @return 条件に合致する総アイテム数
      */
     suspend fun getFilteredItemCount(
