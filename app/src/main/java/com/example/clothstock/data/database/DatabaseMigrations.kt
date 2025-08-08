@@ -11,26 +11,32 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 object DatabaseMigrations {
     
     /**
-     * バージョン1から2へのマイグレーション例
-     * （将来の拡張用）
+     * バージョン1から2へのマイグレーション
+     * 
+     * 変更内容:
+     * - cloth_itemsテーブルにmemoカラム（TEXT NOT NULL DEFAULT ''）を追加
+     * - メモ検索性能向上のためindex_cloth_items_memoインデックスを作成
+     * 
+     * 対応要件: Task1 - データモデルとデータベーススキーマの拡張
+     * 実装日: 2025年1月
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            // 例: 新しいカラム追加
-            // database.execSQL("ALTER TABLE cloth_items ADD COLUMN brand TEXT")
-            
-            // 例: 新しいテーブル作成
-            // database.execSQL("""
-            //     CREATE TABLE IF NOT EXISTS favorites (
-            //         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            //         cloth_item_id INTEGER NOT NULL,
-            //         created_at INTEGER NOT NULL,
-            //         FOREIGN KEY(cloth_item_id) REFERENCES cloth_items(id) ON DELETE CASCADE
-            //     )
-            // """)
-            
-            // 例: インデックス追加
-            // database.execSQL("CREATE INDEX IF NOT EXISTS index_favorites_cloth_item_id ON favorites(cloth_item_id)")
+            try {
+                // メモカラムを追加（デフォルト値は空文字列、NOT NULL制約）
+                database.execSQL("ALTER TABLE cloth_items ADD COLUMN memo TEXT NOT NULL DEFAULT ''")
+                
+                // メモ検索用インデックスを作成（検索性能向上）
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_cloth_items_memo ON cloth_items(memo)")
+                
+                // マイグレーション完了ログ
+                android.util.Log.d("DatabaseMigrations", "MIGRATION_1_2: memoカラムとインデックス追加完了")
+                
+            } catch (exception: Exception) {
+                // マイグレーションエラーをログに記録
+                android.util.Log.e("DatabaseMigrations", "MIGRATION_1_2 failed", exception)
+                throw exception // マイグレーション失敗時は例外を再投出
+            }
         }
     }
     
