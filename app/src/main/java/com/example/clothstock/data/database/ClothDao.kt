@@ -212,12 +212,13 @@ interface ClothDao {
 
     /**
      * テキスト検索で衣服アイテムを検索
-     * 色、カテゴリフィールドを対象に部分一致検索を実行
+     * 色、カテゴリ、メモフィールドを対象に部分一致検索を実行
      * 
      * パフォーマンス考慮:
      * - LIKE演算子の前方一致を優先することでインデックス活用を促進
-     * - OR条件の短絡評価を活用
+     * - OR条件の短絡評価を活用（使用頻度の高いcolor/categoryを優先配置）
      * - NULL値と空文字列の効率的なハンドリング
+     * - memo検索にはmemoフィールド専用インデックス（migration v1→v2で追加）を活用
      * 
      * @param searchText 検索テキスト（空の場合は全件取得）
      * @return 検索条件に合致するアイテムのFlow（作成日時降順）
@@ -226,14 +227,15 @@ interface ClothDao {
         SELECT * FROM cloth_items 
         WHERE (:searchText IS NULL OR :searchText = '' OR 
                color LIKE '%' || :searchText || '%' OR 
-               category LIKE '%' || :searchText || '%')
+               category LIKE '%' || :searchText || '%' OR
+               memo LIKE '%' || :searchText || '%')
         ORDER BY createdAt DESC
     """)
     fun searchItemsByText(searchText: String?): Flow<List<ClothItem>>
 
     /**
      * 複合フィルター条件で衣服アイテムを検索
-     * サイズ、色、カテゴリの複数条件とテキスト検索を組み合わせ
+     * サイズ、色、カテゴリの複数条件とテキスト検索（メモ含む）を組み合わせ
      * 
      * 注意: Roomの制約により、空のリストはnullに変換して渡すこと
      * 
@@ -250,7 +252,8 @@ interface ClothDao {
         AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
         AND (:searchText IS NULL OR :searchText = '' OR 
              color LIKE '%' || :searchText || '%' OR 
-             category LIKE '%' || :searchText || '%')
+             category LIKE '%' || :searchText || '%' OR
+             memo LIKE '%' || :searchText || '%')
         ORDER BY createdAt DESC
     """)
     fun searchItemsWithFiltersInternal(
@@ -315,7 +318,7 @@ interface ClothDao {
 
     /**
      * 複合フィルター条件で衣服アイテムをページネーションで検索
-     * プログレッシブローディング機能で使用される
+     * プログレッシブローディング機能で使用される（メモ検索対応）
      * 
      * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
      * @param colorFilters 色フィルター（nullまたは空の場合は無視）
@@ -332,7 +335,8 @@ interface ClothDao {
         AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
         AND (:searchText IS NULL OR :searchText = '' OR 
              color LIKE '%' || :searchText || '%' OR 
-             category LIKE '%' || :searchText || '%')
+             category LIKE '%' || :searchText || '%' OR
+             memo LIKE '%' || :searchText || '%')
         ORDER BY createdAt DESC
         LIMIT :limit OFFSET :offset
     """)
@@ -368,7 +372,7 @@ interface ClothDao {
 
     /**
      * 複合フィルター条件に合致する総アイテム数を取得
-     * プログレッシブローディングでの「残りデータ有無」判定に使用
+     * プログレッシブローディングでの「残りデータ有無」判定に使用（メモ検索対応）
      * 
      * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
      * @param colorFilters 色フィルター（nullまたは空の場合は無視）
@@ -383,7 +387,8 @@ interface ClothDao {
         AND (:categoryFilters IS NULL OR category IN (:categoryFilters))
         AND (:searchText IS NULL OR :searchText = '' OR 
              color LIKE '%' || :searchText || '%' OR 
-             category LIKE '%' || :searchText || '%')
+             category LIKE '%' || :searchText || '%' OR
+             memo LIKE '%' || :searchText || '%')
     """)
     suspend fun getFilteredItemCountInternal(
         sizeFilters: List<Int>?,

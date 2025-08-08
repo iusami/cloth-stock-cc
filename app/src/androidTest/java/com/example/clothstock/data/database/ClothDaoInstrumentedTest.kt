@@ -455,4 +455,192 @@ class ClothDaoInstrumentedTest {
         // Then
         assertEquals("空文字列では全件取得", 1, nullResults.size)
     }
+
+    // ===== 🔴 TDD Red: Task2 メモ検索機能テスト（失敗するテスト） =====
+
+    @Test
+    fun `searchItemsByText_メモ内容で検索_正しく動作する`() = runTest {
+        // Given - メモ付きのテストデータを準備
+        val itemWithMemo1 = ClothItem.create("/memo1.jpg", TagData(100, "青", "シャツ")).copy(memo = "お気に入りの一枚")
+        val itemWithMemo2 = ClothItem.create("/memo2.jpg", TagData(110, "赤", "パンツ")).copy(memo = "仕事用のパンツ")
+        val itemWithMemo3 = ClothItem.create("/memo3.jpg", TagData(120, "黒", "アウター")).copy(memo = "")
+        val itemWithMemo4 = ClothItem.create("/memo4.jpg", TagData(130, "白", "シャツ")).copy(memo = "カジュアル用")
+
+        clothDao.insert(itemWithMemo1)
+        clothDao.insert(itemWithMemo2)
+        clothDao.insert(itemWithMemo3)
+        clothDao.insert(itemWithMemo4)
+
+        // When - メモ内容で検索（部分一致）
+        val favoriteItems = clothDao.searchItemsByText("お気に入り").first()
+
+        // Then
+        assertEquals("お気に入りを含むアイテムが1件", 1, favoriteItems.size)
+        assertTrue("メモにお気に入りを含む", favoriteItems[0].memo.contains("お気に入り"))
+
+        // When - メモ内容で検索（別のキーワード）
+        val workItems = clothDao.searchItemsByText("仕事").first()
+
+        // Then
+        assertEquals("仕事を含むアイテムが1件", 1, workItems.size)
+        assertTrue("メモに仕事を含む", workItems[0].memo.contains("仕事"))
+
+        // When - メモと既存フィールドの複合検索
+        val shirtItems = clothDao.searchItemsByText("シャツ").first()
+
+        // Then - カテゴリ「シャツ」とメモに「シャツ」を含むアイテム両方を取得
+        assertEquals("シャツ関連アイテムが2件", 2, shirtItems.size)
+
+        // When - 存在しないメモキーワードで検索
+        val notFoundItems = clothDao.searchItemsByText("存在しないメモ").first()
+
+        // Then
+        assertTrue("該当なし", notFoundItems.isEmpty())
+    }
+
+    @Test
+    fun `searchItemsWithFilters_メモ検索とフィルター組み合わせ_正しく動作する`() = runTest {
+        // Given - メモとフィルター条件の複合テスト用データ
+        val testItems = listOf(
+            ClothItem.create("/filter1.jpg", TagData(100, "赤", "シャツ")).copy(memo = "赤いシャツ、お気に入り"),
+            ClothItem.create("/filter2.jpg", TagData(100, "青", "シャツ")).copy(memo = "青いシャツ、普段用"),
+            ClothItem.create("/filter3.jpg", TagData(110, "赤", "パンツ")).copy(memo = "赤いパンツ、フォーマル"),
+            ClothItem.create("/filter4.jpg", TagData(120, "黒", "アウター")).copy(memo = "")
+        )
+
+        testItems.forEach { clothDao.insert(it) }
+
+        // When - サイズフィルター + メモ検索
+        val size100FavoriteItems = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(100),
+            colorFilters = null,
+            categoryFilters = null,
+            searchText = "お気に入り"
+        ).first()
+
+        // Then
+        assertEquals("サイズ100でお気に入りのアイテムが1件", 1, size100FavoriteItems.size)
+        assertEquals("サイズが100", 100, size100FavoriteItems[0].tagData.size)
+        assertTrue("メモにお気に入りを含む", size100FavoriteItems[0].memo.contains("お気に入り"))
+
+        // When - 色フィルター + メモ検索
+        val redItems = clothDao.searchItemsWithFilters(
+            sizeFilters = null,
+            colorFilters = listOf("赤"),
+            categoryFilters = null,
+            searchText = "赤い"
+        ).first()
+
+        // Then - 色が赤 OR メモに「赤い」を含むアイテム
+        assertEquals("赤い関連アイテムが2件", 2, redItems.size)
+        assertTrue("すべて赤色またはメモに赤いを含む", redItems.all { 
+            it.tagData.color == "赤" || it.memo.contains("赤い") 
+        })
+
+        // When - 複合フィルター + メモ検索
+        val complexSearch = clothDao.searchItemsWithFilters(
+            sizeFilters = listOf(100, 110),
+            colorFilters = listOf("赤"),
+            categoryFilters = listOf("シャツ", "パンツ"),
+            searchText = "フォーマル"
+        ).first()
+
+        // Then
+        assertEquals("複合条件に合致するアイテム", 1, complexSearch.size)
+    }
+
+    @Test
+    fun `searchItemsWithPagination_メモ検索対応_正しく動作する`() = runTest {
+        // Given - ページネーションテスト用のメモ付きデータ
+        val testItems = (1..10).map { i ->
+            ClothItem.create("/page$i.jpg", TagData(100 + i, "色$i", "カテゴリ$i"))
+                .copy(memo = "ページテスト用アイテム$i")
+        }
+
+        testItems.forEach { clothDao.insert(it) }
+
+        // When - メモ検索でページネーション（最初の5件）
+        val parameters = com.example.clothstock.data.model.PaginationSearchParameters(
+            sizeFilters = null,
+            colorFilters = null,
+            categoryFilters = null,
+            searchText = "ページテスト",
+            offset = 0,
+            limit = 5
+        )
+        val firstPageItems = clothDao.searchItemsWithPagination(parameters).first()
+
+        // Then
+        assertEquals("最初の5件取得", 5, firstPageItems.size)
+        assertTrue("すべてメモにページテストを含む", firstPageItems.all { 
+            it.memo.contains("ページテスト") 
+        })
+
+        // When - 次の5件取得
+        val secondPageParameters = parameters.copy(offset = 5)
+        val secondPageItems = clothDao.searchItemsWithPagination(secondPageParameters).first()
+
+        // Then
+        assertEquals("次の5件取得", 5, secondPageItems.size)
+        assertTrue("すべてメモにページテストを含む", secondPageItems.all { 
+            it.memo.contains("ページテスト") 
+        })
+    }
+
+    @Test
+    fun `getFilteredItemCount_メモ検索条件_正しくカウントする`() = runTest {
+        // Given - カウントテスト用データ
+        val testItems = listOf(
+            ClothItem.create("/count1.jpg", TagData(100, "赤", "シャツ")).copy(memo = "カウントテスト用"),
+            ClothItem.create("/count2.jpg", TagData(110, "青", "パンツ")).copy(memo = "カウントテスト用"),
+            ClothItem.create("/count3.jpg", TagData(120, "緑", "アウター")).copy(memo = "別のメモ"),
+            ClothItem.create("/count4.jpg", TagData(130, "黒", "シャツ")).copy(memo = "")
+        )
+
+        testItems.forEach { clothDao.insert(it) }
+
+        // When - メモ検索での総数取得
+        val count = clothDao.getFilteredItemCount(
+            sizeFilters = null,
+            colorFilters = null,
+            categoryFilters = null,
+            searchText = "カウントテスト"
+        )
+
+        // Then
+        assertEquals("カウントテストを含むアイテム数", 2, count)
+
+        // When - フィルター + メモ検索での総数取得
+        val filteredCount = clothDao.getFilteredItemCount(
+            sizeFilters = listOf(100, 110),
+            colorFilters = null,
+            categoryFilters = null,
+            searchText = "カウントテスト"
+        )
+
+        // Then
+        assertEquals("サイズ条件 + カウントテスト条件", 2, filteredCount)
+    }
+
+    @Test
+    fun `searchItemsByText_メモが空文字列の場合_適切に処理する`() = runTest {
+        // Given - 空メモのアイテム
+        val itemWithEmptyMemo = ClothItem.create("/empty.jpg", TagData(100, "赤", "シャツ")).copy(memo = "")
+        val itemWithMemo = ClothItem.create("/with_memo.jpg", TagData(110, "青", "パンツ")).copy(memo = "メモあり")
+
+        clothDao.insert(itemWithEmptyMemo)
+        clothDao.insert(itemWithMemo)
+
+        // When - 空文字列メモでは引っかからない検索
+        val searchResults = clothDao.searchItemsByText("存在しないキーワード").first()
+
+        // Then
+        assertTrue("空メモアイテムは引っかからない", searchResults.isEmpty())
+
+        // When - 全体検索（空文字列検索）
+        val allResults = clothDao.searchItemsByText("").first()
+
+        // Then
+        assertEquals("空文字列検索では全件取得", 2, allResults.size)
+    }
 }
