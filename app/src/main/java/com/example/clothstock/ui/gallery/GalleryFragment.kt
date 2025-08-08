@@ -1459,8 +1459,8 @@ class GalleryFragment : Fragment() {
             
         } catch (e: IllegalStateException) {
             Log.e(TAG, "IllegalStateException setting up accessibility", e)
-        } catch (e: RuntimeException) {
-            Log.e(TAG, "RuntimeException setting up accessibility", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException setting up accessibility", e)
         }
     }
     
@@ -1698,7 +1698,7 @@ class GalleryFragment : Fragment() {
         private const val SPAN_COUNT_3 = 3
         private const val SPAN_COUNT_4 = 4
         private const val SMALL_SCREEN_WIDTH_DP = 360
-        private const val MEMORY_DIVISOR = 1024 * 1024 // MB換算
+        // private const val MEMORY_DIVISOR = 1024 * 1024 // MB換算 (将来用)
         private const val SIZE_110 = 110
         private const val SIZE_120 = 120
         private const val SIZE_130 = 130

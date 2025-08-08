@@ -6,6 +6,7 @@ import com.example.clothstock.data.database.ClothDao
 import com.example.clothstock.data.database.ClothDatabase
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
+import com.example.clothstock.data.model.PaginationSearchParameters
 
 /**
  * ClothRepository の実装クラス
@@ -182,21 +183,9 @@ class ClothRepositoryImpl(
     // ===== Task 12: プログレッシブローディング対応 =====
 
     override fun searchItemsWithPagination(
-        sizeFilters: List<Int>?,
-        colorFilters: List<String>?,
-        categoryFilters: List<String>?,
-        searchText: String?,
-        offset: Int,
-        limit: Int
+        parameters: PaginationSearchParameters
     ): Flow<List<ClothItem>> {
-        return clothDao.searchItemsWithPagination(
-            sizeFilters = sizeFilters,
-            colorFilters = colorFilters,
-            categoryFilters = categoryFilters,
-            searchText = searchText,
-            offset = offset,
-            limit = limit
-        )
+        return clothDao.searchItemsWithPagination(parameters)
     }
 
     override suspend fun getFilteredItemCount(

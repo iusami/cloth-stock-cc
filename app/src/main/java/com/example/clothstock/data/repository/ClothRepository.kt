@@ -3,6 +3,7 @@ package com.example.clothstock.data.repository
 import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
+import com.example.clothstock.data.model.PaginationSearchParameters
 
 /**
  * 衣服データアクセスのリポジトリインターフェース
@@ -245,21 +246,11 @@ interface ClothRepository {
      * 複合フィルター条件で衣服アイテムをページネーションで検索
      * プログレッシブローディング機能で使用される
      * 
-     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
-     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
-     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
-     * @param searchText 検索テキスト（nullまたは空の場合は無視）
-     * @param offset 開始オフセット（0から開始）
-     * @param limit 取得件数
+     * @param parameters 検索パラメーター（フィルターとページネーション情報を含む）
      * @return フィルター条件に合致するアイテムのFlow（ページネーション適用済み）
      */
     fun searchItemsWithPagination(
-        sizeFilters: List<Int>?,
-        colorFilters: List<String>?,
-        categoryFilters: List<String>?,
-        searchText: String?,
-        offset: Int,
-        limit: Int
+        parameters: PaginationSearchParameters
     ): Flow<List<ClothItem>>
 
     /**

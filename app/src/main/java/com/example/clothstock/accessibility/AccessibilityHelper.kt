@@ -13,6 +13,7 @@ import com.example.clothstock.R
  * 
  * TalkBack音声通知、フォーカス管理、動的contentDescription更新を提供
  */
+@Suppress("TooManyFunctions")
 object AccessibilityHelper {
     
     private const val FOCUS_SCALE_FACTOR = 1.05f

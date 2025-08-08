@@ -6,6 +6,7 @@ import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.CategoryCount
 import com.example.clothstock.data.model.ColorCount
 import com.example.clothstock.data.model.SizeCount
+import com.example.clothstock.data.model.PaginationSearchParameters
 
 /**
  * ClothItem のデータアクセスオブジェクト (DAO)
@@ -335,6 +336,7 @@ interface ClothDao {
         ORDER BY createdAt DESC
         LIMIT :limit OFFSET :offset
     """)
+    @Suppress("LongParameterList")
     fun searchItemsWithPaginationInternal(
         sizeFilters: List<Int>?,
         colorFilters: List<String>?,
@@ -348,29 +350,19 @@ interface ClothDao {
      * 複合フィルター条件で衣服アイテムをページネーションで検索（空リスト対応版）
      * 空のリストを適切にnullに変換してから内部メソッドを呼び出す
      * 
-     * @param sizeFilters サイズフィルター（nullまたは空の場合は無視）
-     * @param colorFilters 色フィルター（nullまたは空の場合は無視）
-     * @param categoryFilters カテゴリフィルター（nullまたは空の場合は無視）
-     * @param searchText 検索テキスト（nullまたは空の場合は無視）
-     * @param offset 開始オフセット（0から開始）
-     * @param limit 取得件数
+     * @param parameters 検索パラメーター（フィルターとページネーション情報を含む）
      * @return フィルター条件に合致するアイテムのFlow（ページネーション適用済み）
      */
     fun searchItemsWithPagination(
-        sizeFilters: List<Int>?,
-        colorFilters: List<String>?,
-        categoryFilters: List<String>?,
-        searchText: String?,
-        offset: Int,
-        limit: Int
+        parameters: PaginationSearchParameters
     ): Flow<List<ClothItem>> {
         return searchItemsWithPaginationInternal(
-            sizeFilters = sizeFilters?.takeIf { it.isNotEmpty() },
-            colorFilters = colorFilters?.takeIf { it.isNotEmpty() },
-            categoryFilters = categoryFilters?.takeIf { it.isNotEmpty() },
-            searchText = searchText?.takeIf { it.isNotBlank() },
-            offset = offset,
-            limit = limit
+            sizeFilters = parameters.sizeFilters?.takeIf { it.isNotEmpty() },
+            colorFilters = parameters.colorFilters?.takeIf { it.isNotEmpty() },
+            categoryFilters = parameters.categoryFilters?.takeIf { it.isNotEmpty() },
+            searchText = parameters.searchText?.takeIf { it.isNotBlank() },
+            offset = parameters.offset,
+            limit = parameters.limit
         )
     }
 
