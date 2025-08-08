@@ -180,4 +180,197 @@ class ClothItemTest {
         assertFalse("空文字列はバリデーションで無効", validationResult.isSuccess())
         assertTrue("エラーメッセージが含まれる", validationResult.getErrorMessage()!!.isNotEmpty())
     }
+
+    // ===== 🔴 TDD Red: メモ機能テスト（失敗するテスト） =====
+
+    @Test
+    fun `withUpdatedMemo_正常なメモ_メモが更新される`() {
+        // Given
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate
+        )
+        val testMemo = "お気に入りのシャツ"
+
+        // When
+        val updatedItem = clothItem.withUpdatedMemo(testMemo)
+
+        // Then
+        assertEquals(testMemo, updatedItem.memo)
+        assertEquals(clothItem.id, updatedItem.id) // 他のフィールドは変更されない
+        assertEquals(clothItem.imagePath, updatedItem.imagePath)
+        assertEquals(clothItem.tagData, updatedItem.tagData)
+    }
+
+    @Test
+    fun `withUpdatedMemo_長いメモ_制限文字数でトリミングされる`() {
+        // Given
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate
+        )
+        val longMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 100) // 制限を超える長さ
+
+        // When
+        val updatedItem = clothItem.withUpdatedMemo(longMemo)
+
+        // Then
+        assertEquals(ClothItem.MAX_MEMO_LENGTH, updatedItem.memo.length)
+        assertTrue("メモは制限文字数でトリミングされる", updatedItem.memo.length <= ClothItem.MAX_MEMO_LENGTH)
+    }
+
+    @Test
+    fun `hasMemo_メモがある場合_trueを返す`() {
+        // Given
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = "テストメモ"
+        )
+
+        // When & Then
+        assertTrue("メモがある場合はtrueを返す", clothItem.hasMemo())
+    }
+
+    @Test
+    fun `hasMemo_メモが空文字列の場合_falseを返す`() {
+        // Given
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = ""
+        )
+
+        // When & Then
+        assertFalse("空文字列の場合はfalseを返す", clothItem.hasMemo())
+    }
+
+    @Test
+    fun `hasMemo_メモが空白文字列の場合_falseを返す`() {
+        // Given
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = "   "
+        )
+
+        // When & Then
+        assertFalse("空白文字列の場合はfalseを返す", clothItem.hasMemo())
+    }
+
+    @Test
+    fun `getMemoPreview_短いメモ_そのまま返される`() {
+        // Given
+        val shortMemo = "短いメモ"
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = shortMemo
+        )
+
+        // When
+        val preview = clothItem.getMemoPreview()
+
+        // Then
+        assertEquals(shortMemo, preview)
+    }
+
+    @Test
+    fun `getMemoPreview_長いメモ_省略記号付きでトリミングされる`() {
+        // Given
+        val longMemo = "a".repeat(80) // デフォルトの50文字を超える長さ
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = longMemo
+        )
+
+        // When
+        val preview = clothItem.getMemoPreview()
+
+        // Then
+        assertTrue("プレビューは50文字 + ... より短い", preview.length <= 53)
+        assertTrue("省略記号が末尾に付く", preview.endsWith("..."))
+    }
+
+    @Test
+    fun `getMemoPreview_カスタム長さ指定_指定文字数でトリミングされる`() {
+        // Given
+        val memo = "a".repeat(100)
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = memo
+        )
+        val customLength = 20
+
+        // When
+        val preview = clothItem.getMemoPreview(customLength)
+
+        // Then
+        assertTrue("カスタム長さ + ... より短い", preview.length <= customLength + 3)
+        assertTrue("省略記号が末尾に付く", preview.endsWith("..."))
+    }
+
+    @Test
+    fun `validate_メモが制限文字数を超える_バリデーションで無効`() {
+        // Given
+        val longMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 1)
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = longMemo
+        )
+
+        // When
+        val validationResult = clothItem.validate()
+
+        // Then
+        assertFalse("制限文字数を超えるメモはバリデーションで無効", validationResult.isSuccess())
+        assertTrue("エラーメッセージにメモに関する内容が含まれる", 
+                   validationResult.getErrorMessage()!!.contains("メモ"))
+    }
+
+    @Test
+    fun `validate_メモが制限文字数以内_バリデーション成功`() {
+        // Given
+        val validMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH)
+        val clothItem = ClothItem(
+            id = 1,
+            imagePath = testImagePath,
+            tagData = validTagData,
+            createdAt = testDate,
+            memo = validMemo
+        )
+
+        // When
+        val validationResult = clothItem.validate()
+
+        // Then
+        assertTrue("制限文字数以内のメモはバリデーション成功", validationResult.isSuccess())
+    }
+
+    @Test
+    fun `MAX_MEMO_LENGTH定数_1000文字に設定されている`() {
+        // When & Then
+        assertEquals("メモ最大文字数は1000文字", 1000, ClothItem.MAX_MEMO_LENGTH)
+    }
 }

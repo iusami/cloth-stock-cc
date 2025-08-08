@@ -12,10 +12,20 @@ import com.example.clothstock.data.model.ClothItem
  * cloth-stock アプリケーションのメインデータベース
  * 
  * Roomデータベースの設定と初期化を行う
+ * 
+ * データベース変更履歴:
+ * - v1: 基本的な衣服アイテム情報（画像パス、タグ情報、作成日時）
+ * - v2: メモ機能追加（memoカラム追加、検索用インデックス追加）
+ * 
+ * 対応エンティティ:
+ * - ClothItem: 衣服アイテム情報とメモ情報を保存
+ * 
+ * マイグレーション対応:
+ * - MIGRATION_1_2: メモ機能追加対応
  */
 @Database(
     entities = [ClothItem::class],
-    version = 1,
+    version = 2,
     exportSchema = false // テスト用にfalse、本番では適切なスキーマ管理を実装
 )
 @TypeConverters(Converters::class)
@@ -43,8 +53,15 @@ abstract class ClothDatabase : RoomDatabase() {
         /**
          * データベースインスタンスを取得
          * 
+         * Singletonパターンでインスタンスを管理し、初回作成時に
+         * 適切なマイグレーション設定とコールバック設定を行う
+         * 
+         * 設定内容:
+         * - DatabaseCallback: 初期インデックス作成とPRAGMA設定
+         * - MIGRATION_1_2: v1→v2メモ機能追加マイグレーション
+         * 
          * @param context アプリケーションコンテキスト
-         * @return ClothDatabaseインスタンス
+         * @return ClothDatabaseインスタンス（スレッドセーフ）
          */
         fun getInstance(context: Context): ClothDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -54,6 +71,7 @@ abstract class ClothDatabase : RoomDatabase() {
                     DATABASE_NAME
                 )
                     .addCallback(DatabaseCallback())
+                    .addMigrations(DatabaseMigrations.MIGRATION_1_2)
                     .build()
                 
                 INSTANCE = instance
