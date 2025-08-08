@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="viewModel"
+            type="com.example.clothstock.ui.gallery.GalleryViewModel" />
+        <variable
+            name="isEmpty"
+            type="Boolean" />
+        <variable
+            name="isLoading"
+            type="Boolean" />
+    </data>
+
+    <!-- Task 15: タブレット縦画面対応 - 3-4カラムグリッドレイアウト -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
+
+        <!-- SwipeRefreshLayout for pull-to-refresh -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- フィルター・検索ツールバー（タブレット用に幅広） -->
+                <com.google.android.material.appbar.MaterialToolbar
+                    android:id="@+id/toolbarFilter"
+                    android:layout_width="0dp"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="?attr/colorSurface"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="24dp"
+                        android:paddingEnd="24dp">
+
+                        <!-- 検索バー（タブレット用に大きめ） -->
+                        <androidx.appcompat.widget.SearchView
+                            android:id="@+id/searchView"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="16dp"
+                            android:minHeight="48dp"
+                            app:iconifiedByDefault="false"
+                            app:queryBackground="@android:color/transparent"
+                            app:queryHint="@string/search_hint"
+                            app:searchIcon="@drawable/ic_search_24" />
+
+                        <!-- フィルターボタン（タブレット用に大きめ） -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonFilter"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:contentDescription="@string/filter_title"
+                            app:icon="@drawable/ic_filter_24"
+                            app:iconGravity="textStart"
+                            app:iconSize="28dp" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.appbar.MaterialToolbar>
+
+                <!-- RecyclerView for photo grid（タブレット用4カラム） -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewGallery"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:clipToPadding="false"
+                    android:padding="16dp"
+                    android:scrollbars="vertical"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                    tools:itemCount="12"
+                    tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                    tools:listitem="@layout/item_cloth_grid"
+                    tools:spanCount="4"
+                    tools:visibility="visible" />
+
+                <!-- Empty state layout（タブレット用に調整） -->
+                <LinearLayout
+                    android:id="@+id/layoutEmptyState"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="48dp"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                    tools:visibility="gone">
+
+                    <!-- Empty state icon（タブレット用に大きく） -->
+                    <ImageView
+                        android:id="@+id/imageEmptyIcon"
+                        android:layout_width="160dp"
+                        android:layout_height="160dp"
+                        android:layout_marginBottom="32dp"
+                        android:alpha="0.6"
+                        android:contentDescription="@string/empty_gallery_icon"
+                        android:src="@drawable/ic_photo_library_24"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Empty state message -->
+                    <TextView
+                        android:id="@+id/textEmptyMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:gravity="center"
+                        android:text="@string/empty_gallery_message"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Empty state description -->
+                    <TextView
+                        android:id="@+id/textEmptyDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="32dp"
+                        android:gravity="center"
+                        android:text="@string/empty_gallery_description"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Take photo button（タブレット用に大きめ） -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonTakePhoto"
+                        style="@style/Widget.Material3.Button.Icon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:paddingStart="24dp"
+                        android:paddingEnd="24dp"
+                        android:text="@string/button_take_photo"
+                        android:textSize="16sp"
+                        app:icon="@drawable/ic_camera_24"
+                        app:iconGravity="start"
+                        app:iconSize="24dp" />
+
+                </LinearLayout>
+
+                <!-- Loading state overlay -->
+                <FrameLayout
+                    android:id="@+id/layoutLoading"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="?attr/colorSurface"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                    tools:visibility="gone">
+
+                    <ProgressBar
+                        android:id="@+id/progressBar"
+                        style="?android:attr/progressBarStyleLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:indeterminate="true" />
+
+                </FrameLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- FAB for quick camera access（タブレット用に通常サイズ） -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="24dp"
+            android:contentDescription="@string/button_take_photo"
+            app:srcCompat="@drawable/ic_camera_24" />
+
+        <!-- フィルターボトムシート -->
+        <include 
+            android:id="@+id/includeBottomSheetFilter"
+            layout="@layout/bottom_sheet_filter" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</layout>

@@ -1,6 +1,7 @@
 package com.example.clothstock.ui.gallery
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -194,7 +195,10 @@ class GalleryFragment : Fragment() {
         adapter = createFilterAwareClothItemAdapter()
         binding.recyclerViewGallery.adapter = adapter
         
-        Log.d(TAG, "RecyclerView setup completed with filter support")
+        // Task15: パフォーマンス最適化機能追加
+        optimizeScrollPerformance()
+        
+        Log.d(TAG, "RecyclerView setup completed with filter support and performance optimization")
     }
 
     /**
@@ -898,13 +902,78 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * 画面サイズに応じたグリッド列数を計算
+     * Task 15: デバイス構成に応じたグリッド列数を計算（デバイス互換性強化）
      */
     private fun calculateSpanCount(): Int {
         val displayMetrics = resources.displayMetrics
         val screenWidthDp = displayMetrics.widthPixels / displayMetrics.density
-        val itemWidthDp = 150 // 各アイテムの幅（dp）
-        return (screenWidthDp / itemWidthDp).toInt().coerceAtLeast(2)
+        val configuration = resources.configuration
+        
+        return when {
+            // タブレット横画面: 3-4列（左カラムエリアの場合）
+            configuration.screenWidthDp >= TABLET_SCREEN_WIDTH_DP && 
+            configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> {
+                if (screenWidthDp > EXTRA_LARGE_TABLET_SCREEN_WIDTH_DP) SPAN_COUNT_4 else SPAN_COUNT_3
+            }
+            
+            // タブレット縦画面: 3-4列
+            configuration.screenWidthDp >= TABLET_SCREEN_WIDTH_DP -> {
+                if (screenWidthDp > LARGE_TABLET_SCREEN_WIDTH_DP) SPAN_COUNT_4 else SPAN_COUNT_3
+            }
+            
+            // スマートフォン横画面: 3列
+            configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> {
+                SPAN_COUNT_3
+            }
+            
+            // 小画面スマートフォン: 2列
+            screenWidthDp < SMALL_SCREEN_WIDTH_DP -> {
+                2
+            }
+            
+            // 通常スマートフォン縦画面: 2列
+            else -> {
+                2
+            }
+        }.coerceAtLeast(2) // 最低2列は保証
+    }
+
+    // Task 15: 大量データ対応のパフォーマンス監視機能（将来拡張用）
+    // 現在は使用していないが、実際のプロダクション環境での監視に有用
+    // private fun monitorMemoryUsage() { ... }
+
+    /**
+     * Task 15: スクロールパフォーマンス最適化
+     */
+    private fun optimizeScrollPerformance() {
+        binding.recyclerViewGallery.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            private var scrollStartTime = 0L
+            
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                
+                when (newState) {
+                    RecyclerView.SCROLL_STATE_DRAGGING -> {
+                        scrollStartTime = System.currentTimeMillis()
+                        // スクロール中は画像読み込みを一時停止
+                        com.bumptech.glide.Glide.with(this@GalleryFragment).pauseRequests()
+                    }
+                    
+                    RecyclerView.SCROLL_STATE_IDLE -> {
+                        val scrollDuration = System.currentTimeMillis() - scrollStartTime
+                        Log.d(TAG, "Scroll performance: ${scrollDuration}ms")
+                        
+                        // スクロール完了後に画像読み込み再開
+                        com.bumptech.glide.Glide.with(this@GalleryFragment).resumeRequests()
+                        
+                        // パフォーマンス警告
+                        if (scrollDuration > SCROLL_PERFORMANCE_THRESHOLD_MS) {
+                            Log.w(TAG, "Slow scroll detected: ${scrollDuration}ms")
+                        }
+                    }
+                }
+            }
+        })
     }
 
     /**
@@ -1390,8 +1459,8 @@ class GalleryFragment : Fragment() {
             
         } catch (e: IllegalStateException) {
             Log.e(TAG, "IllegalStateException setting up accessibility", e)
-        } catch (e: RuntimeException) {
-            Log.e(TAG, "RuntimeException setting up accessibility", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException setting up accessibility", e)
         }
     }
     
@@ -1492,13 +1561,15 @@ class GalleryFragment : Fragment() {
         )
         
         colorChips.forEach { (chip, descriptionResId) ->
-            chip.setOnCheckedChangeListener { _, isChecked ->
+            chip?.setOnCheckedChangeListener { _, isChecked ->
                 val baseDescription = getString(descriptionResId)
                 AccessibilityHelper.updateChipContentDescription(chip, baseDescription, isChecked)
             }
             // 初期状態設定
-            val baseDescription = getString(descriptionResId)
-            AccessibilityHelper.updateChipContentDescription(chip, baseDescription, chip.isChecked)
+            chip?.let {
+                val baseDescription = getString(descriptionResId)
+                AccessibilityHelper.updateChipContentDescription(it, baseDescription, it.isChecked)
+            }
         }
         
         // カテゴリChip
@@ -1511,13 +1582,15 @@ class GalleryFragment : Fragment() {
         )
         
         categoryChips.forEach { (chip, descriptionResId) ->
-            chip.setOnCheckedChangeListener { _, isChecked ->
+            chip?.setOnCheckedChangeListener { _, isChecked ->
                 val baseDescription = getString(descriptionResId)
                 AccessibilityHelper.updateChipContentDescription(chip, baseDescription, isChecked)
             }
             // 初期状態設定
-            val baseDescription = getString(descriptionResId)
-            AccessibilityHelper.updateChipContentDescription(chip, baseDescription, chip.isChecked)
+            chip?.let {
+                val baseDescription = getString(descriptionResId)
+                AccessibilityHelper.updateChipContentDescription(it, baseDescription, it.isChecked)
+            }
         }
     }
     
@@ -1609,6 +1682,23 @@ class GalleryFragment : Fragment() {
         
         // Task 14: アクセシビリティ用定数
         private const val SIZE_100 = 100
+        
+        // Task15: 大量データパフォーマンス最適化定数
+        // 将来の大量データ対応機能で使用予定
+        // private const val LARGE_DATASET_THRESHOLD = 500 // 大量データとみなす閾値
+        // private const val PREFETCH_DISTANCE = 5 // 先読み距離
+        private const val SCROLL_PERFORMANCE_THRESHOLD_MS = 16 // スムーズスクロール閾値
+        // private const val MEMORY_WARNING_THRESHOLD_MB = 100 // メモリ警告閾値
+        // private const val VIEWPORT_MULTIPLIER = 3 // ビューポート範囲外アイテム乗数
+        
+        // Task15: デバイス構成計算用定数
+        private const val TABLET_SCREEN_WIDTH_DP = 600
+        private const val LARGE_TABLET_SCREEN_WIDTH_DP = 800
+        private const val EXTRA_LARGE_TABLET_SCREEN_WIDTH_DP = 900
+        private const val SPAN_COUNT_3 = 3
+        private const val SPAN_COUNT_4 = 4
+        private const val SMALL_SCREEN_WIDTH_DP = 360
+        // private const val MEMORY_DIVISOR = 1024 * 1024 // MB換算 (将来用)
         private const val SIZE_110 = 110
         private const val SIZE_120 = 120
         private const val SIZE_130 = 130

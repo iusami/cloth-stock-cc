@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
+import com.example.clothstock.data.model.PaginationSearchParameters
 import com.example.clothstock.data.repository.ClothRepository
 import com.example.clothstock.data.repository.FilterManager
 import com.example.clothstock.data.model.FilterState
@@ -663,7 +664,17 @@ class GalleryViewModel(
      * 次のバッチを読み込み
      */
     fun loadNextBatch() {
-        // 条件チェックを1つのif文にまとめる
+        if (!canLoadNextBatch()) return
+        
+        viewModelScope.launch {
+            performBatchLoading()
+        }
+    }
+    
+    /**
+     * バッチ読み込みの条件チェック
+     */
+    private fun canLoadNextBatch(): Boolean {
         val currentLoadingState = _progressiveLoadingState.value
         val isPaused = _isProgressiveLoadingPaused.value == true
         val canLoad = currentLoadingState != null && 
@@ -673,63 +684,87 @@ class GalleryViewModel(
                      
         if (!canLoad) {
             Log.d(TAG, "プログレッシブローディング条件未満足のため、バッチ読み込みをスキップ")
-            return
         }
+        return canLoad
+    }
+    
+    /**
+     * バッチ読み込みの実行
+     */
+    private suspend fun performBatchLoading() {
+        val currentLoadingState = _progressiveLoadingState.value ?: return
         
-        viewModelScope.launch {
-            try {
-                _progressiveLoadingState.value = currentLoadingState.copy(isLoading = true)
-                
-                val currentState = filterManager.getCurrentState()
-                val sizeFilters = if (currentState.sizeFilters.isNotEmpty()) {
-                    currentState.sizeFilters.toList()
-                } else null
-                val colorFilters = if (currentState.colorFilters.isNotEmpty()) {
-                    currentState.colorFilters.toList()
-                } else null  
-                val categoryFilters = if (currentState.categoryFilters.isNotEmpty()) {
-                    currentState.categoryFilters.toList()
-                } else null
-                val searchText = if (currentState.searchText.isNotBlank()) currentState.searchText else null
-                
-                val items = clothRepository.searchItemsWithPagination(
-                    sizeFilters = sizeFilters,
-                    colorFilters = colorFilters,
-                    categoryFilters = categoryFilters,
-                    searchText = searchText,
-                    offset = currentLoadingState.currentOffset,
-                    limit = currentLoadingState.batchSize
-                ).first()
-                
-                val currentItems = _clothItems.value ?: emptyList()
-                val newItems = currentItems + items
-                val hasMore = items.size == currentLoadingState.batchSize
-                
-                _clothItems.value = newItems
-                _isEmpty.value = newItems.isEmpty()
-                _hasMoreData.value = hasMore
-                
-                _progressiveLoadingState.value = currentLoadingState.copy(
-                    isLoading = false,
-                    currentOffset = currentLoadingState.currentOffset + items.size,
-                    hasMoreData = hasMore
-                )
-                
-                // 全件取得完了時にキャッシュに保存
-                if (!hasMore) {
-                    searchCache.put(currentState, newItems)
-                    Log.d(TAG, "プログレッシブローディング完了：${newItems.size}件をキャッシュに保存")
-                }
-                
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "バッチ読み込みエラー"
-                _progressiveLoadingState.value = currentLoadingState.copy(isLoading = false)
-                Log.e(TAG, "バッチ読み込みエラー", e)
-            } finally {
-                if (_progressiveLoadingState.value?.hasMoreData == false) {
-                    _isLoading.value = false
-                }
-            }
+        try {
+            _progressiveLoadingState.value = currentLoadingState.copy(isLoading = true)
+            
+            val parameters = createPaginationParameters(currentLoadingState)
+            val items = clothRepository.searchItemsWithPagination(parameters).first()
+            
+            updateItemsAndState(items, currentLoadingState)
+            
+        } catch (e: Exception) {
+            handleBatchLoadingError(e, currentLoadingState)
+        } finally {
+            finalizeLoadingState()
+        }
+    }
+    
+    /**
+     * ページネーションパラメーターを作成
+     */
+    private fun createPaginationParameters(loadingState: ProgressiveLoadingState): PaginationSearchParameters {
+        val currentState = filterManager.getCurrentState()
+        return PaginationSearchParameters(
+            sizeFilters = currentState.sizeFilters.takeIf { it.isNotEmpty() }?.toList(),
+            colorFilters = currentState.colorFilters.takeIf { it.isNotEmpty() }?.toList(),
+            categoryFilters = currentState.categoryFilters.takeIf { it.isNotEmpty() }?.toList(),
+            searchText = currentState.searchText.takeIf { it.isNotBlank() },
+            offset = loadingState.currentOffset,
+            limit = loadingState.batchSize
+        )
+    }
+    
+    /**
+     * アイテムと状態を更新
+     */
+    private fun updateItemsAndState(items: List<ClothItem>, currentLoadingState: ProgressiveLoadingState) {
+        val currentItems = _clothItems.value ?: emptyList()
+        val newItems = currentItems + items
+        val hasMore = items.size == currentLoadingState.batchSize
+        
+        _clothItems.value = newItems
+        _isEmpty.value = newItems.isEmpty()
+        _hasMoreData.value = hasMore
+        
+        _progressiveLoadingState.value = currentLoadingState.copy(
+            isLoading = false,
+            currentOffset = currentLoadingState.currentOffset + items.size,
+            hasMoreData = hasMore
+        )
+        
+        // 全件取得完了時にキャッシュに保存
+        if (!hasMore) {
+            val currentState = filterManager.getCurrentState()
+            searchCache.put(currentState, newItems)
+            Log.d(TAG, "プログレッシブローディング完了：${newItems.size}件をキャッシュに保存")
+        }
+    }
+    
+    /**
+     * バッチ読み込みエラーを処理
+     */
+    private fun handleBatchLoadingError(e: Exception, currentLoadingState: ProgressiveLoadingState) {
+        _errorMessage.value = e.message ?: "バッチ読み込みエラー"
+        _progressiveLoadingState.value = currentLoadingState.copy(isLoading = false)
+        Log.e(TAG, "バッチ読み込みエラー", e)
+    }
+    
+    /**
+     * 読み込み状態の最終化
+     */
+    private fun finalizeLoadingState() {
+        if (_progressiveLoadingState.value?.hasMoreData == false) {
+            _isLoading.value = false
         }
     }
     
