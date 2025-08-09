@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.google.android.material.color.MaterialColors
@@ -155,7 +154,11 @@ class MemoInputView @JvmOverloads constructor(
     private fun updateWarningState(isWarning: Boolean) {
         if (isWarning) {
             // 警告状態: テキスト色を警告色に変更、警告アイコン表示
-            val warningColor = ContextCompat.getColor(context, android.R.color.holo_red_light)
+            val warningColor = MaterialColors.getColor(
+                context, 
+                com.google.android.material.R.attr.colorError, 
+                "colorError"
+            )
             textCharacterCount.setTextColor(warningColor)
             iconWarning.visibility = View.VISIBLE
             

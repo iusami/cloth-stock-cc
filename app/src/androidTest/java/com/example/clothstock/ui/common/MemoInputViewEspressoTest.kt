@@ -305,9 +305,10 @@ class MemoInputViewEspressoTest {
                 if (item !is android.widget.TextView) return false
                 
                 val currentColor = item.currentTextColor
-                val warningColor = androidx.core.content.ContextCompat.getColor(
+                val warningColor = com.google.android.material.color.MaterialColors.getColor(
                     item.context, 
-                    android.R.color.holo_red_light
+                    com.google.android.material.R.attr.colorError, 
+                    "colorError"
                 )
                 
                 return currentColor == warningColor
