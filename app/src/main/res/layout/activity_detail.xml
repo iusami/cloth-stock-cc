@@ -106,6 +106,14 @@
                 android:textColor="@android:color/white"
                 tools:text="2024/01/15 14:30" />
 
+            <!-- Memo input view -->
+            <com.example.clothstock.ui.common.MemoInputView
+                android:id="@+id/memoInputView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="visible" />
+
         </LinearLayout>
 
         <!-- Back button -->

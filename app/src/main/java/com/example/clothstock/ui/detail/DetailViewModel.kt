@@ -9,6 +9,9 @@ import com.example.clothstock.data.repository.ClothRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.debounce
 import kotlin.math.pow
 
 /**
@@ -43,11 +46,42 @@ class DetailViewModel(
     // パフォーマンス最適化: リトライ機能
     private var retryCount = 0
     private val maxRetryCount = 3
+    
+    // メモ保存機能
+    private val _memoSaveState = MutableLiveData<MemoSaveState>()
+    val memoSaveState: LiveData<MemoSaveState> = _memoSaveState
+    
+    // メモ保存用のFlowとdebounceによる自動保存
+    @OptIn(FlowPreview::class)
+    private val memoUpdateFlow = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
+    private var memoSaveJob: Job? = null
+    
+    companion object {
+        private const val MEMO_SAVE_DEBOUNCE_MS = 1000L // 1秒のdebounce
+        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L // 保存成功表示時間
+        private const val ERROR_DISPLAY_TIME_MS = 5000L // エラー表示時間
+    }
+    
+    /**
+     * メモ保存状態を表すsealed class
+     */
+    sealed class MemoSaveState {
+        object Idle : MemoSaveState()
+        object Saving : MemoSaveState()
+        object Saved : MemoSaveState()
+        data class Error(val message: String) : MemoSaveState()
+    }
 
+    init {
+        // メモ自動保存の初期化
+        setupMemoAutoSave()
+    }
+    
     // パフォーマンス最適化: メモリリーク防止
     override fun onCleared() {
         super.onCleared()
         loadingJob?.cancel()
+        memoSaveJob?.cancel()
     }
 
     /**
@@ -178,5 +212,93 @@ class DetailViewModel(
     fun getTagSummary(): String {
         val item = _clothItem.value ?: return ""
         return item.getSummary()
+    }
+    
+    // ===== メモ関連機能 =====
+    
+    /**
+     * メモ自動保存のセットアップ（debounce機能付き）
+     */
+    @OptIn(FlowPreview::class)
+    private fun setupMemoAutoSave() {
+        memoSaveJob = viewModelScope.launch {
+            memoUpdateFlow
+                .debounce(MEMO_SAVE_DEBOUNCE_MS)
+                .collect { memo ->
+                    saveMemoInternal(memo)
+                }
+        }
+    }
+    
+    /**
+     * メモ変更時に呼び出される（UIから）
+     * debounce機能により、一定時間後に自動保存される
+     * 
+     * @param memo 新しいメモテキスト
+     */
+    fun onMemoChanged(memo: String) {
+        memoUpdateFlow.tryEmit(memo)
+    }
+    
+    /**
+     * メモ即座保存（手動保存時）
+     * debounceを待たずに即座にメモを保存する
+     * 
+     * @param memo 保存するメモテキスト
+     */
+    fun saveMemoImmediately(memo: String) {
+        viewModelScope.launch {
+            saveMemoInternal(memo)
+        }
+    }
+    
+    /**
+     * 内部メモ保存処理
+     * 
+     * @param memo 保存するメモテキスト
+     */
+    private suspend fun saveMemoInternal(memo: String) {
+        val currentItem = _clothItem.value ?: return
+        
+        try {
+            _memoSaveState.value = MemoSaveState.Saving
+            
+            // メモを更新した新しいClothItemを作成
+            val updatedItem = currentItem.withUpdatedMemo(memo)
+            
+            // リポジトリに保存
+            repository.updateItem(updatedItem)
+            
+            // 成功時は現在のClothItemも更新
+            _clothItem.value = updatedItem
+            _memoSaveState.value = MemoSaveState.Saved
+            
+            // 2秒後にIdleに戻す（UIフィードバックのため）
+            delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
+            _memoSaveState.value = MemoSaveState.Idle
+            
+        } catch (e: Exception) {
+            _memoSaveState.value = MemoSaveState.Error("メモの保存に失敗しました: ${e.message}")
+            
+            // 5秒後にIdleに戻す
+            delay(ERROR_DISPLAY_TIME_MS)
+            _memoSaveState.value = MemoSaveState.Idle
+        }
+    }
+    
+    /**
+     * 現在のメモテキストを取得
+     * 
+     * @return 現在のメモテキスト（アイテムが存在しない場合は空文字列）
+     */
+    fun getCurrentMemo(): String {
+        return _clothItem.value?.memo ?: ""
+    }
+    
+    /**
+     * メモ保存状態をリセット
+     */
+    fun clearMemoSaveState() {
+        _memoSaveState.value = MemoSaveState.Idle
     }
 }
