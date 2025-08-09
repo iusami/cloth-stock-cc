@@ -94,6 +94,26 @@
                     android:alpha="0.8"
                     tools:text="2024/01/15" />
 
+                <!-- Memo preview -->
+                <TextView
+                    android:id="@+id/textMemoPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/circle_background_white"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:padding="6dp"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="italic"
+                    android:visibility="gone"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/memo_preview_description"
+                    tools:text="購入場所: 渋谷のセレクトショップ、お気に入りの..."
+                    tools:visibility="visible" />
+
             </LinearLayout>
 
             <!-- Memo indicator -->

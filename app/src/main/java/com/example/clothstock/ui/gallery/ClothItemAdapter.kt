@@ -16,11 +16,12 @@ import java.io.File
 /**
  * 衣服アイテムグリッド表示用RecyclerView.Adapter
  * 
- * TDD Greenフェーズ実装
- * Glide画像表示、クリックリスナー、DiffUtil効率更新
+ * TDD Greenフェーズ実装 + Task 6実装
+ * Glide画像表示、クリックリスナー、DiffUtil効率更新、メモプレビュー機能
  */
 class ClothItemAdapter(
-    private val onItemClick: (ClothItem) -> Unit
+    private val onItemClick: (ClothItem) -> Unit,
+    private val onMemoPreviewClick: (ClothItem) -> Unit = { /* デフォルトは何もしない */ }
 ) : ListAdapter<ClothItem, ClothItemAdapter.ClothItemViewHolder>(ClothItemDiffCallback()) {
     
     companion object {
@@ -28,6 +29,7 @@ class ClothItemAdapter(
         private const val IMAGE_LOAD_TIMEOUT_MS = 10000 // 10秒タイムアウト
         private const val THUMBNAIL_SIZE = 300 // サムネイルサイズ
         private const val GLIDE_ENCODE_QUALITY = 85 // Glide画像品質（Android Q+対応）
+        private const val MEMO_PREVIEW_MAX_LENGTH = 30 // メモプレビュー最大文字数
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ClothItemViewHolder {
@@ -36,7 +38,7 @@ class ClothItemAdapter(
             parent,
             false
         )
-        return ClothItemViewHolder(binding, onItemClick)
+        return ClothItemViewHolder(binding, onItemClick, onMemoPreviewClick)
     }
 
     override fun onBindViewHolder(holder: ClothItemViewHolder, position: Int) {
@@ -44,11 +46,12 @@ class ClothItemAdapter(
     }
 
     /**
-     * ViewHolder - データバインディング + Glide画像読み込み
+     * ViewHolder - データバインディング + Glide画像読み込み + メモプレビュー機能
      */
     class ClothItemViewHolder(
         private val binding: ItemClothGridBinding,
-        private val onItemClick: (ClothItem) -> Unit
+        private val onItemClick: (ClothItem) -> Unit,
+        private val onMemoPreviewClick: (ClothItem) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(clothItem: ClothItem) {
@@ -143,6 +146,9 @@ class ClothItemAdapter(
             binding.memoIndicator.setHasMemo(clothItem.hasMemo())
             Log.d(TAG, "Memo indicator set for item ${clothItem.id}: hasMemo=${clothItem.hasMemo()}")
 
+            // Task 6: メモプレビュー表示設定
+            setupMemoPreview(clothItem)
+
             // お気に入り状態の表示設定（将来の拡張用、現在は非表示）
             binding.iconFavorite.visibility = android.view.View.GONE
         }
@@ -231,6 +237,48 @@ class ClothItemAdapter(
                 Log.d(TAG, "Progress bar set to GONE (success state)")
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting progress bar visibility in showSuccessState", e)
+            }
+        }
+
+        /**
+         * Task 6: メモプレビュー表示設定
+         * 
+         * Requirements 4.2: メモテキストが長い場合は省略表示
+         * Requirements 4.3: メモプレビュータップ時のDetailActivity遷移
+         * 
+         * @param clothItem 表示するClothItem
+         */
+        private fun setupMemoPreview(clothItem: ClothItem) {
+            val hasMemo = clothItem.hasMemo()
+            Log.d(TAG, "Setup memo preview for item ${clothItem.id}: hasMemo=$hasMemo")
+            
+            if (hasMemo) {
+                val memoPreview = clothItem.getMemoPreview(MEMO_PREVIEW_MAX_LENGTH)
+                
+                // メモプレビューを表示
+                binding.textMemoPreview.text = memoPreview
+                binding.textMemoPreview.visibility = android.view.View.VISIBLE
+                
+                // メモプレビュータップ時のリスナー設定
+                binding.textMemoPreview.setOnClickListener {
+                    Log.d(TAG, "Memo preview tapped for item ${clothItem.id}")
+                    onMemoPreviewClick(clothItem)
+                }
+                
+                // アクセシビリティ対応
+                binding.textMemoPreview.contentDescription = 
+                    binding.textMemoPreview.context.getString(
+                        R.string.memo_preview_description, 
+                        memoPreview
+                    )
+                
+                Log.d(TAG, "Memo preview displayed for item ${clothItem.id}: '$memoPreview'")
+            } else {
+                // メモがない場合は非表示
+                binding.textMemoPreview.visibility = android.view.View.GONE
+                binding.textMemoPreview.setOnClickListener(null)
+                
+                Log.d(TAG, "No memo for item ${clothItem.id}, preview hidden")
             }
         }
     }
