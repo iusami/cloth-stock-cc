@@ -5,6 +5,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.typeText
+import androidx.test.espresso.action.ViewActions.clearText
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,7 +48,8 @@ class DetailActivityEspressoTest {
             id = TEST_CLOTH_ITEM_ID,
             imagePath = "/storage/emulated/0/Pictures/test_cloth.jpg",
             tagData = TEST_TAG_DATA,
-            createdAt = Date()
+            createdAt = Date(),
+            memo = "Test memo content"
         )
     }
 
@@ -75,6 +78,10 @@ class DetailActivityEspressoTest {
             onView(withId(R.id.buttonBack))
                 .check(matches(isDisplayed()))
                 .check(matches(isEnabled()))
+            
+            // Task 5: メモ入力ビューの表示確認
+            onView(withId(R.id.memoInputView))
+                .check(matches(isDisplayed()))
         }
     }
 
@@ -270,6 +277,70 @@ class DetailActivityEspressoTest {
             scenario.onActivity { activity ->
                 assert(activity.isFinishing)
             }
+        }
+    }
+
+    // ===== Task 5: メモ機能UIテスト =====
+
+    /**
+     * テスト11: メモ表示機能
+     */
+    @Test
+    fun detailActivity_メモ付きアイテム表示時_メモが正しく表示される() {
+        // Given: メモ付きアイテムのIntent
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        
+        // When: DetailActivityを起動
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            
+            // Then: メモが表示される
+            onView(withId(R.id.memoInputView))
+                .check(matches(isDisplayed()))
+                
+            // メモ入力フィールドに既存のメモが設定される
+            onView(withId(R.id.editTextMemo))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    /**
+     * テスト12: メモ入力機能
+     */
+    @Test
+    fun detailActivity_メモ入力時_文字数カウンターが更新される() {
+        // Given: DetailActivityが表示されている
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        val testMemo = "新しいメモテストです"
+        
+        // When: メモを入力
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            onView(withId(R.id.editTextMemo))
+                .perform(clearText(), typeText(testMemo))
+            
+            // Then: 文字数カウンターが更新される
+            onView(withId(R.id.textCharacterCount))
+                .check(matches(isDisplayed()))
+                .check(matches(withText(containsString("${testMemo.length}/1000"))))
+        }
+    }
+
+    /**
+     * テスト13: メモ文字数制限機能
+     */
+    @Test
+    fun detailActivity_長文メモ入力時_警告が表示される() {
+        // Given: DetailActivityが表示されている
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        val longMemo = "a".repeat(950) // 警告閾値(900文字)を超える
+        
+        // When: 長文メモを入力
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            onView(withId(R.id.editTextMemo))
+                .perform(clearText(), typeText(longMemo))
+            
+            // Then: 警告アイコンが表示される
+            onView(withId(R.id.iconWarning))
+                .check(matches(isDisplayed()))
         }
     }
 

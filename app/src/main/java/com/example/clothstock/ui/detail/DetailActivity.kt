@@ -16,6 +16,7 @@ import com.example.clothstock.R
 import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.ActivityDetailBinding
 import com.example.clothstock.ui.tagging.TaggingActivity
+import com.example.clothstock.ui.common.MemoInputView
 import com.example.clothstock.util.GlideUtils
 import com.google.android.material.snackbar.Snackbar
 
@@ -34,6 +35,7 @@ class DetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDetailBinding
     private lateinit var viewModel: DetailViewModel
+    private lateinit var memoInputView: MemoInputView
     private var clothItemId: Long = INVALID_CLOTH_ITEM_ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,6 +82,10 @@ class DetailActivity : AppCompatActivity() {
      * UI初期設定
      */
     private fun setupUI() {
+        // MemoInputViewの初期化
+        memoInputView = binding.memoInputView
+        setupMemoInputView()
+        
         // 戻りボタン
         binding.buttonBack.setOnClickListener {
             finish()
@@ -136,6 +142,11 @@ class DetailActivity : AppCompatActivity() {
                 View.GONE
             }
         }
+        
+        // メモ保存状態の監視
+        viewModel.memoSaveState.observe(this) { saveState ->
+            handleMemoSaveState(saveState)
+        }
     }
 
     /**
@@ -187,6 +198,9 @@ class DetailActivity : AppCompatActivity() {
 
         // タグ情報を表示（アニメーション付き）
         displayTagInformation(clothItem)
+        
+        // メモ情報を表示
+        memoInputView.setMemo(clothItem.memo)
     }
 
     /**
@@ -292,6 +306,80 @@ class DetailActivity : AppCompatActivity() {
             }
         }
         onBackPressedDispatcher.addCallback(this, callback)
+    }
+    
+    // ===== メモ機能関連 =====
+    
+    /**
+     * MemoInputViewの初期設定
+     */
+    private fun setupMemoInputView() {
+        memoInputView.setOnMemoChangedListener { memo ->
+            // ViewModelの自動保存機能を呼び出し（debounce付き）
+            viewModel.onMemoChanged(memo)
+        }
+    }
+    
+    /**
+     * メモ保存状態のハンドリング
+     * 
+     * @param saveState メモ保存の状態
+     */
+    private fun handleMemoSaveState(saveState: DetailViewModel.MemoSaveState) {
+        when (saveState) {
+            is DetailViewModel.MemoSaveState.Idle -> {
+                // 何もしない（通常状態）
+            }
+            
+            is DetailViewModel.MemoSaveState.Saving -> {
+                // 保存中のUI表示（軽微なフィードバック）
+                showMemoSavingFeedback()
+            }
+            
+            is DetailViewModel.MemoSaveState.Saved -> {
+                // 保存完了のフィードバック
+                showMemoSavedFeedback()
+            }
+            
+            is DetailViewModel.MemoSaveState.Error -> {
+                // エラー表示
+                showMemoSaveError(saveState.message)
+            }
+        }
+    }
+    
+    /**
+     * メモ保存中のUIフィードバック表示
+     */
+    private fun showMemoSavingFeedback() {
+        // 軽微なフィードバック（例：プログレスインジケータ）
+        // 現在は何もしない（過度なUIの変化を避けるため）
+    }
+    
+    /**
+     * メモ保存完了のUIフィードバック表示
+     */
+    private fun showMemoSavedFeedback() {
+        // 短時間のSnackbarで保存完了を通知
+        Snackbar.make(binding.root, "メモを保存しました", Snackbar.LENGTH_SHORT)
+            .setAnchorView(binding.buttonEdit) // 編集ボタンの上に表示
+            .show()
+    }
+    
+    /**
+     * メモ保存エラーのUIフィードバック表示
+     * 
+     * @param errorMessage エラーメッセージ
+     */
+    private fun showMemoSaveError(errorMessage: String) {
+        Snackbar.make(binding.root, errorMessage, Snackbar.LENGTH_LONG)
+            .setAnchorView(binding.buttonEdit)
+            .setAction("再試行") {
+                // 現在のメモ内容で即座に再保存
+                val currentMemo = memoInputView.getMemo()
+                viewModel.saveMemoImmediately(currentMemo)
+            }
+            .show()
     }
     
     override fun onDestroy() {
