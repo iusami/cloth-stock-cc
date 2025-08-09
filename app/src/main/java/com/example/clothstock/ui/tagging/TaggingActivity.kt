@@ -238,6 +238,11 @@ class TaggingActivity : AppCompatActivity() {
             }
         })
         
+        // メモ入力フィールド
+        binding.memoInputView.setOnMemoChangedListener { memo ->
+            viewModel.updateMemo(memo)
+        }
+        
         // IMEアクション設定
         binding.editTextColor.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) {
@@ -325,6 +330,7 @@ class TaggingActivity : AppCompatActivity() {
                 // フィールドを既存データで事前入力
                 binding.editTextColor.setText(it.tagData.color)
                 binding.editTextCategory.setText(it.tagData.category)
+                binding.memoInputView.setMemo(it.memo)
                 
                 // NumberPickerのインデックスを正しく設定（10単位増分対応）
                 val validSizeOptions = TagData.getValidSizeOptions()

@@ -139,6 +139,10 @@ class ClothItemAdapter(
                 onItemClick(clothItem)
             }
 
+            // メモインジケーターの表示設定
+            binding.memoIndicator.setHasMemo(clothItem.hasMemo())
+            Log.d(TAG, "Memo indicator set for item ${clothItem.id}: hasMemo=${clothItem.hasMemo()}")
+
             // お気に入り状態の表示設定（将来の拡張用、現在は非表示）
             binding.iconFavorite.visibility = android.view.View.GONE
         }

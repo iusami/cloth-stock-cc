@@ -138,6 +138,17 @@
     <string name="keyboard_navigation_hint">TABキーで次の項目へ、SHIFTキー+TABキーで前の項目へ移動できます</string>
     <string name="chip_selection_hint">スペースキーまたはEnterキーで選択・選択解除できます</string>
     
+    <!-- メモ機能 -->
+    <string name="memo_label">メモ</string>
+    <string name="memo_hint">購入場所、着用シーン、コーディネートのアイデアなど...</string>
+    <string name="memo_content_description">衣服アイテムに関するメモを入力</string>
+    <string name="character_count_description">文字数カウンター</string>
+    <string name="warning_icon_description">文字数制限警告アイコン</string>
+    <string name="memo_help_text">購入場所、着用シーン、コーディネートのアイデアなど、最大1000文字まで記録できます。</string>
+    <string name="memo_indicator_description">メモ有無インジケーター</string>
+    <string name="memo_indicator_none_description">メモなし</string>
+    <string name="memo_preview_description">メモプレビュー: %1$s</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>

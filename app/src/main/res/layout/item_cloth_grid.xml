@@ -96,6 +96,17 @@
 
             </LinearLayout>
 
+            <!-- Memo indicator -->
+            <com.example.clothstock.ui.common.MemoIndicatorView
+                android:id="@+id/memoIndicator"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_margin="8dp"
+                android:elevation="4dp"
+                app:layout_constraintStart_toStartOf="@+id/imageViewCloth"
+                app:layout_constraintTop_toTopOf="@+id/imageViewCloth"
+                tools:visibility="visible" />
+
             <!-- Favorite indicator (future feature) -->
             <ImageView
                 android:id="@+id/iconFavorite"

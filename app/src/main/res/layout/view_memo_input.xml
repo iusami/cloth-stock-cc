@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="8dp">
+
+    <!-- メモ入力用のテキストラベル -->
+    <TextView
+        android:id="@+id/textMemoLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/memo_label"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textColor="?attr/colorOnSurface"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <!-- メモ入力用EditText -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayoutMemo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/memo_hint"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxStrokeColor="?attr/colorPrimary"
+        app:hintTextColor="?attr/colorOnSurfaceVariant"
+        app:startIconDrawable="@drawable/ic_edit_24"
+        app:startIconTint="?attr/colorOnSurfaceVariant"
+        app:endIconMode="clear_text"
+        app:counterEnabled="false"
+        tools:layout_height="120dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextMemo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top|start"
+            android:inputType="textMultiLine|textCapSentences"
+            android:lines="4"
+            android:maxLines="6"
+            android:minLines="3"
+            android:scrollbars="vertical"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
+            android:importantForAutofill="no"
+            android:contentDescription="@string/memo_content_description"
+            tools:text="ここにメモを入力します。複数行に対応しています。衣服に関する詳細情報、購入場所、着用シーンなどを記録できます。" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 文字数カウンター表示 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/textCharacterCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="@string/character_count_description"
+            tools:text="0/1000" />
+
+        <ImageView
+            android:id="@+id/iconWarning"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="4dp"
+            android:src="@drawable/ic_warning_24"
+            android:contentDescription="@string/warning_icon_description"
+            android:visibility="gone"
+            app:tint="?attr/colorError"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <!-- ヘルプテキスト（最大文字数情報） -->
+    <TextView
+        android:id="@+id/textMemoHelp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/memo_help_text"
+        android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:alpha="0.7"
+        android:gravity="start"
+        tools:text="購入場所、着用シーン、コーディネートのアイデアなど、最大1000文字まで記録できます。" />
+
+</LinearLayout>
