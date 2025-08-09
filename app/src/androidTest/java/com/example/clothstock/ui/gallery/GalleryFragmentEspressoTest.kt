@@ -11,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import com.example.clothstock.R
 import com.example.clothstock.util.TestDataHelper
+import com.example.clothstock.util.IdlingResourceHelper
 import org.hamcrest.Matchers.*
 import org.junit.After
 import org.junit.Before
@@ -41,6 +42,9 @@ class GalleryFragmentEspressoTest {
 
     @After
     fun tearDown() {
+        // IdlingResourceのクリーンアップ
+        IdlingResourceHelper.unregisterAllIdlingResources()
+        
         // テスト後のクリーンアップ: データベースクリア
         TestDataHelper.clearTestDatabaseSync()
     }
@@ -113,8 +117,8 @@ class GalleryFragmentEspressoTest {
         // When: データが読み込まれる
         launchFragmentInContainer<GalleryFragment>()
         
-        // データ読み込み完了まで少し待つ
-        Thread.sleep(1000)
+        // データ読み込み完了を待機（IdlingResource使用）
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
 
         // Then: RecyclerViewにアイテムが表示される
         onView(withId(R.id.recyclerViewGallery))
@@ -133,7 +137,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 2)
 
         // When: 最初のアイテムをクリック
         onView(withId(R.id.recyclerViewGallery))
@@ -143,7 +147,7 @@ class GalleryFragmentEspressoTest {
         // DetailActivityが実装済みなので、Activity遷移を期待する
         // 注意: Fragment in Containerテストでは実際のActivity遷移は制限されるため、
         // クリックアクションが正常に実行されることを確認
-        Thread.sleep(500) // 遷移処理の時間を確保
+        IdlingResourceHelper.waitForUiUpdate(500) // 遷移処理の時間を確保
     }
 
     // ===== ローディング状態テスト =====
@@ -164,11 +168,11 @@ class GalleryFragmentEspressoTest {
                 .check(matches(isDisplayed()))
         } catch (e: AssertionError) {
             // プログレスバーが既に非表示になっている場合は、データが読み込み完了
-            Thread.sleep(100)
+            IdlingResourceHelper.waitForUiUpdate(100)
         }
         
         // 最終的にデータが読み込まれることを確認
-        Thread.sleep(1000)
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 5)
         onView(withId(R.id.recyclerViewGallery))
             .check(matches(isDisplayed()))
     }
@@ -180,14 +184,14 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // 初期読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
 
         // When: SwipeRefreshを実行
         onView(withId(R.id.swipeRefreshLayout))
             .perform(swipeDown())
 
         // Then: リフレッシュ処理が実行される
-        Thread.sleep(1000) // リフレッシュ処理待機
+        IdlingResourceHelper.waitForUiUpdate(1000) // リフレッシュ処理待機
         
         // リフレッシュ後もデータが表示されることを確認
         onView(withId(R.id.recyclerViewGallery))
@@ -201,7 +205,7 @@ class GalleryFragmentEspressoTest {
     fun エラー状態_ネットワークエラー時にエラーメッセージが表示される() {
         // Given: 正常なデータ状態（エラーテストのベースライン）
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // 初期読み込み待機
+        IdlingResourceHelper.waitForEmptyRecyclerView(R.id.recyclerViewGallery) // 空状態確認
 
         // When: エラー状態を擬似的に発生（実際のエラーは統合テストで確認）
         // ここでは基本的なUI表示確認を行う
@@ -222,7 +226,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
 
         // When: RecyclerViewにアイテムが表示された状態
         onView(withId(R.id.recyclerViewGallery))
@@ -241,7 +245,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 2)
 
         // When: タグ情報を含むテストデータが表示される
         onView(withId(R.id.recyclerViewGallery))
@@ -434,7 +438,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000)
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 5)
         
         onView(withId(R.id.buttonFilter))
             .perform(click())
@@ -448,7 +452,7 @@ class GalleryFragmentEspressoTest {
             .perform(click())
 
         // Then: フィルター結果が表示される
-        Thread.sleep(1000) // フィルタリング処理待機
+        IdlingResourceHelper.waitForUiUpdate(1000) // フィルタリング処理待機
         onView(withId(R.id.recyclerViewGallery))
             .check(matches(isDisplayed()))
     }
@@ -480,7 +484,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 5)
 
         // When: カテゴリフィルタリング機能の基本動作確認
         // フィルタUIは実装済みのGalleryViewModelで提供される
@@ -499,7 +503,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 5)
 
         // When: 色フィルタリング機能の基本動作確認
         // フィルタ機能は実装済みのGalleryViewModelで提供される
@@ -516,7 +520,7 @@ class GalleryFragmentEspressoTest {
     fun ナビゲーション_戻るボタンで前画面に戻る() {
         // Given: Fragment表示
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(500)
+        IdlingResourceHelper.waitForUiUpdate(500)
 
         // When: 戻るボタン押下
         // FragmentInContainerテストでは実際のActivity統合は制限される
@@ -536,7 +540,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 6)
 
         // When: GridLayoutManagerの列数確認
         // 画面サイズに応じた適切な列数表示（実装済み）
@@ -554,7 +558,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1500) // 大量データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 15)
 
         // When: スクロール操作
         try {
@@ -580,7 +584,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
 
         // When: RecyclerViewが表示される
         // Then: メモインジケーターが表示される
@@ -599,7 +603,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
 
         // When: RecyclerViewが表示される
         // Then: メモプレビューテキストが表示される
@@ -619,7 +623,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 2)
 
         // When: RecyclerViewが表示される
         // Then: メモプレビューが非表示
@@ -638,7 +642,7 @@ class GalleryFragmentEspressoTest {
         TestDataHelper.injectTestDataSync(testItems)
         
         launchFragmentInContainer<GalleryFragment>()
-        Thread.sleep(1000) // データ読み込み待機
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 2)
 
         // When: RecyclerViewが表示される
         // Then: メモが省略表示される（...付き）
