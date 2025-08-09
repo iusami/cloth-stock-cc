@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
@@ -162,8 +163,12 @@ class MemoInputView @JvmOverloads constructor(
             textCharacterCount.contentDescription = 
                 "警告: ${currentCharacterCount}文字中、最大${ClothItem.MAX_MEMO_LENGTH}文字。文字数制限に近づいています。"
         } else {
-            // 通常状態: デフォルト色、警告アイコン非表示
-            val normalColor = ContextCompat.getColor(context, android.R.color.secondary_text_light)
+            // 通常状態: Material Design 3テーマ色、警告アイコン非表示
+            val normalColor = MaterialColors.getColor(
+                context, 
+                com.google.android.material.R.attr.colorOnSurfaceVariant, 
+                "colorOnSurfaceVariant"
+            )
             textCharacterCount.setTextColor(normalColor)
             iconWarning.visibility = View.GONE
             
