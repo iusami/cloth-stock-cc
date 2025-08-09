@@ -145,10 +145,14 @@
     <ID>TooGenericExceptionCaught:ClothStockApplication.kt$ClothStockApplication$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$exception: Exception</ID>
+    <ID>TooGenericExceptionCaught:DetailActivity.kt$DetailActivity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DetailActivity.kt$DetailActivity$fallbackException: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$logException: Exception</ID>
+    <ID>TooGenericExceptionCaught:GalleryFragment.kt$GalleryFragment$e: Exception</ID>
     <ID>TooGenericExceptionCaught:GalleryViewModel.kt$GalleryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ImageCompressionManager.kt$ImageCompressionManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MainActivity.kt$MainActivity$e: Exception</ID>
@@ -189,7 +193,6 @@
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.load.engine.DiskCacheStrategy</ID>
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.request.RequestOptions</ID>
     <ID>UnusedImports:FileUtilsTest.kt$import android.net.Uri</ID>
-    <ID>UnusedImports:GalleryFragment.kt$import androidx.recyclerview.widget.RecyclerView</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.fragment.app.Fragment</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.ViewModelProvider</ID>
     <ID>UnusedImports:MemoryPressureMonitor.kt$import kotlin.math.max</ID>

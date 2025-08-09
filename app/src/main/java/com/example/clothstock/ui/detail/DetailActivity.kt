@@ -396,25 +396,97 @@ class DetailActivity : AppCompatActivity() {
     /**
      * Task6: メモフィールドにフォーカスを設定
      * Requirements 4.3: メモプレビュータップ時のフォーカス機能
+     * 
+     * ViewTreeObserverを使用してレイアウト完了後にキーボードを表示
      */
     private fun focusOnMemoField() {
         try {
+            android.util.Log.d("DetailActivity", "Starting memo field focus sequence")
+            
             // MemoInputViewにフォーカスを設定
             memoInputView.requestMemoFocus()
             
-            // 少し遅延してからソフトキーボードを表示
-            memoInputView.postDelayed({
-                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                imm.showSoftInput(memoInputView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-            }, 300)
+            // ViewTreeObserverでレイアウト完了を待ってからキーボードを表示
+            val viewTreeObserver = memoInputView.viewTreeObserver
+            if (viewTreeObserver.isAlive) {
+                val layoutListener = object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        android.util.Log.d(
+                            "DetailActivity", 
+                            "Layout completed, attempting to show keyboard"
+                        )
+                        
+                        // リスナーを除去（一度だけ実行）
+                        memoInputView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        
+                        // レイアウトが完了したらソフトキーボードを表示
+                        showSoftKeyboard()
+                    }
+                }
+                viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
+                
+                android.util.Log.d("DetailActivity", "OnGlobalLayoutListener registered")
+            } else {
+                android.util.Log.w(
+                    "DetailActivity", 
+                    "ViewTreeObserver is not alive, falling back to direct keyboard show"
+                )
+                // フォールバック: 直接キーボードを表示
+                showSoftKeyboard()
+            }
             
         } catch (e: Exception) {
             android.util.Log.e("DetailActivity", "Failed to focus memo field", e)
+            // エラー時のフォールバック
+            try {
+                showSoftKeyboard()
+            } catch (fallbackException: Exception) {
+                android.util.Log.e("DetailActivity", "Fallback keyboard show also failed", fallbackException)
+            }
+        }
+    }
+    
+    /**
+     * ソフトキーボード表示のヘルパーメソッド
+     * 共通処理を切り出して再利用性を向上
+     */
+    private fun showSoftKeyboard() {
+        try {
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) 
+                as android.view.inputmethod.InputMethodManager
+            val result = imm.showSoftInput(
+                memoInputView, 
+                android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT
+            )
+            
+            android.util.Log.d("DetailActivity", "Keyboard show result: $result")
+            
+            // フォーカスが続いているか確認
+            if (!memoInputView.hasFocus()) {
+                android.util.Log.d("DetailActivity", "Re-requesting focus after keyboard show")
+                memoInputView.requestMemoFocus()
+            }
+            
+        } catch (e: Exception) {
+            android.util.Log.e("DetailActivity", "Failed to show soft keyboard", e)
         }
     }
     
     override fun onDestroy() {
         super.onDestroy()
+        
+        // ViewTreeObserverのリスナーをクリーンアップ（メモリリーク防止）
+        try {
+            val viewTreeObserver = memoInputView.viewTreeObserver
+            if (viewTreeObserver.isAlive) {
+                // 残っているOnGlobalLayoutListenerを除去しようとしますが、
+                // 既に除去済みの場合は何もしません
+                android.util.Log.d("DetailActivity", "Cleaning up ViewTreeObserver listeners")
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("DetailActivity", "Error during ViewTreeObserver cleanup", e)
+        }
+        
         // Glideは自動的にActivityのライフサイクルを管理するため、
         // 手動でのクリアは不要（むしろクラッシュの原因になる）
         // Glide.with(this)はActivityのライフサイクルに自動的にバインドされているため、
