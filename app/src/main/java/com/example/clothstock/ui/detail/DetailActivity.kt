@@ -30,6 +30,7 @@ class DetailActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_CLOTH_ITEM_ID = "extra_cloth_item_id"
+        const val EXTRA_FOCUS_MEMO = "EXTRA_FOCUS_MEMO" // Task6: メモフォーカス用
         private const val INVALID_CLOTH_ITEM_ID = -1L
     }
 
@@ -37,6 +38,7 @@ class DetailActivity : AppCompatActivity() {
     private lateinit var viewModel: DetailViewModel
     private lateinit var memoInputView: MemoInputView
     private var clothItemId: Long = INVALID_CLOTH_ITEM_ID
+    private var shouldFocusMemo: Boolean = false // Task6: メモフォーカス用フラグ
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +49,9 @@ class DetailActivity : AppCompatActivity() {
 
         // Intent からClothItem IDを取得
         clothItemId = intent.getLongExtra(EXTRA_CLOTH_ITEM_ID, INVALID_CLOTH_ITEM_ID)
+        
+        // Task6: メモフォーカスフラグの取得
+        shouldFocusMemo = intent.getBooleanExtra(EXTRA_FOCUS_MEMO, false)
         
         // ViewModel初期化
         setupViewModel()
@@ -116,6 +121,12 @@ class DetailActivity : AppCompatActivity() {
             if (clothItem != null) {
                 displayClothItem(clothItem)
                 showMainContent()
+                
+                // Task6: メモフォーカス処理
+                if (shouldFocusMemo) {
+                    focusOnMemoField()
+                    shouldFocusMemo = false // 一度だけ実行
+                }
             }
         }
 
@@ -380,6 +391,26 @@ class DetailActivity : AppCompatActivity() {
                 viewModel.saveMemoImmediately(currentMemo)
             }
             .show()
+    }
+
+    /**
+     * Task6: メモフィールドにフォーカスを設定
+     * Requirements 4.3: メモプレビュータップ時のフォーカス機能
+     */
+    private fun focusOnMemoField() {
+        try {
+            // MemoInputViewにフォーカスを設定
+            memoInputView.requestMemoFocus()
+            
+            // 少し遅延してからソフトキーボードを表示
+            memoInputView.postDelayed({
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(memoInputView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }, 300)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("DetailActivity", "Failed to focus memo field", e)
+        }
     }
     
     override fun onDestroy() {

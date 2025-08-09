@@ -203,26 +203,49 @@ class GalleryFragment : Fragment() {
 
     /**
      * Task9: フィルター結果対応ClothItemAdapterの作成（強化版）
+     * Task6: メモプレビュー機能追加
      */
     private fun createFilterAwareClothItemAdapter(): ClothItemAdapter {
-        Log.d(TAG, "Creating filter-aware ClothItemAdapter")
+        Log.d(TAG, "Creating filter-aware ClothItemAdapter with memo preview support")
         
-        return ClothItemAdapter { clothItem ->
-            Log.d(TAG, "Filter-aware adapter: Item clicked - ID: ${clothItem.id}")
-            
-            try {
-                // DetailActivityに遷移（フィルター状態情報付き）
-                navigateToDetailActivityWithFilterContext(clothItem.id)
+        return ClothItemAdapter(
+            onItemClick = { clothItem ->
+                Log.d(TAG, "Filter-aware adapter: Item clicked - ID: ${clothItem.id}")
                 
-            } catch (e: IllegalStateException) {
-                Log.e(TAG, "Failed to navigate to detail with filter context", e)
-                // フォールバック: 通常のナビゲーション
-                navigateToDetailActivity(clothItem.id)
+                try {
+                    // DetailActivityに遷移（フィルター状態情報付き）
+                    navigateToDetailActivityWithFilterContext(clothItem.id)
+                    
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "Failed to navigate to detail with filter context", e)
+                    // フォールバック: 通常のナビゲーション
+                    navigateToDetailActivity(clothItem.id)
+                }
+            },
+            onMemoPreviewClick = { clothItem ->
+                Log.d(TAG, "Task6: Memo preview clicked - ID: ${clothItem.id}")
+                
+                try {
+                    // Requirements 4.3: メモプレビュータップ時の詳細画面遷移
+                    navigateToDetailActivityWithMemoFocus(clothItem.id)
+                    
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "Error navigating to DetailActivity from memo preview", e)
+                    // フォールバック: 通常のナビゲーション  
+                    navigateToDetailActivity(clothItem.id)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Unexpected error during memo preview navigation", e)
+                    Snackbar.make(
+                        binding.root,
+                        "予期しないエラーが発生しました",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }.apply {
+        ).apply {
             // Task9: フィルター結果変更時のDiffUtil最適化
             // ListAdapterのDiffUtilがフィルター結果変更を効率的に処理
-            Log.d(TAG, "Filter-aware adapter configured with DiffUtil optimization")
+            Log.d(TAG, "Filter-aware adapter configured with DiffUtil optimization and memo preview")
         }
     }
 
@@ -992,6 +1015,30 @@ class GalleryFragment : Fragment() {
             putExtra(DetailActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
         }
         startActivity(intent)
+    }
+
+    /**
+     * Task6: メモプレビュータップ時のDetailActivity遷移
+     * Requirements 4.3: メモプレビューのタップでメモフィールドにフォーカスして詳細画面を表示
+     */
+    private fun navigateToDetailActivityWithMemoFocus(clothItemId: Long) {
+        Log.d(TAG, "Task6: Navigating to detail with memo focus for item: $clothItemId")
+        
+        val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+            putExtra(DetailActivity.EXTRA_CLOTH_ITEM_ID, clothItemId)
+            // Task6: メモフィールドにフォーカスするためのExtra
+            putExtra("EXTRA_FOCUS_MEMO", true)
+            
+            Log.d(TAG, "Added memo focus flag to detail intent")
+        }
+        
+        try {
+            startActivity(intent)
+            Log.d(TAG, "Successfully started DetailActivity with memo focus")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start DetailActivity with memo focus", e)
+            throw e
+        }
     }
 
     /**

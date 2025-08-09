@@ -23,13 +23,15 @@ object TestDataHelper {
         id: Long = 0,
         imagePath: String = "content://media/external/images/media/test_image.jpg",
         tagData: TagData = createTestTagData(),
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        memo: String = ""
     ): ClothItem {
         return ClothItem(
             id = id,
             imagePath = imagePath,
             tagData = tagData,
-            createdAt = createdAt
+            createdAt = createdAt,
+            memo = memo
         )
     }
 
@@ -222,5 +224,83 @@ object TestDataHelper {
                 createdAt = Date(System.currentTimeMillis() - (index * 1800000L)) // 30分ずつ過去
             )
         }
+    }
+
+    // ===== Task 6: メモ機能関連のテストデータヘルパー =====
+
+    /**
+     * メモ付きテストアイテムを作成
+     * Task 6 メモプレビュー機能テスト用
+     */
+    fun createTestItemsWithMemo(): List<ClothItem> {
+        return listOf(
+            createTestClothItem(
+                id = 1,
+                memo = "テストメモ1: 購入場所は渋谷のセレクトショップ",
+                tagData = createTestTagData(category = "シャツ", color = "ブルー", size = 100)
+            ),
+            createTestClothItem(
+                id = 2,
+                memo = "テストメモ2: お気に入りのアイテム、特別な日に着用",
+                tagData = createTestTagData(category = "ドレス", color = "レッド", size = 110)
+            ),
+            createTestClothItem(
+                id = 3,
+                memo = "テストメモ3: カジュアル用パンツ、デイリー使い",
+                tagData = createTestTagData(category = "パンツ", color = "グレー", size = 95)
+            )
+        )
+    }
+
+    /**
+     * メモなしテストアイテムを作成
+     * Task 6 メモプレビュー非表示テスト用
+     */
+    fun createTestItemsWithoutMemo(): List<ClothItem> {
+        return listOf(
+            createTestClothItem(
+                id = 10,
+                memo = "", // 空メモ
+                tagData = createTestTagData(category = "ジャケット", color = "ブラック", size = 105)
+            ),
+            createTestClothItem(
+                id = 11,
+                memo = "", // 空メモ
+                tagData = createTestTagData(category = "スカート", color = "ピンク", size = 85)
+            )
+        )
+    }
+
+    /**
+     * 長文メモ付きテストアイテムを作成
+     * Task 6 メモプレビュー省略表示テスト用
+     */
+    fun createTestItemsWithLongMemo(): List<ClothItem> {
+        val longMemo = "これは非常に長いメモテキストです。購入場所は渋谷のセレクトショップで、店員さんがとても親切でした。色合いが気に入っており、特別な日に着用することが多いです。お手入れ方法も教えてもらったので長く愛用できそうです。"
+        
+        return listOf(
+            createTestClothItem(
+                id = 20,
+                memo = longMemo,
+                tagData = createTestTagData(category = "コート", color = "ベージュ", size = 115)
+            ),
+            createTestClothItem(
+                id = 21,
+                memo = longMemo + " さらに追加のテキストで長くしています。",
+                tagData = createTestTagData(category = "ブラウス", color = "ホワイト", size = 90)
+            )
+        )
+    }
+
+    /**
+     * メモ付きとメモなしが混在するテストデータセット
+     * Task 6 総合テスト用
+     */
+    fun createMixedMemoTestData(): List<ClothItem> {
+        val withMemo = createTestItemsWithMemo().take(2)
+        val withoutMemo = createTestItemsWithoutMemo().take(1)
+        val withLongMemo = createTestItemsWithLongMemo().take(1)
+        
+        return withMemo + withoutMemo + withLongMemo
     }
 }

@@ -570,4 +570,84 @@ class GalleryFragmentEspressoTest {
         onView(withId(R.id.recyclerViewGallery))
             .check(matches(isDisplayed()))
     }
+
+    // ===== Task 6: メモプレビュー機能テスト =====
+
+    @Test
+    fun メモプレビュー_メモ付きアイテムでメモインジケーターが表示される() {
+        // Given: メモ付きアイテムのデータ
+        val testItems = TestDataHelper.createTestItemsWithMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        Thread.sleep(1000) // データ読み込み待機
+
+        // When: RecyclerViewが表示される
+        // Then: メモインジケーターが表示される
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        
+        // Requirements 4.1: メモインジケーター表示確認
+        onView(withId(R.id.memoIndicator))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun メモプレビュー_メモプレビューテキストが表示される() {
+        // Given: メモ付きアイテムのデータ
+        val testItems = TestDataHelper.createTestItemsWithMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        Thread.sleep(1000) // データ読み込み待機
+
+        // When: RecyclerViewが表示される
+        // Then: メモプレビューテキストが表示される
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        
+        // Requirements 4.2: メモプレビューテキスト表示確認
+        onView(withId(R.id.textMemoPreview))
+            .check(matches(isDisplayed()))
+            .check(matches(withText(containsString("テスト"))))
+    }
+
+    @Test
+    fun メモプレビュー_メモなしアイテムでメモプレビューが非表示() {
+        // Given: メモなしアイテムのデータ
+        val testItems = TestDataHelper.createTestItemsWithoutMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        Thread.sleep(1000) // データ読み込み待機
+
+        // When: RecyclerViewが表示される
+        // Then: メモプレビューが非表示
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        
+        // Requirements 4.4: メモなし時の非表示確認
+        onView(withId(R.id.textMemoPreview))
+            .check(matches(not(isDisplayed())))
+    }
+
+    @Test
+    fun メモプレビュー_長文メモが省略表示される() {
+        // Given: 長文メモ付きアイテムのデータ
+        val testItems = TestDataHelper.createTestItemsWithLongMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        Thread.sleep(1000) // データ読み込み待機
+
+        // When: RecyclerViewが表示される
+        // Then: メモが省略表示される（...付き）
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        
+        // Requirements 4.2: 長文メモの省略表示確認
+        onView(withId(R.id.textMemoPreview))
+            .check(matches(isDisplayed()))
+            .check(matches(withText(containsString("..."))))
+    }
 }
