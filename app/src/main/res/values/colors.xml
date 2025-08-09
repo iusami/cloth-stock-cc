@@ -69,4 +69,8 @@
     
     <!-- Filter UI colors -->
     <color name="filter_active_color">@color/md_theme_light_primaryContainer</color>
+    
+    <!-- Memo indicator colors -->
+    <color name="memo_indicator_background">@color/md_theme_light_tertiaryContainer</color>
+    <color name="memo_indicator_icon">@color/md_theme_light_onTertiaryContainer</color>
 </resources>

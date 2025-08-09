@@ -146,6 +146,7 @@
     <string name="warning_icon_description">文字数制限警告アイコン</string>
     <string name="memo_help_text">購入場所、着用シーン、コーディネートのアイデアなど、最大1000文字まで記録できます。</string>
     <string name="memo_indicator_description">メモ有無インジケーター</string>
+    <string name="memo_indicator_none_description">メモなし</string>
     <string name="memo_preview_description">メモプレビュー: %1$s</string>
     
     <!-- 共通 -->

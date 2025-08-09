@@ -58,6 +58,10 @@ class TaggingViewModel(
     private val _hasUnsavedChanges = MutableLiveData<Boolean>(false)
     val hasUnsavedChanges: LiveData<Boolean> = _hasUnsavedChanges
     
+    // メモ管理用のLiveData
+    private val _currentMemo = MutableLiveData<String?>()
+    val currentMemo: LiveData<String?> = _currentMemo
+    
     // 元のデータの保持（編集モード時）
     private var originalTagData: TagData? = null
 
@@ -97,6 +101,16 @@ class TaggingViewModel(
      */
     fun updateCategory(category: String) {
         updateTagDataSafely { it.withCategory(category) }
+    }
+
+    /**
+     * メモを更新
+     * 
+     * @param memo 新しいメモ
+     */
+    fun updateMemo(memo: String?) {
+        _currentMemo.value = memo
+        _hasUnsavedChanges.value = true
     }
 
     /**
@@ -147,6 +161,7 @@ class TaggingViewModel(
                 if (item != null) {
                     _clothItem.value = item
                     _tagData.value = item.tagData
+                    _currentMemo.value = item.memo
                     originalTagData = item.tagData // 元データを保存
                     _hasUnsavedChanges.value = false
                     _errorMessage.value = null
@@ -259,7 +274,8 @@ class TaggingViewModel(
         
         // 更新用のClothItemを作成
         val updatedItem = currentItem.copy(
-            tagData = currentTagData
+            tagData = currentTagData,
+            memo = _currentMemo.value ?: ""
         )
         
         val updateResult = clothRepository.updateItem(updatedItem)
@@ -308,6 +324,7 @@ class TaggingViewModel(
             id = 0, // 新規作成時は0
             imagePath = imagePath,
             tagData = tagData,
+            memo = _currentMemo.value ?: "",
             createdAt = Date()
         )
     }

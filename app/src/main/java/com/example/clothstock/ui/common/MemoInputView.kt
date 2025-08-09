@@ -59,6 +59,7 @@ class MemoInputView @JvmOverloads constructor(
     // 警告表示の閾値（90%）
     private val warningThreshold = (ClothItem.MAX_MEMO_LENGTH * WARNING_THRESHOLD_RATIO).toInt()
     
+    
     companion object {
         // 文字数警告の閾値比率（90%）
         private const val WARNING_THRESHOLD_RATIO = 0.9
