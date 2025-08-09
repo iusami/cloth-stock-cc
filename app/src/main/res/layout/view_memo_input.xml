@@ -80,7 +80,7 @@
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:layout_marginStart="4dp"
-            android:src="@drawable/ic_favorite_24"
+            android:src="@drawable/ic_warning_24"
             android:contentDescription="@string/warning_icon_description"
             android:visibility="gone"
             app:tint="?attr/colorError"
