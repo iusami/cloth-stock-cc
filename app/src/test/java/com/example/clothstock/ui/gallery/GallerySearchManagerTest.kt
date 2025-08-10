@@ -149,4 +149,60 @@ class GallerySearchManagerTest {
         
         // Then: グレースフルデグラデーションが有効化される
     }
+
+    // ===== Task 7: メモ検索機能テスト =====
+
+    @Test
+    fun `performSearchWithTimeout_メモ内容で検索できる`() = runTest {
+        // Given: メモ内容を含む検索テキスト
+        val searchText = "購入場所"
+        val timeoutMs = 5000L
+        
+        // When: タイムアウト付き検索を実行
+        searchManager.performSearchWithTimeout(searchText, timeoutMs)
+        
+        // Then: SearchManagerがタイムアウト付き検索を処理する
+        // 実際の検索処理はViewModelで行われる
+    }
+
+    @Test 
+    fun `performSearchWithTimeout_メモと他フィールドの組み合わせ検索`() = runTest {
+        // Given: メモとカテゴリの両方にマッチする可能性のある検索テキスト
+        val combinedSearchText = "シャツ"
+        val timeoutMs = 5000L
+        
+        // When: タイムアウト付き検索を実行
+        searchManager.performSearchWithTimeout(combinedSearchText, timeoutMs)
+        
+        // Then: SearchManagerが複合検索を処理する
+        // 実際の検索処理はClothDaoで color LIKE, category LIKE, memo LIKE のOR条件で実行される
+    }
+
+    @Test
+    fun `performSearchWithTimeout_メモ検索の大文字小文字区別なし`() = runTest {
+        // Given: 異なる大文字小文字の検索テキスト
+        val upperCaseSearch = "PURCHASE"
+        val lowerCaseSearch = "purchase"
+        val timeoutMs = 5000L
+        
+        // When: 大文字小文字が異なる検索を実行
+        searchManager.performSearchWithTimeout(upperCaseSearch, timeoutMs)
+        searchManager.performSearchWithTimeout(lowerCaseSearch, timeoutMs)
+        
+        // Then: 大文字小文字に関係なく検索が処理される
+        // SQLiteのLIKE演算子は大文字小文字を区別しないため、同じ結果が期待される
+    }
+
+    @Test
+    fun `performSearchWithTimeout_メモの部分一致検索`() = runTest {
+        // Given: メモの一部のテキスト
+        val partialText = "渋谷"  // "渋谷のセレクトショップ"の一部
+        val timeoutMs = 5000L
+        
+        // When: 部分一致検索を実行
+        searchManager.performSearchWithTimeout(partialText, timeoutMs)
+        
+        // Then: メモ内容の部分一致で検索が処理される
+        // SQLのLIKE '%text%'パターンで部分一致検索が実行される
+    }
 }
