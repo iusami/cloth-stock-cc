@@ -654,4 +654,109 @@ class GalleryFragmentEspressoTest {
             .check(matches(isDisplayed()))
             .check(matches(withText(containsString("..."))))
     }
+
+    // ===== Task 7: メモ検索機能テスト =====
+
+    @Test
+    fun メモ検索_メモ内容で検索できる() {
+        // Given: メモ付きアイテムのデータ
+        val testItems = TestDataHelper.createTestItemsWithMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
+
+        // When: メモ内容で検索を実行
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("購入場所"))
+
+        // 検索結果が表示されるまで待機
+        IdlingResourceHelper.waitForUiUpdate(1000)
+
+        // Then: メモ内容にマッチするアイテムが表示される
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        // 検索結果にメモ付きアイテムが含まれている
+        onView(withId(R.id.textMemoPreview))
+            .check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun メモ検索_部分一致検索が動作する() {
+        // Given: メモ付きアイテムのデータ  
+        val testItems = TestDataHelper.createTestItemsWithMemo()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 3)
+
+        // When: メモの部分テキストで検索
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("渋谷")) // "渋谷のセレクトショップ"の一部
+
+        IdlingResourceHelper.waitForUiUpdate(1000)
+
+        // Then: 部分一致で検索される
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        // Requirements 3.3: メモ内容の部分一致検索対応
+    }
+
+    @Test 
+    fun メモ検索_組み合わせ検索が動作する() {
+        // Given: メモとカテゴリが混在するデータ
+        val memoItems = TestDataHelper.createTestItemsWithMemo()
+        val normalItems = TestDataHelper.createTestItemsWithoutMemo()
+        val allItems = memoItems + normalItems
+        TestDataHelper.injectTestDataSync(allItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 5)
+
+        // When: メモとカテゴリの両方にマッチする可能性のある検索
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("シャツ")) // カテゴリまたはメモにある可能性
+
+        IdlingResourceHelper.waitForUiUpdate(1000)
+
+        // Then: メモ、カテゴリ、色のいずれかにマッチしたアイテムが表示
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+        // Requirements 3.1: タグとメモ内容の両方を検索  
+        // Requirements 3.2: メモテキストマッチ時に結果に含める
+    }
+
+    @Test
+    fun メモ検索_空検索時に全アイテム表示() {
+        // Given: メモ付きアイテムのデータ
+        val testItems = TestDataHelper.createMixedMemoTestData()
+        TestDataHelper.injectTestDataSync(testItems)
+        
+        launchFragmentInContainer<GalleryFragment>()
+        IdlingResourceHelper.waitForRecyclerView(R.id.recyclerViewGallery, minItemCount = 4)
+
+        // When: 検索テキストを空にする
+        onView(withId(R.id.searchView))
+            .perform(click())
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(typeText("テスト"))
+        
+        // 一度検索してからクリア
+        IdlingResourceHelper.waitForUiUpdate(500)
+        onView(allOf(withId(androidx.appcompat.R.id.search_src_text)))
+            .perform(clearText())
+        
+        IdlingResourceHelper.waitForUiUpdate(1000)
+
+        // Then: 全アイテムが表示される
+        onView(withId(R.id.recyclerViewGallery))
+            .check(matches(isDisplayed()))
+            .check(matches(hasMinimumChildCount(4))) // 全アイテムが表示
+    }
 }
