@@ -154,59 +154,69 @@ class GallerySearchManagerTest {
 
     @Test
     fun `performSearch_メモ内容で検索できる`() = runTest {
-        // Given: メモ内容を含む検索テキスト
-        @Suppress("unused")
-        val memoSearchText = "購入場所"
-
-        // When: メモ内容で検索を実行
-        // 注意: GallerySearchManagerは検索UIの管理のみで、実際の検索はViewModelで実行される
-        // 既存のperformDebouncedSearch相当の処理でメモ検索をテスト
+        // Given: モックの準備と検索テキストの設定
+        val searchText = "購入場所"
         
-        // Then: メモ内容を含む検索が実行される
-        // 実際の検索はClothDaoのsearchItemsWithFiltersで実行され、
-        // そこでmemo LIKE '%' || :searchText || '%'が動作する
+        // When: モックの検索メソッドが適切に呼び出されることを確認
+        verify(mockViewModel, never()).performSearch(searchText)
+        
+        // 検索メソッドを呼び出す
+        searchManager.setupSearchBar(mockSearchView)
+        searchManager.performDebouncedSearch(searchText)
+        
+        // Then: ViewModelの検索メソッドが正しく呼び出される
+        verify(mockViewModel).performSearch(searchText)
     }
 
     @Test 
     fun `performSearch_メモと他フィールドの組み合わせ検索`() = runTest {
-        // Given: メモとカテゴリの両方にマッチする可能性のある検索テキスト
-        @Suppress("unused")
+        // Given: モックの準備と複合検索テキストの設定
         val combinedSearchText = "シャツ"
-
-        // When: 組み合わせ検索を実行
-        // メモ内容、カテゴリ、色のいずれかにマッチすればヒット
         
-        // Then: 複数フィールドでの検索が実行される
-        // ClothDaoでは color LIKE, category LIKE, memo LIKE の
-        // OR条件で検索が実行される
+        // When: モックの検索メソッドが適切に呼び出されることを確認
+        verify(mockViewModel, never()).performSearch(combinedSearchText)
+        
+        // 検索メソッドを呼び出す
+        searchManager.setupSearchBar(mockSearchView)
+        searchManager.performDebouncedSearch(combinedSearchText)
+        
+        // Then: ViewModelの検索メソッドが正しく呼び出される
+        verify(mockViewModel).performSearch(combinedSearchText)
     }
 
     @Test
     fun `performSearch_メモ検索の大文字小文字区別なし`() = runTest {
-        // Given: 異なる大文字小文字の検索テキスト
-        @Suppress("unused")
-        val upperCaseSearch = "PURCHASE" // 購入
-        @Suppress("unused")
+        // Given: モックの準備と大文字小文字の異なる検索テキスト
+        val upperCaseSearch = "PURCHASE"
         val lowerCaseSearch = "purchase"
-
-        // When: 大文字小文字が異なる検索を実行
-        // SQLiteのLIKE演算子は大文字小文字を区別しないため、
-        // 両方の検索で同じ結果が期待される
         
-        // Then: 大文字小文字に関係なく検索される
-        // Requirements 3.4: 大文字小文字を区別しない検索
+        // When: モックの検索メソッドが適切に呼び出されることを確認
+        verify(mockViewModel, never()).performSearch(upperCaseSearch)
+        verify(mockViewModel, never()).performSearch(lowerCaseSearch)
+        
+        // 検索メソッドを呼び出す
+        searchManager.setupSearchBar(mockSearchView)
+        searchManager.performDebouncedSearch(upperCaseSearch)
+        searchManager.performDebouncedSearch(lowerCaseSearch)
+        
+        // Then: 大文字小文字に関わらず、検索メソッドが呼び出される
+        verify(mockViewModel).performSearch(upperCaseSearch)
+        verify(mockViewModel).performSearch(lowerCaseSearch)
     }
 
     @Test
     fun `performSearch_メモの部分一致検索`() = runTest {
-        // Given: メモの一部のテキスト
-        @Suppress("unused")
-        val partialText = "渋谷" // "渋谷のセレクトショップ"の一部
-
-        // When: 部分一致検索を実行
-        // SQLのLIKE '%text%'パターンで部分一致検索
+        // Given: モックの準備と部分テキストの設定
+        val partialText = "渋谷"  // "渋谷のセレクトショップ"の一部
         
-        // Then: メモ内容の部分一致で検索される  
-        // Requirements 3.3: メモ内容の部分一致検索対応
+        // When: モックの検索メソッドが適切に呼び出されることを確認
+        verify(mockViewModel, never()).performSearch(partialText)
+        
+        // 検索メソッドを呼び出す
+        searchManager.setupSearchBar(mockSearchView)
+        searchManager.performDebouncedSearch(partialText)
+        
+        // Then: ViewModelの検索メソッドが正しく呼び出される
+        verify(mockViewModel).performSearch(partialText)
     }
 }

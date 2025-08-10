@@ -700,9 +700,10 @@ class GalleryFragmentEspressoTest {
 
         IdlingResourceHelper.waitForUiUpdate(1000)
 
-        // Then: 部分一致で検索される
+        // Then: 部分一致で検索され、1件のアイテムがフィルタリングされる
         onView(withId(R.id.recyclerViewGallery))
             .check(matches(isDisplayed()))
+            .check(matches(hasChildCount(1))) // 1件に絞られていることを確認
         // Requirements 3.3: メモ内容の部分一致検索対応
     }
 
@@ -725,9 +726,10 @@ class GalleryFragmentEspressoTest {
 
         IdlingResourceHelper.waitForUiUpdate(1000)
 
-        // Then: メモ、カテゴリ、色のいずれかにマッチしたアイテムが表示
+        // Then: メモ、カテゴリ、色のいずれかにマッチしたアイテムが表示され、数が正しい
         onView(withId(R.id.recyclerViewGallery))
             .check(matches(isDisplayed()))
+            .check(matches(hasChildCount(2))) // 期待される件数を確認
         // Requirements 3.1: タグとメモ内容の両方を検索  
         // Requirements 3.2: メモテキストマッチ時に結果に含める
     }
