@@ -56,6 +56,10 @@ class DetailViewModel(
     private val memoUpdateFlow = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
     private var memoSaveJob: Job? = null
     
+    // Task 8: メモ保存リトライ機能
+    private var memoSaveRetryCount = 0
+    private val maxMemoSaveRetryCount = 3
+    
     companion object {
         private const val MEMO_SAVE_DEBOUNCE_MS = 1000L // 1秒のdebounce
         private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L // 保存成功表示時間
@@ -64,12 +68,14 @@ class DetailViewModel(
     
     /**
      * メモ保存状態を表すsealed class
+     * Task 8: リトライ情報を含む拡張
      */
     sealed class MemoSaveState {
         object Idle : MemoSaveState()
         object Saving : MemoSaveState()
         object Saved : MemoSaveState()
-        data class Error(val message: String) : MemoSaveState()
+        data class Error(val message: String, val canRetry: Boolean = true, val retryCount: Int = 0) : MemoSaveState()
+        data class ValidationError(val message: String, val characterCount: Int) : MemoSaveState()
     }
 
     init {
@@ -232,21 +238,42 @@ class DetailViewModel(
     
     /**
      * メモ変更時に呼び出される（UIから）
+     * Task 8: バリデーション機能を追加
      * debounce機能により、一定時間後に自動保存される
      * 
      * @param memo 新しいメモテキスト
      */
     fun onMemoChanged(memo: String) {
+        // Requirements 1.3, 1.4: 文字数制限バリデーション
+        if (memo.length > ClothItem.MAX_MEMO_LENGTH) {
+            _memoSaveState.value = MemoSaveState.ValidationError(
+                "メモは${ClothItem.MAX_MEMO_LENGTH}文字以内で入力してください",
+                memo.length
+            )
+            return
+        }
+        
+        // バリデーション成功時は通常の保存フローへ
         memoUpdateFlow.tryEmit(memo)
     }
     
     /**
      * メモ即座保存（手動保存時）
+     * Task 8: バリデーション機能とリトライ機能を追加
      * debounceを待たずに即座にメモを保存する
      * 
      * @param memo 保存するメモテキスト
      */
     fun saveMemoImmediately(memo: String) {
+        // Requirements 1.3, 1.4: 文字数制限バリデーション
+        if (memo.length > ClothItem.MAX_MEMO_LENGTH) {
+            _memoSaveState.value = MemoSaveState.ValidationError(
+                "メモは${ClothItem.MAX_MEMO_LENGTH}文字以内で入力してください",
+                memo.length
+            )
+            return
+        }
+        
         viewModelScope.launch {
             saveMemoInternal(memo)
         }
@@ -254,10 +281,13 @@ class DetailViewModel(
     
     /**
      * 内部メモ保存処理
+     * Task 8: リトライ機能とエラーハンドリング強化
+     * Requirements 2.4: メモ更新失敗時のエラー表示と元のメモ保持
      * 
      * @param memo 保存するメモテキスト
+     * @param isRetry リトライかどうか
      */
-    private suspend fun saveMemoInternal(memo: String) {
+    private suspend fun saveMemoInternal(memo: String, isRetry: Boolean = false) {
         val currentItem = _clothItem.value ?: return
         
         try {
@@ -273,15 +303,49 @@ class DetailViewModel(
             _clothItem.value = updatedItem
             _memoSaveState.value = MemoSaveState.Saved
             
+            // 成功時はリトライカウントをリセット
+            memoSaveRetryCount = 0
+            
             // 2秒後にIdleに戻す（UIフィードバックのため）
             delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
             _memoSaveState.value = MemoSaveState.Idle
             
         } catch (e: Exception) {
-            _memoSaveState.value = MemoSaveState.Error("メモの保存に失敗しました: ${e.message}")
-            
-            // 5秒後にIdleに戻す
-            delay(ERROR_DISPLAY_TIME_MS)
+            handleMemoSaveError(e, memo, isRetry)
+        }
+    }
+    
+    /**
+     * Task 8: メモ保存エラーのハンドリング
+     * Requirements 2.4: 元のメモを保持し、リトライ可能性を判定
+     */
+    @Suppress("UnusedParameter") 
+    private suspend fun handleMemoSaveError(e: Exception, memo: String, isRetry: Boolean) {
+        val canRetry = memoSaveRetryCount < maxMemoSaveRetryCount
+        val errorMessage = when (e) {
+            is kotlinx.coroutines.TimeoutCancellationException -> 
+                "メモの保存がタイムアウトしました"
+            is java.io.IOException -> 
+                "データの保存に失敗しました"
+            is android.database.sqlite.SQLiteException -> 
+                "データベースエラーが発生しました"
+            else -> 
+                "メモの保存に失敗しました: ${e.message}"
+        }
+        
+        if (!isRetry) {
+            memoSaveRetryCount++
+        }
+        
+        _memoSaveState.value = MemoSaveState.Error(
+            message = errorMessage,
+            canRetry = canRetry,
+            retryCount = memoSaveRetryCount
+        )
+        
+        // エラー状態を一定時間維持（UIでリトライボタンを表示するため）
+        delay(ERROR_DISPLAY_TIME_MS)
+        if (_memoSaveState.value is MemoSaveState.Error) {
             _memoSaveState.value = MemoSaveState.Idle
         }
     }
@@ -300,5 +364,38 @@ class DetailViewModel(
      */
     fun clearMemoSaveState() {
         _memoSaveState.value = MemoSaveState.Idle
+        memoSaveRetryCount = 0  // Task 8: リトライカウントもリセット
+    }
+    
+    /**
+     * Task 8: メモ保存のリトライ実行
+     * Requirements 2.4: リトライ機能の実装
+     * 
+     * @param memo リトライするメモテキスト
+     */
+    fun retryMemoSave(memo: String) {
+        if (memoSaveRetryCount >= maxMemoSaveRetryCount) {
+            _memoSaveState.value = MemoSaveState.Error(
+                "最大リトライ回数に達しました",
+                canRetry = false,
+                retryCount = memoSaveRetryCount
+            )
+            return
+        }
+        
+        viewModelScope.launch {
+            saveMemoInternal(memo, isRetry = true)
+        }
+    }
+    
+    /**
+     * Task 8: メモバリデーション機能
+     * Requirements 1.3: 文字数制限チェック
+     * 
+     * @param memo チェックするメモテキスト
+     * @return バリデーション結果
+     */
+    fun validateMemo(memo: String): Boolean {
+        return memo.length <= ClothItem.MAX_MEMO_LENGTH
     }
 }
