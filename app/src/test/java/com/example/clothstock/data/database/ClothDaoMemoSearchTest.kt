@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.clothstock.data.model.ClothItem
+import com.example.clothstock.data.model.TagData
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.`is`
@@ -13,6 +14,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.*
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.util.Date
 
 /**
  * Task 7: ClothDao メモ検索機能の検証テスト
@@ -27,7 +29,7 @@ import java.io.IOException
 class ClothDaoMemoSearchTest {
 
     private lateinit var clothDao: ClothDao
-    private lateinit var db: AppDatabase
+    private lateinit var db: ClothDatabase
 
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
@@ -36,7 +38,7 @@ class ClothDaoMemoSearchTest {
     fun createDb() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(
-            context, AppDatabase::class.java
+            context, ClothDatabase::class.java
         ).build()
         clothDao = db.clothDao()
     }
@@ -52,12 +54,17 @@ class ClothDaoMemoSearchTest {
         // Given: メモを含むアイテムをデータベースに挿入
         val itemWithMemo = ClothItem(
             id = 1, 
-            memo = "購入場所：渋谷のセレクトショップ", 
-            category = "シャツ"
+            imagePath = "/path/to/image1.jpg",
+            tagData = TagData(size = 100, color = "赤", category = "シャツ"),
+            createdAt = Date(),
+            memo = "購入場所：渋谷のセレクトショップ"
         )
         val itemWithoutMemo = ClothItem(
             id = 2, 
-            category = "パンツ"
+            imagePath = "/path/to/image2.jpg",
+            tagData = TagData(size = 110, color = "青", category = "パンツ"),
+            createdAt = Date(),
+            memo = ""
         )
         clothDao.insertAll(listOf(itemWithMemo, itemWithoutMemo))
 
@@ -75,8 +82,10 @@ class ClothDaoMemoSearchTest {
         // Given: メモを含むアイテムをデータベースに挿入
         val item = ClothItem(
             id = 1, 
-            memo = "Purchase in Tokyo", 
-            category = "シャツ"
+            imagePath = "/path/to/image.jpg",
+            tagData = TagData(size = 100, color = "黒", category = "シャツ"),
+            createdAt = Date(),
+            memo = "Purchase in Tokyo"
         )
         clothDao.insert(item)
 
@@ -94,9 +103,27 @@ class ClothDaoMemoSearchTest {
     fun searchItemsByText_タグとメモの複合検索() = runBlocking {
         // Given: メモとカテゴリを含むアイテムをデータベースに挿入
         val items = listOf(
-            ClothItem(id = 1, memo = "渋谷で購入", category = "シャツ"),
-            ClothItem(id = 2, category = "シャツ"),
-            ClothItem(id = 3, memo = "銀座のセレクトショップ")
+            ClothItem(
+                id = 1, 
+                imagePath = "/path/to/image1.jpg",
+                tagData = TagData(size = 100, color = "赤", category = "シャツ"),
+                createdAt = Date(),
+                memo = "渋谷で購入"
+            ),
+            ClothItem(
+                id = 2,
+                imagePath = "/path/to/image2.jpg", 
+                tagData = TagData(size = 110, color = "青", category = "シャツ"),
+                createdAt = Date(),
+                memo = ""
+            ),
+            ClothItem(
+                id = 3,
+                imagePath = "/path/to/image3.jpg",
+                tagData = TagData(size = 120, color = "黒", category = "パンツ"),
+                createdAt = Date(),
+                memo = "銀座のセレクトショップ"
+            )
         )
         clothDao.insertAll(items)
 
