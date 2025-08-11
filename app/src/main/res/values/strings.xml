@@ -158,6 +158,12 @@
     <string name="memo_load_error">メモの読み込みに失敗しました</string>
     <string name="memo_retry_action">再試行</string>
     
+    <!-- SwipeHandleView -->
+    <string name="swipe_handle_description">詳細パネルの表示・非表示を切り替えるハンドル</string>
+    <string name="swipe_handle_role">スワイプハンドル</string>
+    <string name="detail_panel_shown">詳細パネルが表示されました</string>
+    <string name="detail_panel_hidden">詳細パネルが非表示になりました</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>

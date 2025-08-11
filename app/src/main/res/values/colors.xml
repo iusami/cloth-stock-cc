@@ -73,4 +73,9 @@
     <!-- Memo indicator colors -->
     <color name="memo_indicator_background">@color/md_theme_light_tertiaryContainer</color>
     <color name="memo_indicator_icon">@color/md_theme_light_onTertiaryContainer</color>
+    
+    <!-- SwipeHandleView colors -->
+    <color name="swipe_handle_color">@color/md_theme_light_onSurfaceVariant</color>
+    <color name="swipe_handle_color_high_contrast">#000000</color>
+    <color name="memo_background">@color/md_theme_light_surfaceVariant</color>
 </resources>
