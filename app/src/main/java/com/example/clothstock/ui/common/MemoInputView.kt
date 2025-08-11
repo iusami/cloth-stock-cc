@@ -219,7 +219,9 @@ class MemoInputView @JvmOverloads constructor(
             editTextMemo.addTextChangedListener(textWatcher)
         } else {
             // TextWatcherがnullの場合、エラーをログに出力
-            android.util.Log.e("MemoInputView", "textWatcher is null")
+            if (BuildConfig.DEBUG) {
+                android.util.Log.e("MemoInputView", "textWatcher is null")
+            }
             // 通常のsetTextを実行
             editTextMemo.setText(trimmedText)
             editTextMemo.setSelection(trimmedText.length)

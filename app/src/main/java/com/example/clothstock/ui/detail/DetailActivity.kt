@@ -123,7 +123,7 @@ class DetailActivity : AppCompatActivity() {
     private fun observeViewModel() {
         // ClothItemデータの監視
         viewModel.clothItem.observe(this) { clothItem ->
-            android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=" + clothItem)
+            if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"observeViewModel: clothItem changed, clothItem=\" + clothItem)\n            }
             if (clothItem != null) {
                 displayClothItem(clothItem)
                 showMainContent()
@@ -138,7 +138,7 @@ class DetailActivity : AppCompatActivity() {
 
         // ローディング状態の監視
         viewModel.isLoading.observe(this) { isLoading ->
-            android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=" + isLoading)
+            if (BuildConfig.DEBUG) {\n                android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=" + isLoading)\n            }
             if (isLoading) {
                 showLoading()
             }
@@ -146,7 +146,7 @@ class DetailActivity : AppCompatActivity() {
 
         // エラーメッセージの監視
         viewModel.errorMessage.observe(this) { errorMessage ->
-            android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=" + errorMessage)
+            if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"observeViewModel: errorMessage changed, errorMessage=\" + errorMessage)\n            }
             if (errorMessage != null) {
                 showError(errorMessage)
                 viewModel.clearErrorMessage()
@@ -172,7 +172,7 @@ class DetailActivity : AppCompatActivity() {
      * ClothItemを表示（最適化版）
      */
     private fun displayClothItem(clothItem: com.example.clothstock.data.model.ClothItem) {
-        android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=" + clothItem)
+        if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"displayClothItem: called with clothItem=\" + clothItem)\n            }
         // データバインディングでClothItemをセット
         binding.clothItem = clothItem
 
@@ -248,7 +248,7 @@ class DetailActivity : AppCompatActivity() {
      * メインコンテンツを表示（アニメーション付き）
      */
     private fun showMainContent() {
-        android.util.Log.d("DetailActivity", "showMainContent: called")
+        if (BuildConfig.DEBUG) {\n                android.util.Log.d("DetailActivity", "showMainContent: called")\n            }
         binding.imageViewClothDetail.visibility = View.VISIBLE
         binding.layoutTagInfo.visibility = View.VISIBLE
         binding.layoutLoading.visibility = View.GONE
@@ -274,7 +274,7 @@ class DetailActivity : AppCompatActivity() {
      * ローディング状態を表示
      */
     private fun showLoading() {
-        android.util.Log.d("DetailActivity", "showLoading: called")
+        if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"showLoading: called\")\n            }
         binding.layoutLoading.visibility = View.VISIBLE
         binding.imageViewClothDetail.visibility = View.GONE
         binding.layoutTagInfo.visibility = View.GONE
@@ -285,7 +285,7 @@ class DetailActivity : AppCompatActivity() {
      * エラー状態を表示
      */
     private fun showError(message: String) {
-        android.util.Log.d("DetailActivity", "showError: called with message=" + message)
+        if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"showError: called with message=\" + message)\n            }
         binding.layoutError.visibility = View.VISIBLE
         binding.textErrorMessage.text = message
         binding.imageViewClothDetail.visibility = View.GONE
@@ -456,7 +456,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun focusOnMemoField() {
         try {
-            android.util.Log.d("DetailActivity", "Starting memo field focus sequence")
+            if (BuildConfig.DEBUG) {\n                android.util.Log.d(\"DetailActivity\", \"Starting memo field focus sequence\")\n            }
             
             // MemoInputViewにフォーカスを設定
             memoInputView.requestMemoFocus()
@@ -536,7 +536,7 @@ class DetailActivity : AppCompatActivity() {
                 memoErrorHandler.cleanup()
             }
         } catch (e: Exception) {
-            android.util.Log.w("DetailActivity", "Error during MemoErrorHandler cleanup", e)
+            if (BuildConfig.DEBUG) {\n            android.util.Log.w(\"DetailActivity\", \"Error during MemoErrorHandler cleanup\", e)\n        }
         }
         
         // ViewTreeObserverのリスナーをクリーンアップ（メモリリーク防止）
@@ -548,7 +548,7 @@ class DetailActivity : AppCompatActivity() {
                 android.util.Log.d("DetailActivity", "Cleaning up ViewTreeObserver listeners")
             }
         } catch (e: Exception) {
-            android.util.Log.w("DetailActivity", "Error during ViewTreeObserver cleanup", e)
+            if (BuildConfig.DEBUG) {\n        android.util.Log.w(\"DetailActivity\", \"Error during ViewTreeObserver cleanup\", e)\n    }
         }
         
         // Glideは自動的にActivityのライフサイクルを管理するため、
