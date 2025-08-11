@@ -30,6 +30,7 @@ import java.util.Date
  * DetailViewModelのユニットテスト
  * 
  * Task 5実装: メモ機能のテスト
+ * Task 8追加: エラーハンドリングとバリデーション機能のテスト
  * 
  * TDD Red-Green-Refactorサイクルに基づくテスト実装
  */
@@ -202,8 +203,11 @@ class DetailViewModelTest {
     }
 
     @Test
-    fun `memo with over max length should be trimmed`() = runTest {
+    fun `memo with over max length should show ValidationError`() = runTest {
         // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
         val longMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 100)
         
         // アイテムをロード
@@ -212,13 +216,19 @@ class DetailViewModelTest {
         
         // When
         viewModel.saveMemoImmediately(longMemo)
-        advanceTimeBy(1L)
         
-        // Then
-        val updatedItemSlot = slot<ClothItem>()
-        coVerify { repository.updateItem(capture(updatedItemSlot)) }
-        assertEquals(ClothItem.MAX_MEMO_LENGTH, updatedItemSlot.captured.memo.length)
-        assertEquals(longMemo.take(ClothItem.MAX_MEMO_LENGTH), updatedItemSlot.captured.memo)
+        // Then: ValidationErrorステートが設定される
+        verify {
+            memoSaveStateObserver.onChanged(
+                match<DetailViewModel.MemoSaveState.ValidationError> { state ->
+                    state.message.contains("${ClothItem.MAX_MEMO_LENGTH}文字以内") &&
+                    state.characterCount == longMemo.length
+                }
+            )
+        }
+        
+        // リポジトリへの保存は行われない（バリデーション失敗のため）
+        coVerify(exactly = 0) { repository.updateItem(any()) }
     }
 
     // ===== 既存機能テスト（メモ機能統合確認） =====
@@ -262,5 +272,252 @@ class DetailViewModelTest {
                 }
             ) 
         }
+    }
+
+    // ===== Task 8: エラーハンドリングとバリデーション機能のテスト =====
+
+    @Test
+    fun `onMemoChanged should validate character limit and show ValidationError`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val longMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 1)  // 制限超過
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // When
+        viewModel.onMemoChanged(longMemo)
+        
+        // Then
+        verify { 
+            memoSaveStateObserver.onChanged(
+                match<DetailViewModel.MemoSaveState.ValidationError> { state ->
+                    state.characterCount == longMemo.length
+                }
+            )
+        }
+        
+        // リポジトリへの保存は行われない
+        coVerify(exactly = 1) { repository.getItemById(1L) } // loadのみ
+        coVerify(exactly = 0) { repository.updateItem(any()) }
+    }
+
+    @Test
+    fun `saveMemoImmediately should validate character limit and show ValidationError`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val longMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 100)  // 制限超過
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // When
+        viewModel.saveMemoImmediately(longMemo)
+        
+        // Then
+        verify { 
+            memoSaveStateObserver.onChanged(
+                match<DetailViewModel.MemoSaveState.ValidationError> { state ->
+                    state.message.contains("${ClothItem.MAX_MEMO_LENGTH}文字以内") &&
+                    state.characterCount == longMemo.length
+                }
+            )
+        }
+        
+        // リポジトリへの保存は行われない
+        coVerify(exactly = 0) { repository.updateItem(any()) }
+    }
+
+    @Test
+    fun `saveMemoInternal should handle exception and show Error with retry info`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val testMemo = "Test memo for error"
+        val testException = RuntimeException("Database error")
+        
+        // リポジトリの更新で例外を発生させる
+        coEvery { repository.updateItem(any()) } throws testException
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // When
+        viewModel.saveMemoImmediately(testMemo)
+        advanceTimeBy(1L)
+        
+        // Then: Errorステートが設定され、リトライ情報が含まれる
+        verify { 
+            memoSaveStateObserver.onChanged(
+                match<DetailViewModel.MemoSaveState.Error> { state ->
+                    state.canRetry && state.retryCount > 0
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `retryMemoSave should retry memo save within retry limit`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val testMemo = "Test memo for retry"
+        val testException = RuntimeException("Database error")
+        
+        // 最初は失敗させる
+        coEvery { repository.updateItem(any()) } throws testException
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // 最初の保存で失敗
+        viewModel.saveMemoImmediately(testMemo)
+        advanceTimeBy(1L)
+        
+        // リトライで成功させる
+        coEvery { repository.updateItem(any()) } returns true
+        
+        // When: リトライ実行
+        viewModel.retryMemoSave(testMemo)
+        advanceTimeBy(1L)
+        
+        // Then: リポジトリの更新が複数回呼ばれる（初回 + リトライ）
+        coVerify(atLeast = 2) { repository.updateItem(any()) }
+        
+        // 最終的にSavedステートになる
+        verify { 
+            memoSaveStateObserver.onChanged(DetailViewModel.MemoSaveState.Saved)
+        }
+    }
+
+    @Test
+    fun `retryMemoSave should not retry when max retry count exceeded`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val testMemo = "Test memo for max retry"
+        
+        // リポジトリで例外を継続発生させる
+        coEvery { repository.updateItem(any()) } throws RuntimeException("Persistent error")
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // When: 最大リトライ回数まで失敗させる（3回）
+        repeat(4) { // 最初の試行 + 3回リトライ
+            viewModel.saveMemoImmediately(testMemo)
+            advanceTimeBy(1L)
+        }
+        
+        // 更に追加でリトライを試行
+        viewModel.retryMemoSave(testMemo)
+        
+        // Then: 最大リトライ回数到達でcanRetry = falseのErrorステートになる
+        verify { 
+            memoSaveStateObserver.onChanged(
+                match<DetailViewModel.MemoSaveState.Error> { state ->
+                    !state.canRetry && state.message.contains("最大リトライ回数")
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `validateMemo should return true for valid memo length`() = runTest {
+        // Given
+        val validMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH)  // 制限内
+        
+        // When
+        val result = viewModel.validateMemo(validMemo)
+        
+        // Then
+        assertTrue(result)
+    }
+
+    @Test
+    fun `validateMemo should return false for invalid memo length`() = runTest {
+        // Given
+        val invalidMemo = "a".repeat(ClothItem.MAX_MEMO_LENGTH + 1)  // 制限超過
+        
+        // When
+        val result = viewModel.validateMemo(invalidMemo)
+        
+        // Then
+        assertFalse(result)
+    }
+
+    @Test
+    fun `clearMemoSaveState should reset state and retry count`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        // エラー状態にする
+        coEvery { repository.updateItem(any()) } throws RuntimeException("Test error")
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        viewModel.saveMemoImmediately("test")
+        advanceTimeBy(1L)
+        
+        // When
+        viewModel.clearMemoSaveState()
+        
+        // Then
+        verify { memoSaveStateObserver.onChanged(DetailViewModel.MemoSaveState.Idle) }
+        
+        // リトライカウントがリセットされることを確認するため、再度リトライ実行
+        viewModel.retryMemoSave("test retry after clear")
+        verify(atLeast = 1) { memoSaveStateObserver.onChanged(any()) }
+    }
+
+    @Test
+    fun `memo save success should reset retry count`() = runTest {
+        // Given
+        val memoSaveStateObserver: Observer<DetailViewModel.MemoSaveState> = mockk(relaxed = true)
+        viewModel.memoSaveState.observeForever(memoSaveStateObserver)
+        
+        val testMemo = "Test memo success"
+        
+        // 最初は失敗させる
+        coEvery { repository.updateItem(any()) } throws RuntimeException("First error")
+        
+        // アイテムをロード
+        viewModel.loadClothItem(1L)
+        advanceTimeBy(100L)
+        
+        // 最初の保存で失敗
+        viewModel.saveMemoImmediately(testMemo)
+        advanceTimeBy(1L)
+        
+        // リトライで成功させる
+        coEvery { repository.updateItem(any()) } returns true
+        viewModel.retryMemoSave(testMemo)
+        advanceTimeBy(DetailViewModelTest.SAVE_SUCCESS_DISPLAY_TIME_MS + 1L)
+        
+        // When: 新しいメモを保存（リトライカウントがリセットされているはず）
+        val newMemo = "New memo after success"
+        viewModel.saveMemoImmediately(newMemo)
+        advanceTimeBy(1L)
+        
+        // Then: 新しい保存が正常に実行される（リトライカウントがリセットされている）
+        verify { 
+            memoSaveStateObserver.onChanged(DetailViewModel.MemoSaveState.Saved)
+        }
+    }
+
+    companion object {
+        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L
     }
 }

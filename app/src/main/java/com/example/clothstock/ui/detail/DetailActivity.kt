@@ -17,6 +17,7 @@ import com.example.clothstock.data.repository.ClothRepositoryImpl
 import com.example.clothstock.databinding.ActivityDetailBinding
 import com.example.clothstock.ui.tagging.TaggingActivity
 import com.example.clothstock.ui.common.MemoInputView
+import com.example.clothstock.ui.common.MemoErrorHandler
 import com.example.clothstock.util.GlideUtils
 import com.google.android.material.snackbar.Snackbar
 
@@ -37,6 +38,7 @@ class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding
     private lateinit var viewModel: DetailViewModel
     private lateinit var memoInputView: MemoInputView
+    private lateinit var memoErrorHandler: MemoErrorHandler  // Task 8: メモエラーハンドラー
     private var clothItemId: Long = INVALID_CLOTH_ITEM_ID
     private var shouldFocusMemo: Boolean = false // Task6: メモフォーカス用フラグ
 
@@ -90,6 +92,9 @@ class DetailActivity : AppCompatActivity() {
         // MemoInputViewの初期化
         memoInputView = binding.memoInputView
         setupMemoInputView()
+        
+        // Task 8: MemoErrorHandlerの初期化
+        setupMemoErrorHandler()
         
         // 戻りボタン
         binding.buttonBack.setOnClickListener {
@@ -333,6 +338,7 @@ class DetailActivity : AppCompatActivity() {
     
     /**
      * メモ保存状態のハンドリング
+     * Task 8: MemoErrorHandlerを使用した統一エラー処理
      * 
      * @param saveState メモ保存の状態
      */
@@ -353,8 +359,13 @@ class DetailActivity : AppCompatActivity() {
             }
             
             is DetailViewModel.MemoSaveState.Error -> {
-                // エラー表示
-                showMemoSaveError(saveState.message)
+                // Task 8: エラーハンドラーを使用した統一エラー処理
+                handleMemoSaveError(saveState)
+            }
+            
+            is DetailViewModel.MemoSaveState.ValidationError -> {
+                // Task 8: バリデーションエラーの処理
+                handleMemoValidationError(saveState)
             }
         }
     }
@@ -377,20 +388,51 @@ class DetailActivity : AppCompatActivity() {
             .show()
     }
     
+    // Task 8: 旧メソッドを削除し、新しいエラーハンドリングメソッドに置き換え
+    
     /**
-     * メモ保存エラーのUIフィードバック表示
-     * 
-     * @param errorMessage エラーメッセージ
+     * Task 8: MemoErrorHandlerの初期化
      */
-    private fun showMemoSaveError(errorMessage: String) {
-        Snackbar.make(binding.root, errorMessage, Snackbar.LENGTH_LONG)
-            .setAnchorView(binding.buttonEdit)
-            .setAction("再試行") {
-                // 現在のメモ内容で即座に再保存
-                val currentMemo = memoInputView.getMemo()
-                viewModel.saveMemoImmediately(currentMemo)
-            }
-            .show()
+    private fun setupMemoErrorHandler() {
+        memoErrorHandler = MemoErrorHandler(
+            context = this,
+            rootView = binding.root
+        ) { memo ->
+            // リトライコールバック
+            viewModel.retryMemoSave(memo)
+        }
+    }
+    
+    /**
+     * Task 8: メモ保存エラーのハンドリング
+     * Requirements 2.4: リトライ機能付きエラー表示
+     */
+    private fun handleMemoSaveError(errorState: DetailViewModel.MemoSaveState.Error) {
+        val currentMemo = memoInputView.getMemo()
+        
+        if (errorState.canRetry) {
+            memoErrorHandler.showMemoSaveErrorWithRetry(
+                message = errorState.message,
+                memo = currentMemo,
+                retryCount = errorState.retryCount
+            )
+        } else {
+            memoErrorHandler.showMemoSaveError(
+                message = errorState.message,
+                originalMemo = currentMemo
+            )
+        }
+    }
+    
+    /**
+     * Task 8: メモバリデーションエラーのハンドリング
+     * Requirements 1.3, 1.4: 文字数制限エラー表示
+     */
+    private fun handleMemoValidationError(errorState: DetailViewModel.MemoSaveState.ValidationError) {
+        memoErrorHandler.showMemoValidationError(
+            message = errorState.message,
+            currentLength = errorState.characterCount
+        )
     }
 
     /**
@@ -474,6 +516,15 @@ class DetailActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
+        
+        // Task 8: MemoErrorHandlerのクリーンアップ
+        try {
+            if (::memoErrorHandler.isInitialized) {
+                memoErrorHandler.cleanup()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("DetailActivity", "Error during MemoErrorHandler cleanup", e)
+        }
         
         // ViewTreeObserverのリスナーをクリーンアップ（メモリリーク防止）
         try {

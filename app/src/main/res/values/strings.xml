@@ -149,6 +149,15 @@
     <string name="memo_indicator_none_description">メモなし</string>
     <string name="memo_preview_description">メモプレビュー: %1$s</string>
     
+    <!-- メモエラーメッセージ -->
+    <string name="memo_validation_error_max_length">メモは%1$d文字以内で入力してください</string>
+    <string name="memo_save_error_general">メモの保存に失敗しました</string>
+    <string name="memo_save_error_network">ネットワークエラーによりメモの保存に失敗しました</string>
+    <string name="memo_save_error_storage">ストレージエラーによりメモの保存に失敗しました</string>
+    <string name="memo_auto_save_error">メモの自動保存に失敗しました</string>
+    <string name="memo_load_error">メモの読み込みに失敗しました</string>
+    <string name="memo_retry_action">再試行</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
