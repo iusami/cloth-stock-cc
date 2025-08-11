@@ -17,19 +17,19 @@ import org.mockito.MockitoAnnotations
 import org.mockito.Mockito.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 /**
- * MemoErrorHandlerのユニットテスト
+ * MemoErrorHandlerのユニットテスト（コアロジック）
  * 
  * Task 8: エラーハンドリングとバリデーション機能のテスト
  * Requirements 1.3, 1.4, 2.4の検証
  * 
  * TDD Red-Green-Refactorサイクルに基づくテスト実装
  * 
- * NOTE: AndroidのUIコンポーネント（Snackbar）のモックが困難なため、
- * 統合テスト（Espresso）または実機テストでの実装が推奨
+ * NOTE: AndroidのUIコンポーネント（Snackbar）のテストは統合テスト（Espresso）で実装
+ * ここではUIに依存しないコアロジック（エラー頻度制限、メトリクス収集）をテスト
  */
-@Ignore("AndroidのUIコンポーネントのモック問題により無効化 - 統合テスト推奨")
 @ExperimentalCoroutinesApi
 class MemoErrorHandlerTest {
 
@@ -71,13 +71,9 @@ class MemoErrorHandlerTest {
         `when`(mockContext.resources).thenReturn(mockResources)
         
         // Android APIレベル23以上のgetColor(int)メソッドをモック
-        try {
+        runCatching {
             `when`(mockContext.getColor(anyInt())).thenReturn(0xFF000000.toInt())
-        } catch (e: Exception) {
-            // Android APIの違いで例外が発生する場合はスキップ
-            @Suppress("SwallowedException")
-            Unit // 例外処理のスキップは意図的
-        }
+        } // Android API互換性のため例外を無視（テスト環境での意図された動作）
         
         // リトライコールバックの初期化
         retryCallbackInvoked = false
@@ -100,6 +96,7 @@ class MemoErrorHandlerTest {
 
     // ===== Requirements 2.4: メモ保存失敗エラーのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoSaveError - 基本的なメモ保存エラー表示`() = runTest {
         // Given
@@ -116,6 +113,7 @@ class MemoErrorHandlerTest {
         assertEquals(1, metrics["MEMO_SAVE_ERROR"])
     }
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoSaveErrorWithRetry - リトライ機能付きエラー表示`() = runTest {
         // Given
@@ -133,6 +131,7 @@ class MemoErrorHandlerTest {
         assertEquals(1, metrics["MEMO_SAVE_ERROR_WITH_RETRY"])
     }
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoSaveErrorWithRetry - 3回以上のリトライでは異なる色を使用`() = runTest {
         // Given
@@ -151,6 +150,7 @@ class MemoErrorHandlerTest {
 
     // ===== Requirements 1.3, 1.4: バリデーションエラーのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoValidationError - 文字数制限エラー表示`() = runTest {
         // Given
@@ -166,6 +166,7 @@ class MemoErrorHandlerTest {
         assertEquals(1, metrics["MEMO_VALIDATION_ERROR"])
     }
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoValidationError - 詳細メッセージに文字数情報が含まれる`() = runTest {
         // Given
@@ -183,6 +184,7 @@ class MemoErrorHandlerTest {
 
     // ===== 自動保存エラーのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoAutoSaveError - 自動保存エラー表示`() = runTest {
         // Given
@@ -200,6 +202,7 @@ class MemoErrorHandlerTest {
 
     // ===== メモ読み込みエラーのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoLoadError - メモ読み込みエラー表示`() = runTest {
         // Given
@@ -215,8 +218,26 @@ class MemoErrorHandlerTest {
         assertEquals(1, metrics["MEMO_LOAD_ERROR"])
     }
 
-    // ===== エラー頻度制限のテスト =====
+    // ===== エラー頻度制限のテスト（コアロジック） =====
 
+    @Test
+    fun `エラー頻度制限 - shouldShowErrorメソッドのテスト`() = runTest {
+        // Given
+        val shouldShowErrorMethod = memoErrorHandler::class.java.getDeclaredMethod("shouldShowError")
+        shouldShowErrorMethod.isAccessible = true
+
+        // When: 最初の呼び出し
+        val firstCall = shouldShowErrorMethod.invoke(memoErrorHandler) as Boolean
+
+        // すぐに2回目の呼び出し（ERROR_THROTTLE_MS以内）
+        val secondCall = shouldShowErrorMethod.invoke(memoErrorHandler) as Boolean
+
+        // Then: 1回目はtrue、2回目はfalse（頻度制限）
+        assertTrue(firstCall, "最初のエラー表示は許可されるべき")
+        assertFalse(secondCall, "短時間での連続エラーは制限されるべき")
+    }
+
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `エラー頻度制限 - 短時間での連続エラーは制限される`() = runTest {
         // Given
@@ -232,6 +253,7 @@ class MemoErrorHandlerTest {
         assertEquals(1, metrics["MEMO_SAVE_ERROR"])
     }
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `エラー頻度制限 - 制限回数を超えると一定時間制限される`() = runTest {
         // Given
@@ -252,6 +274,7 @@ class MemoErrorHandlerTest {
 
     // ===== バリデーション成功フィードバックのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `showMemoValidationSuccess - バリデーション成功メッセージ表示`() = runTest {
         // Given
@@ -267,6 +290,7 @@ class MemoErrorHandlerTest {
 
     // ===== エラー詳細取得のテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `getErrorDetail - 様々な例外タイプの詳細取得`() = runTest {
         // Given & When & Then: 各例外タイプでエラー詳細が適切に取得される
@@ -292,6 +316,7 @@ class MemoErrorHandlerTest {
 
     // ===== リソースクリーンアップのテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `cleanup - リソースクリーンアップの確認`() = runTest {
         // Given: エラーを発生させてメトリクスを蓄積
@@ -307,8 +332,30 @@ class MemoErrorHandlerTest {
         assertTrue(metricsAfterCleanup.isEmpty()) // クリーンアップ後にメトリクスがクリアされる
     }
 
-    // ===== エラーメトリクスのテスト =====
+    // ===== エラーメトリクスのテスト（コアロジック） =====
 
+    @Test
+    fun `recordErrorMetric - メトリクス記録のコアロジック`() = runTest {
+        // Given
+        val recordErrorMetricMethod = memoErrorHandler::class.java.getDeclaredMethod(
+            "recordErrorMetric", 
+            String::class.java, 
+            Long::class.java
+        )
+        recordErrorMetricMethod.isAccessible = true
+        
+        val startTime = System.currentTimeMillis()
+
+        // When: メトリクスを記録
+        recordErrorMetricMethod.invoke(memoErrorHandler, "TEST_ERROR", startTime)
+        recordErrorMetricMethod.invoke(memoErrorHandler, "TEST_ERROR", startTime)
+
+        // Then: メトリクスが正しく記録されている
+        val metrics = memoErrorHandler.getErrorMetrics()
+        assertEquals(2, metrics["TEST_ERROR"]) // 2回記録されている
+    }
+
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `getErrorMetrics - エラーメトリクス取得の確認`() = runTest {
         // Given: 様々なタイプのエラーを発生
@@ -332,6 +379,7 @@ class MemoErrorHandlerTest {
 
     // ===== Context例外処理のテスト =====
 
+    @Ignore("「SnackbarのUIテストは統合テストで実装")
     @Test
     fun `Context例外処理 - Context取得失敗時の適切な処理`() = runTest {
         // Given: 無効なContextでMemoErrorHandlerを作成

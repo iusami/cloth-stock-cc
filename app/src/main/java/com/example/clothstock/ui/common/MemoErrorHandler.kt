@@ -2,6 +2,7 @@ package com.example.clothstock.ui.common
 
 import android.content.Context
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import com.example.clothstock.R
 import com.google.android.material.snackbar.Snackbar
@@ -34,8 +35,7 @@ class MemoErrorHandler(
         private const val TAG = "MemoErrorHandler"
         private const val ERROR_THROTTLE_MS = 1000L // 1秒間に1回まで
         private const val MAX_ERRORS_PER_MINUTE = 5
-        private const val TIMEOUT_DURATION = 5000L
-        private const val ONE_MINUTE_IN_TIMEOUT_UNITS = 12L
+        private const val ONE_MINUTE_MS = 60_000L
         private const val MAGIC_NUMBER_THRESHOLD = 50
         private const val METRICS_LOG_INTERVAL = 2
         private const val RETRY_THRESHOLD = 3
@@ -77,7 +77,7 @@ class MemoErrorHandler(
                     .setAction("再試行") { 
                         retryMemoSave(currentRetryMemo)
                     }
-                    .setActionTextColor(context.getColor(android.R.color.holo_red_light))
+                    .setActionTextColor(getErrorColor(context))
                     .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
                     .show()
             }
@@ -215,16 +215,16 @@ class MemoErrorHandler(
             
             contextRef.get()?.let { context ->
                 val actionColor = if (retryCount >= RETRY_THRESHOLD) {
-                    android.R.color.holo_red_light  // 3回以上失敗した場合は赤色
+                    getErrorColor(context)  // 3回以上失敗した場合は赤色
                 } else {
-                    android.R.color.holo_orange_light
+                    getWarningColor(context)
                 }
                 
                 Snackbar.make(rootView, retryMessage, Snackbar.LENGTH_INDEFINITE)
                     .setAction("再試行") { 
                         retryMemoSave(currentRetryMemo)
                     }
-                    .setActionTextColor(context.getColor(actionColor))
+                    .setActionTextColor(actionColor)
                     .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
                     .show()
             }
@@ -314,7 +314,7 @@ class MemoErrorHandler(
     private fun isErrorCountExceeded(currentTime: Long): Boolean {
         if (errorCount < MAX_ERRORS_PER_MINUTE) return false
         
-        val oneMinuteAgo = currentTime - TIMEOUT_DURATION * ONE_MINUTE_IN_TIMEOUT_UNITS
+        val oneMinuteAgo = currentTime - ONE_MINUTE_MS
         val shouldReset = lastErrorTime <= oneMinuteAgo
         
         if (shouldReset) {
@@ -363,5 +363,31 @@ class MemoErrorHandler(
         errorCount = 0
         lastErrorTime = 0L
         currentRetryMemo = ""
+    }
+    
+    /**
+     * Material Designのエラーカラーを取得
+     */
+    private fun getErrorColor(context: Context): Int {
+        val typedValue = TypedValue()
+        return if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorError, typedValue, true)) {
+            typedValue.data
+        } else {
+            // フォールバック: 赤系の色
+            context.getColor(android.R.color.holo_red_dark)
+        }
+    }
+    
+    /**
+     * Material Designの警告カラーを取得
+     */
+    private fun getWarningColor(context: Context): Int {
+        val typedValue = TypedValue()
+        return if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)) {
+            typedValue.data
+        } else {
+            // フォールバック: オレンジ系の色
+            context.getColor(android.R.color.holo_orange_dark)
+        }
     }
 }

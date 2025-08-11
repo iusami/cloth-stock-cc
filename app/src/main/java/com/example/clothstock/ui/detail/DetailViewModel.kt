@@ -244,14 +244,7 @@ class DetailViewModel(
      * @param memo 新しいメモテキスト
      */
     fun onMemoChanged(memo: String) {
-        // Requirements 1.3, 1.4: 文字数制限バリデーション
-        if (memo.length > ClothItem.MAX_MEMO_LENGTH) {
-            _memoSaveState.value = MemoSaveState.ValidationError(
-                "メモは${ClothItem.MAX_MEMO_LENGTH}文字以内で入力してください",
-                memo.length
-            )
-            return
-        }
+        if (!isMemoValid(memo)) return
         
         // バリデーション成功時は通常の保存フローへ
         memoUpdateFlow.tryEmit(memo)
@@ -265,18 +258,29 @@ class DetailViewModel(
      * @param memo 保存するメモテキスト
      */
     fun saveMemoImmediately(memo: String) {
-        // Requirements 1.3, 1.4: 文字数制限バリデーション
+        if (!isMemoValid(memo)) return
+        
+        viewModelScope.launch {
+            saveMemoInternal(memo)
+        }
+    }
+    
+    /**
+     * メモバリデーション処理
+     * Requirements 1.3, 1.4: 文字数制限バリデーション
+     * 
+     * @param memo バリデーション対象のメモテキスト
+     * @return バリデーション成功時はtrue
+     */
+    private fun isMemoValid(memo: String): Boolean {
         if (memo.length > ClothItem.MAX_MEMO_LENGTH) {
             _memoSaveState.value = MemoSaveState.ValidationError(
                 "メモは${ClothItem.MAX_MEMO_LENGTH}文字以内で入力してください",
                 memo.length
             )
-            return
+            return false
         }
-        
-        viewModelScope.launch {
-            saveMemoInternal(memo)
-        }
+        return true
     }
     
     /**
