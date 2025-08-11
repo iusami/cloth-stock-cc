@@ -10,6 +10,8 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.example.clothstock.R
 
 /**
@@ -72,13 +74,12 @@ class SwipeHandleView @JvmOverloads constructor(
 
     /**
      * ハイコントラストモードが有効かチェック
+     * UiModeManagerを使用してナイトモードを検出
      */
     private fun isHighContrastEnabled(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) 
-                as android.view.accessibility.AccessibilityManager
-            // 簡易実装：アクセシビリティサービスが有効かどうかで判定
-            accessibilityManager.isEnabled
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+            val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+            uiModeManager.nightMode == android.app.UiModeManager.MODE_NIGHT_YES
         } else {
             false
         }
@@ -155,34 +156,30 @@ class SwipeHandleView @JvmOverloads constructor(
     }
 
     /**
-     * アクセシビリティ情報の完全実装
+     * アクセシビリティ情報の安全な実装
+     * ViewCompatを使用してAPIレベル差異を吸収
      */
     override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo?) {
         super.onInitializeAccessibilityNodeInfo(info)
         info?.apply {
             addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)
-            
-            // API 19+ でroleDescriptionを設定
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                className = "Button"
-                
-                // API 23+ でroleDescriptionを設定
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    // roleDescriptionプロパティは存在しないので、extra情報として設定
-                    val bundle = extras
-                    bundle.putCharSequence(
-                        "AccessibilityNodeInfo.roleDescription",
-                        context.getString(R.string.swipe_handle_role)
-                    )
-                }
-            } else {
-                className = "SwipeHandleView"
-            }
+            className = "android.widget.Button"
             
             // 詳細な状態情報
             isClickable = this@SwipeHandleView.isClickable
             isFocusable = this@SwipeHandleView.isFocusable
         }
+        
+        // ViewCompatを使用してroleDescriptionを安全に設定
+        ViewCompat.setAccessibilityDelegate(this, object : androidx.core.view.AccessibilityDelegateCompat() {
+            override fun onInitializeAccessibilityNodeInfo(
+                host: View,
+                info: AccessibilityNodeInfoCompat
+            ) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.roleDescription = context.getString(R.string.swipe_handle_role)
+            }
+        })
     }
 
     /**

@@ -2,6 +2,8 @@ package com.example.clothstock.ui.common
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
 import org.junit.Before
@@ -65,16 +67,24 @@ class SwipeHandleViewTest {
     }
     
     @Test
-    fun `onDraw should draw handle with correct shape and color`() {
-        // このテストはSwipeHandleView実装後に実行される
-        // 現在はスキップ（実装されていないため）
-        
+    fun `draw should render handle correctly`() {
         // Given: SwipeHandleView が初期化されている
-        // When: onDraw が呼び出される
-        // Then: 正しい形状と色でハンドルが描画される
+        swipeHandleView = SwipeHandleView(context)
+        val mockCanvas = mock(Canvas::class.java)
         
-        // Expected result: 現在は実装されていないため失敗
-        assertTrue("This test will be implemented in Green phase", true)
+        // ビューのサイズを設定（描画に必要）
+        swipeHandleView.layout(0, 0, 100, 50)
+        
+        // When: draw が呼び出される（onDrawを間接的に呼び出す）
+        swipeHandleView.draw(mockCanvas)
+        
+        // Then: Canvas.drawRoundRect が呼ばれることを確認する
+        verify(mockCanvas, atLeastOnce()).drawRoundRect(
+            any(RectF::class.java),
+            anyFloat(),
+            anyFloat(),
+            any(Paint::class.java)
+        )
     }
     
     @Test
