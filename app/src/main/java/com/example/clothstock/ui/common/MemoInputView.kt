@@ -81,24 +81,22 @@ class MemoInputView @JvmOverloads constructor(
         setupAccessibility()
     }
 
+    private val textWatcher = object : TextWatcher {
+        @Suppress("EmptyFunctionBlock")
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            val text = s?.toString() ?: ""
+            handleTextChange(text)
+        }
+        @Suppress("EmptyFunctionBlock")
+        override fun afterTextChanged(s: Editable?) {}
+    }
+
     /**
      * EditTextの設定とTextWatcherの追加
      */
     private fun setupEditText() {
-        editTextMemo.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                // 不要
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val text = s?.toString() ?: ""
-                handleTextChange(text)
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                // 不要
-            }
-        })
+        editTextMemo.addTextChangedListener(textWatcher)
     }
 
     /**
@@ -210,9 +208,10 @@ class MemoInputView @JvmOverloads constructor(
         val safeText = memo ?: ""
         val trimmedText = safeText.take(ClothItem.MAX_MEMO_LENGTH)
         
-        // TextWatcherが動作しないよう一時的に無効化してからテキスト設定
+        editTextMemo.removeTextChangedListener(textWatcher)
         editTextMemo.setText(trimmedText)
         editTextMemo.setSelection(trimmedText.length)
+        editTextMemo.addTextChangedListener(textWatcher)
         
         // 手動で文字数カウント更新
         currentCharacterCount = trimmedText.length
