@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.example.clothstock.BuildConfig
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.google.android.material.color.MaterialColors
