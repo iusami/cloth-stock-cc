@@ -44,7 +44,6 @@ object DatabaseMigrations {
      * バージョン2から3へのマイグレーション
      * 
      * 変更内容:
-     * - memoフィールドのデフォルト値を統一（'' → 'undefined'）
      * - 不足しているインデックスを追加（category, size, created_at, memo）
      * 
      * 問題解決: Migration didn't properly handleエラー対応
