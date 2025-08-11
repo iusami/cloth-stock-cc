@@ -439,36 +439,30 @@ class MemoInputView @JvmOverloads constructor(
     /**
      * ハイコントラストモードが有効かチェック
      * 
-     * AccessibilityManagerとUiModeManagerを使用してハイコントラスト状態を判定
-     * より正確な判定のために複数の指標を組み合わせる
+     * AccessibilityManagerを使用してハイコントラスト状態を判定
+     * 利用可能なアクセシビリティ機能の組み合わせで総合判断
      * 
      * @return ハイコントラストモードが有効な場合true
      */
     fun isHighContrastModeEnabled(): Boolean {
         return try {
-            // ダークモードの確認（基本的な判定）
-            val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager?
-            val isDarkMode = uiModeManager?.nightMode == android.app.UiModeManager.MODE_NIGHT_YES
+            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) 
+                as android.view.accessibility.AccessibilityManager? ?: return false
             
-            // アクセシビリティサービスの確認
-            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager?
-            val hasAccessibilityFeatures = accessibilityManager?.let { am ->
-                val hasSpokenFeedback = am.getEnabledAccessibilityServiceList(
-                    android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_SPOKEN
-                ).isNotEmpty()
-                am.isEnabled && (am.isTouchExplorationEnabled || hasSpokenFeedback)
-            } ?: false
+            // アクセシビリティ機能の組み合わせでハイコントラスト判定
+            val hasSpokenFeedback = accessibilityManager.getEnabledAccessibilityServiceList(
+                android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_SPOKEN
+            ).isNotEmpty()
             
-            // ダークモード または アクセシビリティ機能有効時にハイコントラストとみなす
-            isDarkMode || hasAccessibilityFeatures
+            accessibilityManager.isEnabled && (accessibilityManager.isTouchExplorationEnabled || hasSpokenFeedback)
         } catch (e: SecurityException) {
             if (BuildConfig.DEBUG) {
                 android.util.Log.w(TAG, "Error detecting high contrast mode - security", e)
             }
             false
-        } catch (e: NullPointerException) {
+        } catch (e: IllegalStateException) {
             if (BuildConfig.DEBUG) {
-                android.util.Log.w(TAG, "Error detecting high contrast mode - null", e)
+                android.util.Log.w(TAG, "Error detecting high contrast mode - state", e)
             }
             false
         }
