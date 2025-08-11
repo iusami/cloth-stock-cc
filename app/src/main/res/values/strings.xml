@@ -164,6 +164,10 @@
     <string name="detail_panel_shown">詳細パネルが表示されました</string>
     <string name="detail_panel_hidden">詳細パネルが非表示になりました</string>
     
+    <!-- MemoInputView Background -->
+    <string name="memo_with_background_description">メモテキスト（背景付き）</string>
+    <string name="memo_input_description">メモ入力フィールド</string>
+    
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>

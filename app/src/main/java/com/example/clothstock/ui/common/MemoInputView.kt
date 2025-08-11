@@ -1,6 +1,8 @@
 package com.example.clothstock.ui.common
 
 import android.content.Context
+import android.content.res.Resources
+import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.AttributeSet
@@ -9,6 +11,9 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import com.example.clothstock.BuildConfig
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
@@ -63,12 +68,25 @@ class MemoInputView @JvmOverloads constructor(
     // TextWatcher
     private lateinit var textWatcher: TextWatcher
     
+    // 背景色機能（Task 2 追加）
+    private val backgroundDrawable: GradientDrawable
+    private var memoBackgroundColor: Int = ContextCompat.getColor(context, R.color.memo_background)
+    
     companion object {
         // 文字数警告の閾値比率（90%）
         private const val WARNING_THRESHOLD_RATIO = 0.9
+        // WCAG 最小コントラスト比
+        private const val MIN_CONTRAST_RATIO = 4.5
+        private const val TAG = "MemoInputView"
     }
 
     init {
+        // 背景描画可能オブジェクトの初期化（Task 2 追加）
+        backgroundDrawable = GradientDrawable().apply {
+            cornerRadius = resources.getDimension(R.dimen.memo_background_corner_radius)
+            setColor(memoBackgroundColor)
+        }
+        
         // レイアウトをinflate
         LayoutInflater.from(context).inflate(R.layout.view_memo_input, this, true)
         
@@ -94,6 +112,9 @@ class MemoInputView @JvmOverloads constructor(
         setupEditText()
         updateCharacterCount(0)
         setupAccessibility()
+        
+        // 背景初期設定（Task 2 追加）
+        setupBackgroundPadding()
     }
 
     /**
@@ -231,6 +252,9 @@ class MemoInputView @JvmOverloads constructor(
         // 手動で文字数カウント更新
         currentCharacterCount = trimmedText.length
         updateCharacterCount(currentCharacterCount)
+        
+        // 背景表示を更新（Task 2 追加）
+        updateBackgroundVisibility(trimmedText.isNotBlank())
     }
 
     /**
@@ -293,4 +317,161 @@ class MemoInputView @JvmOverloads constructor(
         textInputLayout.isEnabled = enabled
         editTextMemo.isEnabled = enabled
     }
+
+    // ===== 背景色機能（Task 2 追加） =====
+
+    /**
+     * 背景のパディングを設定
+     */
+    private fun setupBackgroundPadding() {
+        val padding = resources.getDimensionPixelSize(R.dimen.memo_background_padding)
+        setPadding(padding, padding, padding, padding)
+    }
+
+    /**
+     * メモ背景色を設定
+     * 
+     * @param color 設定する背景色
+     */
+    fun setMemoBackgroundColor(@ColorInt color: Int) {
+        try {
+            memoBackgroundColor = color
+            backgroundDrawable.setColor(color)
+            
+            // コントラスト比を確認してアクセシビリティ警告
+            validateContrastRatio(color)
+        } catch (e: Resources.NotFoundException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.e(TAG, "Error setting memo background color - resource not found", e)
+            }
+        } catch (e: IllegalArgumentException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.e(TAG, "Error setting memo background color - invalid color", e)
+            }
+        }
+    }
+    
+    /**
+     * 背景色のコントラスト比を検証
+     * 
+     * @param backgroundColor 検証する背景色
+     */
+    private fun validateContrastRatio(@ColorInt backgroundColor: Int) {
+        try {
+            val textColor = editTextMemo.currentTextColor
+            if (!hasMinimumContrast(backgroundColor, textColor)) {
+                if (BuildConfig.DEBUG) {
+                    val actualRatio = getContrastRatio(backgroundColor, textColor)
+                    android.util.Log.w(
+                        TAG, 
+                        "Memo background color may not have sufficient contrast. " +
+                        "Required: $MIN_CONTRAST_RATIO, Actual: $actualRatio"
+                    )
+                }
+            }
+        } catch (e: IllegalArgumentException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.w(TAG, "Error validating contrast ratio", e)
+            }
+        }
+    }
+
+    /**
+     * 背景の表示・非表示を更新
+     * 
+     * @param hasMemo メモにコンテンツがある場合true
+     */
+    private fun updateBackgroundVisibility(hasMemo: Boolean) {
+        background = if (hasMemo) backgroundDrawable else null
+        
+        // アクセシビリティ用の状態更新
+        contentDescription = if (hasMemo) {
+            context.getString(R.string.memo_with_background_description)
+        } else {
+            context.getString(R.string.memo_input_description)
+        }
+    }
+
+    /**
+     * 最小コントラスト比をチェック
+     * 
+     * @param backgroundColor 背景色
+     * @param textColor テキスト色
+     * @return WCAG基準を満たす場合true
+     */
+    private fun hasMinimumContrast(@ColorInt backgroundColor: Int, @ColorInt textColor: Int): Boolean {
+        return ColorUtils.calculateContrast(textColor, backgroundColor) >= MIN_CONTRAST_RATIO
+    }
+
+    /**
+     * コントラスト比を計算
+     * 
+     * @param color1 色1
+     * @param color2 色2
+     * @return コントラスト比
+     */
+    fun getContrastRatio(@ColorInt color1: Int, @ColorInt color2: Int): Double {
+        return ColorUtils.calculateContrast(color1, color2)
+    }
+
+    /**
+     * ハイコントラストモード対応の色調整
+     * 
+     * @param enabled ハイコントラストモードが有効な場合true
+     */
+    fun adjustColorsForHighContrast(enabled: Boolean) {
+        try {
+            val targetColor = if (enabled) {
+                // ハイコントラストモード用の色に調整
+                ContextCompat.getColor(context, R.color.swipe_handle_color_high_contrast)
+            } else {
+                // 通常の色に戻す（デフォルトの背景色）
+                ContextCompat.getColor(context, R.color.memo_background)
+            }
+            setMemoBackgroundColor(targetColor)
+        } catch (e: Resources.NotFoundException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.e(TAG, "Error adjusting colors - resource not found", e)
+            }
+        }
+    }
+
+    /**
+     * ハイコントラストモードが有効かチェック
+     * 
+     * AccessibilityManagerを使用してハイコントラスト状態を判定
+     * 利用可能なアクセシビリティ機能の組み合わせで総合判断
+     * 
+     * @return ハイコントラストモードが有効な場合true
+     */
+    fun isHighContrastModeEnabled(): Boolean {
+        return try {
+            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) 
+                as android.view.accessibility.AccessibilityManager? ?: return false
+            
+            // アクセシビリティ機能の組み合わせでハイコントラスト判定
+            val hasSpokenFeedback = accessibilityManager.getEnabledAccessibilityServiceList(
+                android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_SPOKEN
+            ).isNotEmpty()
+            
+            accessibilityManager.isEnabled && (accessibilityManager.isTouchExplorationEnabled || hasSpokenFeedback)
+        } catch (e: SecurityException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.w(TAG, "Error detecting high contrast mode - security", e)
+            }
+            false
+        } catch (e: IllegalStateException) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.w(TAG, "Error detecting high contrast mode - state", e)
+            }
+            false
+        }
+    }
+
+    /**
+     * 背景描画可能オブジェクトを取得（テスト用）
+     * 
+     * @return 背景描画可能オブジェクト
+     */
+    fun getMemoBackgroundDrawable(): GradientDrawable = backgroundDrawable
 }
