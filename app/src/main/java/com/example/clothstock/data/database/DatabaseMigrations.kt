@@ -41,34 +41,47 @@ object DatabaseMigrations {
     }
     
     /**
-     * バージョン2から3へのマイグレーション例
-     * （将来の拡張用）
+     * バージョン2から3へのマイグレーション
+     * 
+     * 変更内容:
+     * - 不足しているインデックスを追加（category, size, created_at, memo）
+     * 
+     * 問題解決: Migration didn't properly handleエラー対応
+     * 実装日: 2025年8月
      */
     val MIGRATION_2_3 = object : Migration(2, 3) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            // 例: カラム名変更
-            // database.execSQL("ALTER TABLE cloth_items RENAME COLUMN color TO primary_color")
-            
-            // 例: データ型変更のためのテーブル再作成
-            // database.execSQL("""
-            //     CREATE TABLE cloth_items_new (
-            //         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            //         imagePath TEXT NOT NULL,
-            //         size INTEGER NOT NULL,
-            //         primary_color TEXT NOT NULL,
-            //         secondary_color TEXT,
-            //         category TEXT NOT NULL,
-            //         createdAt INTEGER NOT NULL
-            //     )
-            // """)
-            // 
-            // database.execSQL("""
-            //     INSERT INTO cloth_items_new (id, imagePath, size, primary_color, category, createdAt)
-            //     SELECT id, imagePath, size, color, category, createdAt FROM cloth_items
-            // """)
-            // 
-            // database.execSQL("DROP TABLE cloth_items")
-            // database.execSQL("ALTER TABLE cloth_items_new RENAME TO cloth_items")
+            try {
+                // 既存インデックスの確認と作成（存在チェック付き）
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_cloth_items_category 
+                    ON cloth_items(category)
+                """)
+                
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_cloth_items_size 
+                    ON cloth_items(size)
+                """)
+                
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_cloth_items_created_at 
+                    ON cloth_items(createdAt)
+                """)
+                
+                // memo用のインデックスは既にMIGRATION_1_2で作成済みなので確認のみ
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_cloth_items_memo 
+                    ON cloth_items(memo)
+                """)
+                
+                // マイグレーション完了ログ
+                android.util.Log.d("DatabaseMigrations", "MIGRATION_2_3: インデックス統一完了")
+                
+            } catch (exception: Exception) {
+                // マイグレーションエラーをログに記録
+                android.util.Log.e("DatabaseMigrations", "MIGRATION_2_3 failed", exception)
+                throw exception // マイグレーション失敗時は例外を再投出
+            }
         }
     }
     

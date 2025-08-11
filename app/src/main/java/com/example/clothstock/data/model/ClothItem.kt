@@ -1,34 +1,45 @@
 package com.example.clothstock.data.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Embedded
+import androidx.room.Index
 import java.util.Date
 
 /**
  * 衣服アイテムを表すRoom Entityクラス
- * 
+ *
  * データベースのテーブル構造を定義し、
  * 撮影した衣服の写真、タグ情報、およびメモ情報を保存する
- * 
+ *
  * @property id アイテムの一意識別子（自動生成）
  * @property imagePath 衣服画像のファイルパス
  * @property tagData サイズ、色、カテゴリ情報
  * @property createdAt アイテム作成日時
  * @property memo ユーザーが追加するメモ情報（最大${MAX_MEMO_LENGTH}文字）
  */
-@Entity(tableName = ClothItem.TABLE_NAME)
+@Entity(
+    tableName = ClothItem.TABLE_NAME,
+    indices = [
+        Index(value = ["category"]),
+        Index(value = ["size"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["memo"])
+    ]
+)
 data class ClothItem(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    
+
     val imagePath: String,
-    
+
     @Embedded
     val tagData: TagData,
-    
+
     val createdAt: Date,
-    
+
+    @ColumnInfo(defaultValue = "")
     val memo: String = ""
 ) : Validatable {
     

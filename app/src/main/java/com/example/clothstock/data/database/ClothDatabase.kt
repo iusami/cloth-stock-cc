@@ -16,16 +16,18 @@ import com.example.clothstock.data.model.ClothItem
  * データベース変更履歴:
  * - v1: 基本的な衣服アイテム情報（画像パス、タグ情報、作成日時）
  * - v2: メモ機能追加（memoカラム追加、検索用インデックス追加）
+ * - v3: インデックス統一とスキーマ整合性修正
  * 
  * 対応エンティティ:
  * - ClothItem: 衣服アイテム情報とメモ情報を保存
  * 
  * マイグレーション対応:
  * - MIGRATION_1_2: メモ機能追加対応
+ * - MIGRATION_2_3: インデックス統一対応
  */
 @Database(
     entities = [ClothItem::class],
-    version = 2,
+    version = 3,
     exportSchema = false // テスト用にfalse、本番では適切なスキーマ管理を実装
 )
 @TypeConverters(Converters::class)
@@ -59,6 +61,7 @@ abstract class ClothDatabase : RoomDatabase() {
          * 設定内容:
          * - DatabaseCallback: 初期インデックス作成とPRAGMA設定
          * - MIGRATION_1_2: v1→v2メモ機能追加マイグレーション
+         * - MIGRATION_2_3: v2→v3インデックス統一マイグレーション
          * 
          * @param context アプリケーションコンテキスト
          * @return ClothDatabaseインスタンス（スレッドセーフ）
@@ -71,7 +74,10 @@ abstract class ClothDatabase : RoomDatabase() {
                     DATABASE_NAME
                 )
                     .addCallback(DatabaseCallback())
-                    .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+                    .addMigrations(
+                        DatabaseMigrations.MIGRATION_1_2,
+                        DatabaseMigrations.MIGRATION_2_3
+                    )
                     .build()
                 
                 INSTANCE = instance
@@ -113,9 +119,11 @@ abstract class ClothDatabase : RoomDatabase() {
             super.onCreate(db)
             
             // データベース作成時の初期化処理
-            // 必要に応じてデフォルトデータの挿入やインデックス作成を実装
+            // 新規インストール時はマイグレーションが実行されないため、
+            // 必要なインデックスをここで作成する
             
             // パフォーマンス向上のためのインデックス作成
+            // （MIGRATION_2_3と同じインデックスを作成）
             db.execSQL("""
                 CREATE INDEX IF NOT EXISTS index_cloth_items_category 
                 ON cloth_items(category)
@@ -129,6 +137,12 @@ abstract class ClothDatabase : RoomDatabase() {
             db.execSQL("""
                 CREATE INDEX IF NOT EXISTS index_cloth_items_created_at 
                 ON cloth_items(createdAt)
+            """)
+            
+            // memo用インデックス（v2以降で必要）
+            db.execSQL("""
+                CREATE INDEX IF NOT EXISTS index_cloth_items_memo 
+                ON cloth_items(memo)
             """)
         }
 

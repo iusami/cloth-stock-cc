@@ -231,7 +231,6 @@ class MemoryPressureMonitor private constructor(private val context: Context) {
 
     private fun triggerGarbageCollection() {
         hasTriggeredGC = true
-        System.gc()
     }
 
     // ===== Android Q+対応: システム統合メソッド =====
