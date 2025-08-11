@@ -208,10 +208,17 @@ class MemoInputView @JvmOverloads constructor(
         val safeText = memo ?: ""
         val trimmedText = safeText.take(ClothItem.MAX_MEMO_LENGTH)
         
-        editTextMemo.removeTextChangedListener(textWatcher)
-        editTextMemo.setText(trimmedText)
-        editTextMemo.setSelection(trimmedText.length)
-        editTextMemo.addTextChangedListener(textWatcher)
+        // TextWatcherがnullでないことを確認してから操作
+        textWatcher?.let { watcher ->
+            editTextMemo.removeTextChangedListener(watcher)
+            editTextMemo.setText(trimmedText)
+            editTextMemo.setSelection(trimmedText.length)
+            editTextMemo.addTextChangedListener(watcher)
+        } ?: run {
+            // TextWatcherがnullの場合、通常のsetTextを実行
+            editTextMemo.setText(trimmedText)
+            editTextMemo.setSelection(trimmedText.length)
+        }
         
         // 手動で文字数カウント更新
         currentCharacterCount = trimmedText.length
