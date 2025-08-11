@@ -94,6 +94,7 @@ class DetailViewModel(
      * ClothItemを読み込む（最適化版）
      */
     fun loadClothItem(clothItemId: Long) {
+        android.util.Log.d("DetailViewModel", "loadClothItem: called with clothItemId=" + clothItemId)
         if (clothItemId <= 0) {
             _errorMessage.value = "無効なアイテムIDです"
             return
@@ -109,6 +110,7 @@ class DetailViewModel(
                 retryCount = 0
 
                 val item = repository.getItemById(clothItemId)
+                android.util.Log.d("DetailViewModel", "loadClothItem: repository.getItemById returned item=" + item)
                 if (item != null) {
                     _clothItem.value = item
                 } else {
@@ -116,6 +118,7 @@ class DetailViewModel(
                 }
                 
             } catch (e: Exception) {
+                android.util.Log.e("DetailViewModel", "loadClothItem: Exception occurred", e)
                 handleLoadingError(e, clothItemId)
             } finally {
                 _isLoading.value = false
@@ -128,19 +131,23 @@ class DetailViewModel(
      * 指数バックオフによる負荷制御（1秒→2秒→4秒）
      */
     private suspend fun handleLoadingError(exception: Exception, clothItemId: Long) {
+        android.util.Log.d("DetailViewModel", "handleLoadingError: called with exception=" + exception.message)
         when {
             retryCount < maxRetryCount -> {
                 retryCount++
                 // 真の指数バックオフ: 1秒, 2秒, 4秒の遅延
                 val delayMs = (1000L * (2.0.pow(retryCount - 1))).toLong()
+                android.util.Log.d("DetailViewModel", "handleLoadingError: retrying with delayMs=" + delayMs + ", retryCount=" + retryCount)
                 delay(delayMs)
                 try {
                     val item = repository.getItemById(clothItemId)
+                    android.util.Log.d("DetailViewModel", "handleLoadingError: retry success, item=" + item)
                     if (item != null) {
                         _clothItem.value = item
                         return
                     }
                 } catch (retryException: Exception) {
+                    android.util.Log.e("DetailViewModel", "handleLoadingError: retry failed with exception=" + retryException.message)
                     // リトライも失敗した場合は元のエラーを表示
                 }
             }

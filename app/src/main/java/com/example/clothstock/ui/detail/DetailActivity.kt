@@ -123,6 +123,7 @@ class DetailActivity : AppCompatActivity() {
     private fun observeViewModel() {
         // ClothItemデータの監視
         viewModel.clothItem.observe(this) { clothItem ->
+            android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=" + clothItem)
             if (clothItem != null) {
                 displayClothItem(clothItem)
                 showMainContent()
@@ -137,6 +138,7 @@ class DetailActivity : AppCompatActivity() {
 
         // ローディング状態の監視
         viewModel.isLoading.observe(this) { isLoading ->
+            android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=" + isLoading)
             if (isLoading) {
                 showLoading()
             }
@@ -144,6 +146,7 @@ class DetailActivity : AppCompatActivity() {
 
         // エラーメッセージの監視
         viewModel.errorMessage.observe(this) { errorMessage ->
+            android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=" + errorMessage)
             if (errorMessage != null) {
                 showError(errorMessage)
                 viewModel.clearErrorMessage()
@@ -169,6 +172,7 @@ class DetailActivity : AppCompatActivity() {
      * ClothItemを表示（最適化版）
      */
     private fun displayClothItem(clothItem: com.example.clothstock.data.model.ClothItem) {
+        android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=" + clothItem)
         // データバインディングでClothItemをセット
         binding.clothItem = clothItem
 
@@ -191,6 +195,7 @@ class DetailActivity : AppCompatActivity() {
                     target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
                     isFirstResource: Boolean
                 ): Boolean {
+                    android.util.Log.e("DetailActivity", "Glide image load failed", e)
                     viewModel.onImageLoadFailed()
                     return false
                 }
@@ -202,6 +207,7 @@ class DetailActivity : AppCompatActivity() {
                     dataSource: com.bumptech.glide.load.DataSource,
                     isFirstResource: Boolean
                 ): Boolean {
+                    android.util.Log.d("DetailActivity", "Glide image load success")
                     viewModel.onImageLoadComplete()
                     // 画像表示成功時のスケールインアニメーション
                     binding.imageViewClothDetail.startAnimation(
@@ -216,7 +222,11 @@ class DetailActivity : AppCompatActivity() {
         displayTagInformation(clothItem)
         
         // メモ情報を表示
-        memoInputView.setMemo(clothItem.memo)
+        if (memoInputView != null) {
+            memoInputView.setMemo(clothItem.memo)
+        } else {
+            android.util.Log.e("DetailActivity", "memoInputView is null")
+        }
     }
 
     /**
@@ -238,6 +248,7 @@ class DetailActivity : AppCompatActivity() {
      * メインコンテンツを表示（アニメーション付き）
      */
     private fun showMainContent() {
+        android.util.Log.d("DetailActivity", "showMainContent: called")
         binding.imageViewClothDetail.visibility = View.VISIBLE
         binding.layoutTagInfo.visibility = View.VISIBLE
         binding.layoutLoading.visibility = View.GONE
@@ -263,6 +274,7 @@ class DetailActivity : AppCompatActivity() {
      * ローディング状態を表示
      */
     private fun showLoading() {
+        android.util.Log.d("DetailActivity", "showLoading: called")
         binding.layoutLoading.visibility = View.VISIBLE
         binding.imageViewClothDetail.visibility = View.GONE
         binding.layoutTagInfo.visibility = View.GONE
@@ -273,6 +285,7 @@ class DetailActivity : AppCompatActivity() {
      * エラー状態を表示
      */
     private fun showError(message: String) {
+        android.util.Log.d("DetailActivity", "showError: called with message=" + message)
         binding.layoutError.visibility = View.VISIBLE
         binding.textErrorMessage.text = message
         binding.imageViewClothDetail.visibility = View.GONE

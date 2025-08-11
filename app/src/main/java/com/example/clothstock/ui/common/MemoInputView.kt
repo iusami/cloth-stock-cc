@@ -59,6 +59,8 @@ class MemoInputView @JvmOverloads constructor(
     // 警告表示の閾値（90%）
     private val warningThreshold = (ClothItem.MAX_MEMO_LENGTH * WARNING_THRESHOLD_RATIO).toInt()
     
+    // TextWatcher
+    private lateinit var textWatcher: TextWatcher
     
     companion object {
         // 文字数警告の閾値比率（90%）
@@ -75,21 +77,22 @@ class MemoInputView @JvmOverloads constructor(
         textCharacterCount = findViewById(R.id.textCharacterCount)
         iconWarning = findViewById(R.id.iconWarning)
         
+        // TextWatcherを初期化
+        textWatcher = object : TextWatcher {
+            @Suppress("EmptyFunctionBlock")
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val text = s?.toString() ?: ""
+                handleTextChange(text)
+            }
+            @Suppress("EmptyFunctionBlock")
+            override fun afterTextChanged(s: Editable?) {}
+        }
+        
         // 初期設定
         setupEditText()
         updateCharacterCount(0)
         setupAccessibility()
-    }
-
-    private val textWatcher = object : TextWatcher {
-        @Suppress("EmptyFunctionBlock")
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            val text = s?.toString() ?: ""
-            handleTextChange(text)
-        }
-        @Suppress("EmptyFunctionBlock")
-        override fun afterTextChanged(s: Editable?) {}
     }
 
     /**
@@ -209,13 +212,15 @@ class MemoInputView @JvmOverloads constructor(
         val trimmedText = safeText.take(ClothItem.MAX_MEMO_LENGTH)
         
         // TextWatcherがnullでないことを確認してから操作
-        textWatcher?.let { watcher ->
-            editTextMemo.removeTextChangedListener(watcher)
+        if (textWatcher != null) {
+            editTextMemo.removeTextChangedListener(textWatcher)
             editTextMemo.setText(trimmedText)
             editTextMemo.setSelection(trimmedText.length)
-            editTextMemo.addTextChangedListener(watcher)
-        } ?: run {
-            // TextWatcherがnullの場合、通常のsetTextを実行
+            editTextMemo.addTextChangedListener(textWatcher)
+        } else {
+            // TextWatcherがnullの場合、エラーをログに出力
+            android.util.Log.e("MemoInputView", "textWatcher is null")
+            // 通常のsetTextを実行
             editTextMemo.setText(trimmedText)
             editTextMemo.setSelection(trimmedText.length)
         }
