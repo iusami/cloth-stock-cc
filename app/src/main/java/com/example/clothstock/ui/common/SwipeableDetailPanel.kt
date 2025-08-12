@@ -18,6 +18,10 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
 
+    companion object {
+        private const val LOG_TAG = "SwipeableDetailPanel"
+    }
+
     private var binding: ViewSwipeableDetailPanelBinding? = null
 
     /**
@@ -120,8 +124,8 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             }
             
             // デバッグログ（リリースビルドでは自動的に除外される）
-            if (android.util.Log.isLoggable("SwipeableDetailPanel", android.util.Log.DEBUG)) {
-                android.util.Log.d("SwipeableDetailPanel", "Panel state changed: $oldState -> $state")
+            if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                android.util.Log.d(LOG_TAG, "Panel state changed: $oldState -> $state")
             }
         }
     }

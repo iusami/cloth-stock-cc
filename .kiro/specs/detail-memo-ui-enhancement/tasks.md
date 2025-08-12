@@ -88,22 +88,22 @@
   - 設定変更時の状態復元を最適化する
   - _Requirements: 5.3, 5.4_
 
-- [ ] 5. SwipeableDetailPanel カスタムビューの実装（TDD）
-- [ ] 5.1 SwipeableDetailPanel 基本構造のユニットテスト作成
+- [x] 5. SwipeableDetailPanel カスタムビューの実装（TDD）
+- [x] 5.1 SwipeableDetailPanel 基本構造のユニットテスト作成
 
   - パネル状態変更の失敗テストを作成する
   - 基本的なレイアウト構造の失敗テストを作成する
   - パネル状態管理の失敗テストを作成する
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 5.2 SwipeableDetailPanel 基本構造の最小実装
+- [x] 5.2 SwipeableDetailPanel 基本構造の最小実装
 
   - テストを通すための最小限の SwipeableDetailPanel クラスを作成する
   - ConstraintLayout ベースの基本構造を実装する
   - パネル状態（SHOWN/HIDDEN/ANIMATING）の定義と基本管理を追加する
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 5.3 SwipeableDetailPanel 基本構造のリファクタリング
+- [x] 5.3 SwipeableDetailPanel 基本構造のリファクタリング
 
   - SwipeHandleView とコンテンツコンテナーのレイアウトを最適化する
   - パネル状態管理の品質向上を行う
