@@ -117,6 +117,41 @@ class SwipeableDetailPanelTest {
         assertEquals(0, notifyCount) // 通知されないはず
     }
     
+    // ===== Task 5.3: リファクタリング機能のテスト =====
+    
+    @Test
+    fun `setPanelState with notifyListener false should not notify listener`() {
+        // Given
+        var notifiedState: SwipeableDetailPanel.PanelState? = null
+        panel.onPanelStateChangedListener = { state ->
+            notifiedState = state
+        }
+        
+        // When
+        panel.setPanelState(SwipeableDetailPanel.PanelState.HIDDEN, notifyListener = false)
+        
+        // Then
+        assertEquals(SwipeableDetailPanel.PanelState.HIDDEN, panel.getPanelState())
+        assertNull(notifiedState) // 通知されないはず
+    }
+    
+    @Test
+    fun `resetPanelState should reset to SHOWN and notify listener`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.HIDDEN)
+        var notifiedState: SwipeableDetailPanel.PanelState? = null
+        panel.onPanelStateChangedListener = { state ->
+            notifiedState = state
+        }
+        
+        // When
+        panel.resetPanelState()
+        
+        // Then
+        assertEquals(SwipeableDetailPanel.PanelState.SHOWN, panel.getPanelState())
+        assertEquals(SwipeableDetailPanel.PanelState.SHOWN, notifiedState)
+    }
+    
     @Test
     fun `togglePanelState should not change state when ANIMATING`() {
         // Given
