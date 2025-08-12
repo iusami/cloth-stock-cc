@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.repository.ClothRepository
+import com.example.clothstock.data.preferences.DetailPreferencesManager
+import com.example.clothstock.ui.common.SwipeableDetailPanel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +23,8 @@ import kotlin.math.pow
  * ClothItemの詳細データ管理とUI状態制御
  */
 class DetailViewModel(
-    private val repository: ClothRepository
+    private val repository: ClothRepository,
+    private val preferencesManager: DetailPreferencesManager
 ) : ViewModel() {
 
     // ClothItemデータ
@@ -60,6 +63,13 @@ class DetailViewModel(
     private var memoSaveRetryCount = 0
     private val maxMemoSaveRetryCount = 3
     
+    // Task 4: パネル状態管理
+    private val _panelState = MutableLiveData<SwipeableDetailPanel.PanelState>()
+    val panelState: LiveData<SwipeableDetailPanel.PanelState> = _panelState
+    
+    private val _isFullScreenMode = MutableLiveData<Boolean>()
+    val isFullScreenMode: LiveData<Boolean> = _isFullScreenMode
+    
     companion object {
         private const val MEMO_SAVE_DEBOUNCE_MS = 1000L // 1秒のdebounce
         private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L // 保存成功表示時間
@@ -81,6 +91,11 @@ class DetailViewModel(
     init {
         // メモ自動保存の初期化
         setupMemoAutoSave()
+        
+        // Task 4: パネル状態の初期化
+        val initialPanelState = preferencesManager.getLastPanelState()
+        _panelState.value = initialPanelState
+        _isFullScreenMode.value = initialPanelState == SwipeableDetailPanel.PanelState.HIDDEN
     }
     
     // パフォーマンス最適化: メモリリーク防止
@@ -88,13 +103,21 @@ class DetailViewModel(
         super.onCleared()
         loadingJob?.cancel()
         memoSaveJob?.cancel()
+        
+        // Task 4: ViewModelが破棄される際に状態を保存
+        _panelState.value?.let { state ->
+            preferencesManager.saveLastPanelState(state)
+        }
     }
 
     /**
      * ClothItemを読み込む（最適化版）
      */
     fun loadClothItem(clothItemId: Long) {
-        android.util.Log.d("DetailViewModel", "loadClothItem: called with clothItemId=" + clothItemId)
+        android.util.Log.d(
+            "DetailViewModel", 
+            "loadClothItem: called with clothItemId=" + clothItemId
+        )
         if (clothItemId <= 0) {
             _errorMessage.value = "無効なアイテムIDです"
             return
@@ -110,7 +133,10 @@ class DetailViewModel(
                 retryCount = 0
 
                 val item = repository.getItemById(clothItemId)
-                android.util.Log.d("DetailViewModel", "loadClothItem: repository.getItemById returned item=" + item)
+                android.util.Log.d(
+            "DetailViewModel", 
+            "loadClothItem: repository.getItemById returned item=" + item
+        )
                 if (item != null) {
                     _clothItem.value = item
                 } else {
@@ -131,23 +157,35 @@ class DetailViewModel(
      * 指数バックオフによる負荷制御（1秒→2秒→4秒）
      */
     private suspend fun handleLoadingError(exception: Exception, clothItemId: Long) {
-        android.util.Log.d("DetailViewModel", "handleLoadingError: called with exception=" + exception.message)
+        android.util.Log.d(
+            "DetailViewModel", 
+            "handleLoadingError: called with exception=" + exception.message
+        )
         when {
             retryCount < maxRetryCount -> {
                 retryCount++
                 // 真の指数バックオフ: 1秒, 2秒, 4秒の遅延
                 val delayMs = (1000L * (2.0.pow(retryCount - 1))).toLong()
-                android.util.Log.d("DetailViewModel", "handleLoadingError: retrying with delayMs=" + delayMs + ", retryCount=" + retryCount)
+                android.util.Log.d(
+            "DetailViewModel", 
+            "handleLoadingError: retrying with delayMs=" + delayMs + ", retryCount=" + retryCount
+        )
                 delay(delayMs)
                 try {
                     val item = repository.getItemById(clothItemId)
-                    android.util.Log.d("DetailViewModel", "handleLoadingError: retry success, item=" + item)
+                    android.util.Log.d(
+            "DetailViewModel", 
+            "handleLoadingError: retry success, item=" + item
+        )
                     if (item != null) {
                         _clothItem.value = item
                         return
                     }
                 } catch (retryException: Exception) {
-                    android.util.Log.e("DetailViewModel", "handleLoadingError: retry failed with exception=" + retryException.message)
+                    android.util.Log.e(
+            "DetailViewModel", 
+            "handleLoadingError: retry failed with exception=" + retryException.message
+        )
                     // リトライも失敗した場合は元のエラーを表示
                 }
             }
@@ -209,6 +247,36 @@ class DetailViewModel(
      */
     fun hasError(): Boolean {
         return _errorMessage.value != null
+    }
+    
+    // ===== パネル状態管理機能 =====
+    
+    /**
+     * パネル状態を設定する
+     * Task 4: パネル状態管理機能の実装
+     * 
+     * @param state 新しいパネル状態
+     */
+    fun setPanelState(state: SwipeableDetailPanel.PanelState) {
+        _panelState.value = state
+        _isFullScreenMode.value = state == SwipeableDetailPanel.PanelState.HIDDEN
+        
+        // セッション中の状態を保存
+        preferencesManager.saveLastPanelState(state)
+    }
+    
+    /**
+     * パネル状態を切り替える
+     * Task 4: パネル状態管理機能の実装
+     */
+    fun togglePanelState() {
+        val currentState = _panelState.value ?: SwipeableDetailPanel.PanelState.SHOWN
+        val newState = when (currentState) {
+            SwipeableDetailPanel.PanelState.SHOWN -> SwipeableDetailPanel.PanelState.HIDDEN
+            SwipeableDetailPanel.PanelState.HIDDEN -> SwipeableDetailPanel.PanelState.SHOWN
+            SwipeableDetailPanel.PanelState.ANIMATING -> return // アニメーション中は無視
+        }
+        setPanelState(newState)
     }
 
     /**

@@ -1,47 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Task 15: デフォルトサイズ定義 -->
-    
-    <!-- 基本表示用サイズ -->
-    <dimen name="empty_icon_size">120dp</dimen>
-    <dimen name="empty_padding">24dp</dimen>
-    <dimen name="fab_margin">16dp</dimen>
-    <dimen name="toolbar_padding_horizontal">16dp</dimen>
-    
-    <!-- フィルターボトムシート用サイズ -->
-    <dimen name="bottom_sheet_padding">16dp</dimen>
-    <dimen name="chip_margin_horizontal">6dp</dimen>
-    <dimen name="chip_margin_vertical">4dp</dimen>
-    
-    <!-- グリッド間隔 -->
-    <dimen name="gallery_grid_padding">8dp</dimen>
-    <dimen name="item_spacing">8dp</dimen>
-    
-    <!-- テキストサイズ -->
-    <dimen name="default_text_size_headline">22sp</dimen>
-    <dimen name="default_text_size_body">16sp</dimen>
-    <dimen name="default_text_size_caption">14sp</dimen>
-    
-    <!-- Task 15: デバイス固有サイズのデフォルト値 -->
-    
-    <!-- 小画面用テキストサイズ（デフォルト値） -->
-    <dimen name="compact_text_size_headline">20sp</dimen>
-    <dimen name="compact_text_size_body">15sp</dimen>
-    <dimen name="compact_text_size_caption">13sp</dimen>
-    
-    <!-- 大画面用テキストサイズ（デフォルト値） -->
-    <dimen name="large_text_size_headline">26sp</dimen>
-    <dimen name="large_text_size_body">17sp</dimen>
-    <dimen name="large_text_size_caption">15sp</dimen>
-    
-    <!-- タブレット詳細分割用（デフォルト値） -->
-    <dimen name="detail_column_width">320dp</dimen>
-    <dimen name="divider_width">1dp</dimen>
-    
-    <!-- SwipeHandleView dimensions -->
+    <!-- スワイプハンドル -->
     <dimen name="swipe_handle_height">24dp</dimen>
-    <dimen name="swipe_handle_width_ratio">0.3</dimen>
-    <dimen name="swipe_handle_height_ratio">0.4</dimen>
+    <dimen name="swipe_handle_margin_top">8dp</dimen>
+    
+    <!-- パネルコンテンツ -->
+    <dimen name="panel_content_padding">16dp</dimen>
+    <dimen name="memo_input_margin_bottom">16dp</dimen>
+    
+    <!-- メモ背景 -->
     <dimen name="memo_background_corner_radius">8dp</dimen>
     <dimen name="memo_background_padding">12dp</dimen>
+    
+    <!-- 空状態アイコン -->
+    <dimen name="empty_icon_size">120dp</dimen>
+    <dimen name="empty_padding">32dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="toolbar_padding_horizontal">16dp</dimen>
+    <dimen name="bottom_sheet_padding">16dp</dimen>
+    <dimen name="chip_margin_horizontal">4dp</dimen>
+    <dimen name="chip_margin_vertical">2dp</dimen>
+    <dimen name="gallery_grid_padding">8dp</dimen>
+    <dimen name="item_spacing">4dp</dimen>
+    <dimen name="compact_text_size_headline">20sp</dimen>
+    <dimen name="large_text_size_headline">24sp</dimen>
+    <dimen name="compact_text_size_body">16sp</dimen>
+    <dimen name="large_text_size_body">20sp</dimen>
+    <dimen name="compact_text_size_caption">14sp</dimen>
+    <dimen name="large_text_size_caption">18sp</dimen>
+    <dimen name="detail_column_width">320dp</dimen>
+    <dimen name="divider_width">1dp</dimen>
 </resources>

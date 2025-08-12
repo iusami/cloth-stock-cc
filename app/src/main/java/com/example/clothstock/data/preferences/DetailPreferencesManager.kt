@@ -41,7 +41,7 @@ class DetailPreferencesManager(context: Context) {
             } else {
                 Log.e(TAG, "Failed to save panel state: $state")
             }
-        } catch (e: Exception) {
+        } catch (e: java.lang.Exception) {
             when (e) {
                 is SecurityException, is IllegalStateException -> {
                     Log.e(TAG, "${e.javaClass.simpleName} while saving panel state: $state", e)
@@ -84,7 +84,7 @@ class DetailPreferencesManager(context: Context) {
             Log.d(TAG, "Panel state loaded: $resolvedState (from: $stateName)")
             return resolvedState
             
-        } catch (e: Exception) {
+        } catch (e: java.lang.Exception) {
             when (e) {
                 is SecurityException, is IllegalStateException -> {
                     Log.e(TAG, "${e.javaClass.simpleName} while loading panel state", e)
