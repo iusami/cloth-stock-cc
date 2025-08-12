@@ -2,6 +2,8 @@ package com.example.clothstock.ui.detail
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.repository.ClothRepository
@@ -336,9 +338,25 @@ class DetailViewModelTest {
         verify(exactly = 0) { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.HIDDEN) }
     }
     
-    // onClearedメソッドはprotectedなので、直接テストすることはできません。
-    // 代わりに、ViewModelが破棄される際に状態が保存されることを間接的にテストします。
-    // ここではテストを削除します。
+    @Test
+    fun `ViewModel destruction should save panel state to preferences`() = runTest {
+        // Given: パネル状態を設定
+        val testPanelState = SwipeableDetailPanel.PanelState.HIDDEN
+        viewModel.setPanelState(testPanelState)
+        
+        // When: ViewModelを破棄（onClearedを間接的にトリガー）
+        // AndroidのViewModelStoreを使ってライフサイクルをシミュレート
+        val viewModelStore = ViewModelStore()
+        val viewModelProvider = ViewModelProvider(viewModelStore, DetailViewModelFactory(repository, preferencesManager))
+        val testViewModel = viewModelProvider.get(DetailViewModel::class.java)
+        testViewModel.setPanelState(testPanelState)
+        
+        // ViewModelStoreをクリアしてonClearedをトリガー
+        viewModelStore.clear()
+        
+        // Then: preferencesManager.saveLastPanelState が呼ばれることを確認
+        coVerify { preferencesManager.saveLastPanelState(testPanelState) }
+    }
 
     @Test
     fun `memo update should update clothItem LiveData`() = runTest {

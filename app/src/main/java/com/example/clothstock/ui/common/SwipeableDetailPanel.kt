@@ -17,7 +17,8 @@ class SwipeableDetailPanel @JvmOverloads constructor(
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
 
     // private var binding: ViewSwipeableDetailPanelBinding? = null
-    // 現在は使用されていませんが、将来的に使用する可能性があるためコメントアウトしています
+    // 将来的にメモの編集やタグのインタラクションなど、
+    // より複雑なUIイベントを扱う際にView Bindingを導入するために予約されています
 
     /**
      * パネルの状態定義
@@ -42,7 +43,8 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     }
 
     // レイアウトのインフレートを確実に行う
-    // 現在は使用されていませんが、将来的に使用する可能性があるためコメントアウトしています
+    // 将来的にメモの編集やタグのインタラクションなど、
+    // より複雑なUIイベントを扱う際にView Bindingを導入するために予約されています
     /*
     private fun ensureBinding() {
         if (binding == null) {
@@ -65,11 +67,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
         // アニメーション中は状態変更を無視
         if (panelState == PanelState.ANIMATING) return
         
-        val newState = when (panelState) {
-            PanelState.SHOWN -> PanelState.HIDDEN
-            PanelState.HIDDEN -> PanelState.SHOWN
-            PanelState.ANIMATING -> panelState // 到達しないがコンパイルエラーを避けるため
-        }
+        val newState = if (panelState == PanelState.SHOWN) PanelState.HIDDEN else PanelState.SHOWN
         
         setPanelState(newState)
     }

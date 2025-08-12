@@ -127,10 +127,7 @@ class DetailActivity : AppCompatActivity() {
         // ClothItemデータの監視
         viewModel.clothItem.observe(this) { clothItem ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                    "DetailActivity", 
-                    "observeViewModel: clothItem changed, clothItem=" + clothItem
-                )
+                android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=$clothItem")
             }
             if (clothItem != null) {
                 displayClothItem(clothItem)
@@ -147,10 +144,7 @@ class DetailActivity : AppCompatActivity() {
         // ローディング状態の監視
         viewModel.isLoading.observe(this) { isLoading ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                    "DetailActivity", 
-                    "observeViewModel: isLoading changed, isLoading=" + isLoading
-                )
+                android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=$isLoading")
             }
             if (isLoading) {
                 showLoading()
@@ -160,10 +154,7 @@ class DetailActivity : AppCompatActivity() {
         // エラーメッセージの監視
         viewModel.errorMessage.observe(this) { errorMessage ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                    "DetailActivity", 
-                    "observeViewModel: errorMessage changed, errorMessage=" + errorMessage
-                )
+                android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=$errorMessage")
             }
             if (errorMessage != null) {
                 showError(errorMessage)
@@ -191,10 +182,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun displayClothItem(clothItem: com.example.clothstock.data.model.ClothItem) {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                "DetailActivity", 
-                "displayClothItem: called with clothItem=" + clothItem
-            )
+                android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=$clothItem")
             }
         // データバインディングでClothItemをセット
         binding.clothItem = clothItem
@@ -272,10 +260,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun showMainContent() {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                "DetailActivity", 
-                "showMainContent: called"
-            )
+                android.util.Log.d("DetailActivity", "showMainContent: called")
             }
         binding.imageViewClothDetail.visibility = View.VISIBLE
         binding.layoutTagInfo.visibility = View.VISIBLE
@@ -303,10 +288,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun showLoading() {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                "DetailActivity", 
-                "showLoading: called"
-            )
+                android.util.Log.d("DetailActivity", "showLoading: called")
             }
         binding.layoutLoading.visibility = View.VISIBLE
         binding.imageViewClothDetail.visibility = View.GONE
@@ -319,10 +301,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun showError(message: String) {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                "DetailActivity", 
-                "showError: called with message=" + message
-            )
+                android.util.Log.d("DetailActivity", "showError: called with message=$message")
             }
         binding.layoutError.visibility = View.VISIBLE
         binding.textErrorMessage.text = message
@@ -495,10 +474,7 @@ class DetailActivity : AppCompatActivity() {
     private fun focusOnMemoField() {
         try {
             if (BuildConfig.DEBUG) {
-                android.util.Log.d(
-                "DetailActivity", 
-                "Starting memo field focus sequence"
-            )
+                android.util.Log.d("DetailActivity", "Starting memo field focus sequence")
             }
             
             // MemoInputViewにフォーカスを設定
@@ -509,10 +485,7 @@ class DetailActivity : AppCompatActivity() {
             if (viewTreeObserver.isAlive) {
                 val layoutListener = object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
                     override fun onGlobalLayout() {
-                        android.util.Log.d(
-                            "DetailActivity", 
-                            "Layout completed, attempting to show keyboard"
-                        )
+                        android.util.Log.d("DetailActivity", "Layout completed, attempting to show keyboard")
                         
                         // リスナーを除去（一度だけ実行）
                         memoInputView.viewTreeObserver.removeOnGlobalLayoutListener(this)
