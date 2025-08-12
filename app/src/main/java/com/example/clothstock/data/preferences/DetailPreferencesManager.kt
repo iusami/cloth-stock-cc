@@ -36,18 +36,20 @@ class DetailPreferencesManager(context: Context) {
             if (success) {
                 // 保存成功時にキャッシュを更新
                 cachedPanelState = state
+                hasCacheBeenLoaded = true
                 Log.d(TAG, "Panel state saved successfully: $state")
             } else {
                 Log.e(TAG, "Failed to save panel state: $state")
             }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while saving panel state: $state", e)
-            // エラー時はキャッシュだけ更新（セッション中は維持される）
-            cachedPanelState = state
-        } catch (e: IllegalStateException) {
-            Log.e(TAG, "IllegalStateException while saving panel state: $state", e)
-            // エラー時はキャッシュだけ更新（セッション中は維持される）
-            cachedPanelState = state
+        } catch (e: Exception) {
+            when (e) {
+                is SecurityException, is IllegalStateException -> {
+                    Log.e(TAG, "${e.javaClass.simpleName} while saving panel state: $state", e)
+                    // エラー時はキャッシュだけ更新（セッション中は維持される）
+                    cachedPanelState = state
+                }
+                else -> throw e
+            }
         }
     }
     
@@ -59,8 +61,9 @@ class DetailPreferencesManager(context: Context) {
      */
     fun getLastPanelState(): SwipeableDetailPanel.PanelState {
         // キャッシュからの取得でパフォーマンス最適化
-        if (hasCacheBeenLoaded && cachedPanelState != null) {
-            return cachedPanelState!!
+        val cached = cachedPanelState
+        if (hasCacheBeenLoaded && cached != null) {
+            return cached
         }
         
         return loadPanelStateFromPreferences()
@@ -81,12 +84,14 @@ class DetailPreferencesManager(context: Context) {
             Log.d(TAG, "Panel state loaded: $resolvedState (from: $stateName)")
             return resolvedState
             
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while loading panel state", e)
-            return getDefaultStateAndUpdateCache()
-        } catch (e: IllegalStateException) {
-            Log.e(TAG, "IllegalStateException while loading panel state", e)
-            return getDefaultStateAndUpdateCache()
+        } catch (e: Exception) {
+            when (e) {
+                is SecurityException, is IllegalStateException -> {
+                    Log.e(TAG, "${e.javaClass.simpleName} while loading panel state", e)
+                    return getDefaultStateAndUpdateCache()
+                }
+                else -> throw e
+            }
         }
     }
     
