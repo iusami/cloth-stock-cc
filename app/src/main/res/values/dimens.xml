@@ -3,6 +3,7 @@
     <!-- スワイプハンドル -->
     <dimen name="swipe_handle_height">24dp</dimen>
     <dimen name="swipe_handle_margin_top">8dp</dimen>
+    <dimen name="swipe_handle_min_height">48dp</dimen>
     
     <!-- パネルコンテンツ -->
     <dimen name="panel_content_padding">16dp</dimen>

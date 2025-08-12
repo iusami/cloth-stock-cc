@@ -1,9 +1,11 @@
 package com.example.clothstock.ui.common
 
 import android.content.Context
+import android.os.Build
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.example.clothstock.R
 import com.example.clothstock.databinding.ViewSwipeableDetailPanelBinding
 
 /**
@@ -20,6 +22,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
 
     companion object {
         private const val LOG_TAG = "SwipeableDetailPanel"
+        private const val ROBOLECTRIC_TEST_RUNNER_CLASS = "org.robolectric.RobolectricTestRunner"
     }
 
     private var binding: ViewSwipeableDetailPanelBinding? = null
@@ -76,9 +79,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             // スワイプハンドルの制約最適化
             binding.swipeHandle.apply {
                 // アクセシビリティ向上のため、最小タップ領域を確保
-                minimumHeight = resources.getDimensionPixelSize(
-                    androidx.appcompat.R.dimen.abc_action_button_min_height_material
-                )
+                minimumHeight = resources.getDimensionPixelSize(R.dimen.swipe_handle_min_height)
                 // Material Design ガイドラインに沿った制約設定は既にXMLで設定済み
             }
             
@@ -123,8 +124,9 @@ class SwipeableDetailPanel @JvmOverloads constructor(
                 onPanelStateChangedListener?.invoke(state)
             }
             
-            // デバッグログ（リリースビルドでは自動的に除外される）
-            if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+            // デバッグログ（パフォーマンス最適化版）
+            // リリースビルドとテスト時はログを無効化、不要な文字列構築を回避
+            if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG) && !isTestEnvironment()) {
                 android.util.Log.d(LOG_TAG, "Panel state changed: $oldState -> $state")
             }
         }
@@ -142,14 +144,22 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     /**
      * テスト環境かどうかを判定
      */
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException") // ClassNotFoundException は実行環境判定の一部として意図的にキャッチし、
+                                     // 例外発生 = 非テスト環境として false を返すため、無視しても安全
     private fun isTestEnvironment(): Boolean {
+        // Build.FINGERPRINT ベースの判定を優先使用（より確実）
+        if (Build.FINGERPRINT.contains("robolectric", ignoreCase = true)) {
+            return true
+        }
+        
+        // フォールバック: Robolectricクラスの存在確認
         return try {
-            Class.forName("org.robolectric.RobolectricTestRunner")
+            Class.forName(ROBOLECTRIC_TEST_RUNNER_CLASS)
             true
         } catch (e: ClassNotFoundException) {
-            // テスト環境でない場合は false を返す（意図的な動作）
-            // この例外は期待される動作なので、swallowしても問題ない
+            // テスト環境でない場合は false を返す（期待される動作）
+            // Robolectricがクラスパスにない = 本番実行環境として判定
+            // この例外は環境判定ロジックの一部なので、例外を握りつぶしても問題ない
             false
         }
     }
