@@ -15,6 +15,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.example.clothstock.BuildConfig
 import com.example.clothstock.R
 import com.example.clothstock.data.repository.ClothRepositoryImpl
+import com.example.clothstock.data.preferences.DetailPreferencesManager
 import com.example.clothstock.databinding.ActivityDetailBinding
 import com.example.clothstock.ui.tagging.TaggingActivity
 import com.example.clothstock.ui.common.MemoInputView
@@ -81,7 +82,8 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun setupViewModel() {
         val repository = ClothRepositoryImpl.getInstance(this)
-        val viewModelFactory = DetailViewModelFactory(repository)
+        val preferencesManager = DetailPreferencesManager(this)
+        val viewModelFactory = DetailViewModelFactory(repository, preferencesManager)
         viewModel = ViewModelProvider(this, viewModelFactory)[DetailViewModel::class.java]
         binding.viewModel = viewModel
     }
@@ -125,7 +127,7 @@ class DetailActivity : AppCompatActivity() {
         // ClothItemデータの監視
         viewModel.clothItem.observe(this) { clothItem ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=" + clothItem)
+                android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=$clothItem")
             }
             if (clothItem != null) {
                 displayClothItem(clothItem)
@@ -142,7 +144,7 @@ class DetailActivity : AppCompatActivity() {
         // ローディング状態の監視
         viewModel.isLoading.observe(this) { isLoading ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=" + isLoading)
+                android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=$isLoading")
             }
             if (isLoading) {
                 showLoading()
@@ -152,7 +154,7 @@ class DetailActivity : AppCompatActivity() {
         // エラーメッセージの監視
         viewModel.errorMessage.observe(this) { errorMessage ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=" + errorMessage)
+                android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=$errorMessage")
             }
             if (errorMessage != null) {
                 showError(errorMessage)
@@ -180,7 +182,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun displayClothItem(clothItem: com.example.clothstock.data.model.ClothItem) {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=" + clothItem)
+                android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=$clothItem")
             }
         // データバインディングでClothItemをセット
         binding.clothItem = clothItem
@@ -299,7 +301,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun showError(message: String) {
         if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "showError: called with message=" + message)
+                android.util.Log.d("DetailActivity", "showError: called with message=$message")
             }
         binding.layoutError.visibility = View.VISIBLE
         binding.textErrorMessage.text = message
@@ -483,10 +485,7 @@ class DetailActivity : AppCompatActivity() {
             if (viewTreeObserver.isAlive) {
                 val layoutListener = object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
                     override fun onGlobalLayout() {
-                        android.util.Log.d(
-                            "DetailActivity", 
-                            "Layout completed, attempting to show keyboard"
-                        )
+                        android.util.Log.d("DetailActivity", "Layout completed, attempting to show keyboard")
                         
                         // リスナーを除去（一度だけ実行）
                         memoInputView.viewTreeObserver.removeOnGlobalLayoutListener(this)

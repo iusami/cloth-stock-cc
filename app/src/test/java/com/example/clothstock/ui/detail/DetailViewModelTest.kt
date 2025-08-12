@@ -2,9 +2,13 @@ package com.example.clothstock.ui.detail
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
 import com.example.clothstock.data.repository.ClothRepository
+import com.example.clothstock.data.preferences.DetailPreferencesManager
+import com.example.clothstock.ui.common.SwipeableDetailPanel
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -31,6 +35,7 @@ import java.util.Date
  * 
  * Task 5実装: メモ機能のテスト
  * Task 8追加: エラーハンドリングとバリデーション機能のテスト
+ * Task 4追加: パネル状態管理機能のテスト
  * 
  * TDD Red-Green-Refactorサイクルに基づくテスト実装
  */
@@ -42,6 +47,9 @@ class DetailViewModelTest {
 
     @MockK
     private lateinit var repository: ClothRepository
+
+    @MockK
+    private lateinit var preferencesManager: DetailPreferencesManager
 
     private lateinit var viewModel: DetailViewModel
     private val testDispatcher = StandardTestDispatcher()
@@ -68,7 +76,11 @@ class DetailViewModelTest {
         coEvery { repository.getItemById(any()) } returns testClothItem
         coEvery { repository.updateItem(any()) } returns true
         
-        viewModel = DetailViewModel(repository)
+        // デフォルトのPreferencesManagerモック設定
+        coEvery { preferencesManager.getLastPanelState() } returns SwipeableDetailPanel.PanelState.SHOWN
+        coEvery { preferencesManager.saveLastPanelState(any()) } returns Unit
+        
+        viewModel = DetailViewModel(repository, preferencesManager)
     }
 
     @After
@@ -247,6 +259,103 @@ class DetailViewModelTest {
         coVerify { repository.getItemById(1L) }
         verify { itemObserver.onChanged(testClothItem) }
         assertEquals("Test memo", viewModel.getCurrentMemo())
+    }
+    
+    // ===== Task 4: パネル状態管理機能のテスト =====
+    
+    @Test
+    fun `panelState should be initialized from preferences`() = runTest {
+        // Given
+        val initialPanelState = SwipeableDetailPanel.PanelState.HIDDEN
+        coEvery { preferencesManager.getLastPanelState() } returns initialPanelState
+        val viewModel = DetailViewModel(repository, preferencesManager)
+        
+        // When
+        val panelState = viewModel.panelState.value
+        val isFullScreenMode = viewModel.isFullScreenMode.value
+        
+        // Then
+        assertEquals(initialPanelState, panelState)
+        assertTrue(isFullScreenMode ?: false)
+    }
+    
+    @Test
+    fun `setPanelState should update panel state and save to preferences`() = runTest {
+        // Given
+        val panelStateObserver: Observer<SwipeableDetailPanel.PanelState> = mockk(relaxed = true)
+        val fullScreenModeObserver: Observer<Boolean> = mockk(relaxed = true)
+        viewModel.panelState.observeForever(panelStateObserver)
+        viewModel.isFullScreenMode.observeForever(fullScreenModeObserver)
+        
+        // When
+        viewModel.setPanelState(SwipeableDetailPanel.PanelState.HIDDEN)
+        
+        // Then
+        verify { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.HIDDEN) }
+        verify { fullScreenModeObserver.onChanged(true) }
+        coVerify { preferencesManager.saveLastPanelState(SwipeableDetailPanel.PanelState.HIDDEN) }
+    }
+    
+    @Test
+    fun `togglePanelState should switch between SHOWN and HIDDEN`() = runTest {
+        // Given
+        val panelStateObserver: Observer<SwipeableDetailPanel.PanelState> = mockk(relaxed = true)
+        viewModel.panelState.observeForever(panelStateObserver)
+        
+        // When: 初期状態(SHOWN)からHIDDENに切り替え
+        viewModel.togglePanelState()
+        
+        // Then
+        verify { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.HIDDEN) }
+        
+        // When: HIDDENからSHOWNに切り替え
+        viewModel.togglePanelState()
+        
+        // Then
+        verify { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.SHOWN) }
+    }
+    
+    @Test
+    fun `togglePanelState should not change state when ANIMATING`() = runTest {
+        // Given
+        val panelStateObserver: Observer<SwipeableDetailPanel.PanelState> = mockk(relaxed = true)
+        viewModel.panelState.observeForever(panelStateObserver)
+        
+        // 初期状態をSHOWNに設定
+        viewModel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        
+        // ANIMATING状態に変更
+        viewModel.setPanelState(SwipeableDetailPanel.PanelState.ANIMATING)
+        
+        // When
+        viewModel.togglePanelState()
+        
+        // Then: 状態が変化しないことを確認
+        // 初期状態のSHOWN通知(2回) + ANIMATING通知(2回) 
+        // (初期化時のSHOWN通知 + setPanelState(SHOWN)の通知 + setPanelState(ANIMATING)の通知 + togglePanelState後のANIMATING通知)
+        verify(atLeast = 1) { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.SHOWN) }
+        verify(atLeast = 1) { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.ANIMATING) }
+        verify(exactly = 0) { panelStateObserver.onChanged(SwipeableDetailPanel.PanelState.HIDDEN) }
+    }
+    
+    @Test
+    fun `ViewModel destruction should save panel state to preferences`() = runTest {
+        // Given: パネル状態を設定
+        val testPanelState = SwipeableDetailPanel.PanelState.HIDDEN
+        viewModel.setPanelState(testPanelState)
+        
+        // When: ViewModelを破棄（onClearedを間接的にトリガー）
+        // AndroidのViewModelStoreを使ってライフサイクルをシミュレート
+        val viewModelStore = ViewModelStore()
+        val viewModelProvider = ViewModelProvider(viewModelStore, DetailViewModelFactory(repository, preferencesManager))
+        val testViewModel = viewModelProvider.get(DetailViewModel::class.java)
+        testViewModel.setPanelState(testPanelState)
+        
+        // ViewModelStoreをクリアしてonClearedをトリガー
+        viewModelStore.clear()
+        
+        // Then: preferencesManager.saveLastPanelState が呼ばれることを確認
+        coVerify { preferencesManager.saveLastPanelState(testPanelState) }
     }
 
     @Test
