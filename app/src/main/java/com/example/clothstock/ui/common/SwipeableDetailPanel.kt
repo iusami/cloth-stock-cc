@@ -34,6 +34,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
         private const val MIN_FLING_VELOCITY = 200f       // 最小フリング速度（ピクセル/秒）
         private const val HIGH_FLING_VELOCITY = 1000f     // 高速フリング速度閾値（ピクセル/秒）
         private const val ANGLE_THRESHOLD = 0.5f          // 垂直スワイプ判定の角度閾値
+        private const val SLOW_SWIPE_MULTIPLIER = 1.5f    // 低速スワイプ距離倍率
         
         // ViewConfiguration から取得すべき値（デバイス対応向上）
         private fun getScaledTouchSlop(context: Context): Int {
@@ -218,39 +219,53 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             velocityX: Float,
             velocityY: Float
         ): Boolean {
-            if (e1 == null) return false
-            
+            return if (e1 != null) {
+                processFlingGesture(e1, e2, velocityX, velocityY)
+            } else {
+                false
+            }
+        }
+        
+        /**
+         * フリングジェスチャーの処理
+         */
+        private fun processFlingGesture(
+            e1: MotionEvent,
+            e2: MotionEvent,
+            velocityX: Float,
+            velocityY: Float
+        ): Boolean {
             val deltaX = e2.x - e1.x
             val deltaY = e2.y - e1.y
             
             // より精密な垂直スワイプ判定（角度ベース）
-            if (isVerticalSwipe(deltaX, deltaY)) {
-                // 改良されたフリング速度判定
-                val swipeResult = when {
-                    // 高速フリング：距離に関係なく実行
-                    abs(velocityY) > HIGH_FLING_VELOCITY -> {
-                        handleHighVelocityFling(deltaY, velocityY)
-                    }
-                    // 通常フリング：距離と速度の両方をチェック
-                    abs(deltaY) > MIN_SWIPE_DISTANCE && abs(velocityY) > MIN_FLING_VELOCITY -> {
-                        handleNormalFling(deltaY, velocityY)
-                    }
-                    // 距離のみで判定（低速だが十分な距離）
-                    abs(deltaY) > MIN_SWIPE_DISTANCE * 1.5f -> {
-                        handleSlowSwipe(deltaY)
-                    }
-                    else -> false
-                }
-                
-                if (swipeResult) {
-                    logGestureInfo("Fling", deltaX, deltaY, velocityX, velocityY)
-                }
-                
-                return swipeResult
+            if (!isVerticalSwipe(deltaX, deltaY)) {
+                // 水平スワイプは親ビューに委譲（ジェスチャー競合解決）
+                return false
             }
             
-            // 水平スワイプは親ビューに委譲（ジェスチャー競合解決）
-            return false
+            // 改良されたフリング速度判定
+            val swipeResult = when {
+                // 高速フリング：距離に関係なく実行
+                abs(velocityY) > HIGH_FLING_VELOCITY -> {
+                    handleHighVelocityFling(deltaY, velocityY)
+                }
+                // 通常フリング：距離と速度の両方をチェック
+                abs(deltaY) > MIN_SWIPE_DISTANCE && abs(velocityY) > MIN_FLING_VELOCITY -> {
+                    handleNormalFling(deltaY, velocityY)
+                }
+                // 距離のみで判定（低速だが十分な距離）
+                abs(deltaY) > MIN_SWIPE_DISTANCE * SLOW_SWIPE_MULTIPLIER -> {
+                    handleSlowSwipe(deltaY)
+                }
+                else -> false
+            }
+            
+            if (swipeResult) {
+                logGestureInfo("Fling", deltaX, deltaY, velocityX, velocityY)
+            }
+            
+            return swipeResult
         }
         
         /**
@@ -272,14 +287,14 @@ class SwipeableDetailPanel @JvmOverloads constructor(
         /**
          * 高速フリングの処理
          */
-        private fun handleHighVelocityFling(deltaY: Float, velocityY: Float): Boolean {
+        private fun handleHighVelocityFling(deltaY: Float, @Suppress("UNUSED_PARAMETER") velocityY: Float): Boolean {
             return handleVerticalSwipe(deltaY, SwipeType.HIGH_VELOCITY_FLING)
         }
         
         /**
          * 通常フリングの処理
          */
-        private fun handleNormalFling(deltaY: Float, velocityY: Float): Boolean {
+        private fun handleNormalFling(deltaY: Float, @Suppress("UNUSED_PARAMETER") velocityY: Float): Boolean {
             return handleVerticalSwipe(deltaY, SwipeType.NORMAL_FLING)
         }
         
@@ -296,7 +311,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
          * @param swipeType スワイプの種類
          * @return 処理された場合true
          */
-        private fun handleVerticalSwipe(deltaY: Float, swipeType: SwipeType): Boolean {
+        private fun handleVerticalSwipe(deltaY: Float, @Suppress("UNUSED_PARAMETER") swipeType: SwipeType): Boolean {
             // アニメーション中は無視
             if (panelState == PanelState.ANIMATING) return false
             
