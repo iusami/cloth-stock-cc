@@ -169,8 +169,10 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
             logError("Failed to check memory status due to security: ${e.message}", e)
         } catch (e: OutOfMemoryError) {
             logError("Failed to check memory status due to out of memory: ${e.message}", e)
-        } catch (e: RuntimeException) {
-            logError("Failed to check memory status: ${e.message}", e)
+        } catch (e: UnsupportedOperationException) {
+            logError("Failed to check memory status due to unsupported operation: ${e.message}", e)
+        } catch (e: IllegalArgumentException) {
+            logError("Failed to check memory status due to illegal argument: ${e.message}", e)
         }
         
         return false
@@ -365,8 +367,11 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
         } catch (e: IllegalStateException) {
             logError("Configuration change handling failed due to illegal state: ${e.message}", e)
             performEmergencyConfigurationRecovery()
-        } catch (e: RuntimeException) {
-            logError("Configuration change handling failed: ${e.message}", e)
+        } catch (e: UnsupportedOperationException) {
+            logError("Configuration change handling failed due to unsupported operation: ${e.message}", e)
+            performEmergencyConfigurationRecovery()
+        } catch (e: IllegalArgumentException) {
+            logError("Configuration change handling failed due to illegal argument: ${e.message}", e)
             performEmergencyConfigurationRecovery()
         }
     }
@@ -479,8 +484,11 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
         } catch (e: IllegalStateException) {
             logError("Failed to get memory info due to illegal state: ${e.message}", e)
             null
-        } catch (e: RuntimeException) {
-            logError("Failed to get memory info: ${e.message}", e)
+        } catch (e: UnsupportedOperationException) {
+            logError("Failed to get memory info due to unsupported operation: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logError("Failed to get memory info due to illegal argument: ${e.message}", e)
             null
         }
     }
@@ -646,9 +654,13 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
             configSaveFailureCount++
             logError("Config save failed: illegal state (attempt $configSaveFailureCount): ${e.message}", e)
             false
-        } catch (e: RuntimeException) {
+        } catch (e: UnsupportedOperationException) {
             configSaveFailureCount++
-            logError("Config save failed: runtime (attempt $configSaveFailureCount): ${e.message}", e)
+            logError("Config save failed: unsupported operation (attempt $configSaveFailureCount): ${e.message}", e)
+            false
+        } catch (e: IllegalArgumentException) {
+            configSaveFailureCount++
+            logError("Config save failed: illegal argument (attempt $configSaveFailureCount): ${e.message}", e)
             false
         }
     }
@@ -684,8 +696,11 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
             logError("Configuration save fallback was interrupted: ${e.message}", e)
             Thread.currentThread().interrupt() // スレッド中断状態を復元
             preserveConfigurationInMemory(panelState)
-        } catch (e: RuntimeException) {
-            logError("Configuration save fallback failed: ${e.message}", e)
+        } catch (e: UnsupportedOperationException) {
+            logError("Configuration save fallback failed due to unsupported operation: ${e.message}", e)
+            preserveConfigurationInMemory(panelState)
+        } catch (e: IllegalArgumentException) {
+            logError("Configuration save fallback failed due to illegal argument: ${e.message}", e)
             preserveConfigurationInMemory(panelState)
         }
     }
@@ -712,8 +727,11 @@ class SwipeGestureErrorHandler(private val swipeablePanel: SwipeableDetailPanel)
         } catch (e: IllegalStateException) {
             logError("Fallback storage save failed due to illegal state: ${e.message}", e)
             false
-        } catch (e: RuntimeException) {
-            logError("Fallback storage save failed: ${e.message}", e)
+        } catch (e: UnsupportedOperationException) {
+            logError("Fallback storage save failed due to unsupported operation: ${e.message}", e)
+            false
+        } catch (e: IllegalArgumentException) {
+            logError("Fallback storage save failed due to illegal argument: ${e.message}", e)
             false
         }
     }
