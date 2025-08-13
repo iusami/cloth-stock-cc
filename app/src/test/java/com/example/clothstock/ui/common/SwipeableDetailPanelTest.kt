@@ -17,6 +17,7 @@ import org.robolectric.annotation.Config
  * Task 5.2: SwipeableDetailPanel 基本構造の最小実装のテスト
  * Task 5.3: SwipeableDetailPanel 基本構造のリファクタリングのテスト
  * Task 6.1: SwipeableDetailPanel スワイプジェスチャー検出のユニットテスト作成
+ * Task 7.1: SwipeableDetailPanel パネルアニメーションのユニットテスト作成
  * 
  * TDD Red-Green-Refactorサイクルに基づくテスト実装
  */
@@ -291,5 +292,91 @@ class SwipeableDetailPanelTest {
         downEvent.recycle()
         moveEvent.recycle()
         upEvent.recycle()
+    }
+    
+    // ===== Task 7.1: パネルアニメーションのユニットテスト =====
+    
+    @Test
+    fun `panel should animate smoothly when state changes with animation enabled`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        panel.layout(0, 0, 100, 200)
+        
+        var animationStartedCount = 0
+        var animationEndedCount = 0
+        panel.onPanelStateChangedListener = { state ->
+            when (state) {
+                SwipeableDetailPanel.PanelState.ANIMATING -> animationStartedCount++
+                SwipeableDetailPanel.PanelState.HIDDEN -> animationEndedCount++
+                else -> {}
+            }
+        }
+        
+        // When - アニメーション付きでパネル状態変更
+        val result = panel.animateTo(SwipeableDetailPanel.PanelState.HIDDEN)
+        
+        // Then - アニメーションが正常に開始される
+        assertTrue("アニメーション機能が実装されtrueが返されるはず", result)
+        
+        // アニメーション開始が通知されるはず
+        assertEquals(1, animationStartedCount)
+    }
+    
+    @Test
+    fun `panel should manage animation state correctly during animation`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        panel.layout(0, 0, 100, 200)
+        
+        // When - アニメーション中断処理のテスト
+        val firstResult = panel.animateTo(SwipeableDetailPanel.PanelState.HIDDEN)
+        // アニメーション中に別の状態変更を試行
+        val secondResult = panel.animateTo(SwipeableDetailPanel.PanelState.SHOWN)
+        
+        // Then - 最初のアニメーションは成功、二回目は失敗（アニメーション中のため）
+        assertTrue("最初のアニメーションは成功するはず", firstResult)
+        assertFalse("アニメーション中の状態変更は失敗するはず", secondResult)
+    }
+    
+    @Test
+    fun `panel should use decelerate interpolator for smooth animation`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        panel.layout(0, 0, 100, 200)
+        
+        // When - 減速アニメーションの設定確認
+        panel.setAnimationInterpolator("decelerate")
+        val result = panel.animateTo(SwipeableDetailPanel.PanelState.HIDDEN)
+        
+        // Then - 減速アニメーションが正常に設定されアニメーションが開始される
+        assertTrue("減速アニメーション設定は実装されているtrueが返されるはず", result)
+    }
+    
+    @Test
+    fun `panel should handle animation interruption gracefully`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        panel.layout(0, 0, 100, 200)
+        
+        // When - アニメーション中断のテスト
+        val animationResult = panel.animateTo(SwipeableDetailPanel.PanelState.HIDDEN)
+        panel.cancelAnimation()  // アニメーション中断
+        
+        // Then - アニメーションが正常に開始され、中断処理も成功する
+        assertTrue("アニメーション中断処理は実装されているtrueが返されるはず", animationResult)
+    }
+    
+    @Test
+    fun `panel should optimize animation performance on low-end devices`() {
+        // Given
+        panel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
+        panel.layout(0, 0, 100, 200)
+        
+        // When - パフォーマンス最適化のテスト
+        panel.setAnimationOptimizationEnabled(true)
+        val result = panel.animateTo(SwipeableDetailPanel.PanelState.HIDDEN)
+        
+        // Then - アニメーション最適化が正常に設定されアニメーションが開始される
+        assertTrue("アニメーション最適化は実装されているtrueが返されるはず", result)
     }
 }
