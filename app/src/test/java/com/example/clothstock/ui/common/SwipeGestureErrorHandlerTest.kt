@@ -122,26 +122,26 @@ class SwipeGestureErrorHandlerTest {
     
     @Test
     fun `error handler should detect invalid panel states`() {
-        // Given - 正常なパネル状態が設定されている
+        // Given - 最小実装では基本チェックのみ
         mockPanel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
         
-        // When - 不正状態検出を実行
+        // When - 不正状態検出を実行（最小実装）
         val hasInvalidState = errorHandler.detectInvalidPanelStates()
         
-        // Then - 正常な状態なのでfalseが返される
-        assertFalse(hasInvalidState, "正常なパネル状態ではfalseが返される")
+        // Then - 最小実装では常にfalseが返される
+        assertFalse(hasInvalidState, "最小実装では常にfalseが返される")
     }
     
     @Test
     fun `error handler should fix inconsistent panel states`() {
-        // Given - 正常なパネル状態
+        // Given - 最小実装では基本チェックのみ
         mockPanel.setPanelState(SwipeableDetailPanel.PanelState.SHOWN)
         
-        // When - 状態修正を実行
+        // When - 状態修正を実行（最小実装）
         val fixed = errorHandler.fixInconsistentStates()
         
-        // Then - 正常な状態なので修正不要（falseが返される）
-        assertFalse(fixed, "正常なパネル状態では修正不要")
+        // Then - 最小実装では常にfalseが返される
+        assertFalse(fixed, "最小実装では常にfalseが返される")
     }
     
     @Test
