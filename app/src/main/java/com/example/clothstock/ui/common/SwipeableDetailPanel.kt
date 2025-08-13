@@ -213,6 +213,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     /**
      * デバイス性能を検出（Task 7.3: リファクタリング版）
      */
+    @Suppress("TooGenericExceptionCaught") // システム設定アクセスは多様な例外が発生するため汎用的な例外処理が必要
     private fun detectDeviceCapabilities() {
         if (isTestEnvironment()) return
         
@@ -228,8 +229,14 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             if (isLowEndDevice && android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
                 android.util.Log.d(LOG_TAG, "Low-end device detected. Animation optimization enabled.")
             }
-        } catch (e: Exception) {
-            // デバイス情報取得失敗時は安全な設定を使用
+        } catch (e: SecurityException) {
+            // 権限不足でデバイス情報取得失敗時は安全な設定を使用
+            isLowEndDevice = false
+            if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.WARN)) {
+                android.util.Log.w(LOG_TAG, "Failed to detect device capabilities due to security", e)
+            }
+        } catch (e: RuntimeException) {
+            // その他のランタイム例外でも安全な設定を使用
             isLowEndDevice = false
             if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.WARN)) {
                 android.util.Log.w(LOG_TAG, "Failed to detect device capabilities", e)
@@ -240,6 +247,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     /**
      * アクセシビリティ設定を検出（Task 7.3: リファクタリング版）
      */
+    @Suppress("TooGenericExceptionCaught") // システム設定アクセスは多様な例外が発生するため汎用的な例外処理が必要
     private fun detectAccessibilitySettings() {
         if (isTestEnvironment()) return
         
@@ -258,8 +266,14 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             if (isReduceMotionEnabled && android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
                 android.util.Log.d(LOG_TAG, "Reduced motion detected. Animation duration adjusted.")
             }
-        } catch (e: Exception) {
-            // アクセシビリティ設定取得失敗時は安全な設定を使用
+        } catch (e: SecurityException) {
+            // 権限不足でアクセシビリティ設定取得失敗時は安全な設定を使用
+            isReduceMotionEnabled = false
+            if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.WARN)) {
+                android.util.Log.w(LOG_TAG, "Failed to detect accessibility settings due to security", e)
+            }
+        } catch (e: RuntimeException) {
+            // その他のランタイム例外でも安全な設定を使用
             isReduceMotionEnabled = false
             if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.WARN)) {
                 android.util.Log.w(LOG_TAG, "Failed to detect accessibility settings", e)
