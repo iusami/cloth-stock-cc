@@ -49,7 +49,21 @@
             app:layout_constraintTop_toTopOf="@+id/imageViewClothDetail"
             tools:visibility="visible" />
 
-        <!-- Tag information overlay -->
+        <!-- SwipeableDetailPanel（新しいレイアウト構造） -->
+        <com.example.clothstock.ui.common.SwipeableDetailPanel
+            android:id="@+id/swipeableDetailPanel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_overlay"
+            android:visibility="gone"
+            android:animateLayoutChanges="true"
+            android:clipToPadding="false"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:visibility="visible" />
+
+        <!-- 既存のTag information overlay（フォールバック用） -->
         <LinearLayout
             android:id="@+id/layoutTagInfo"
             android:layout_width="0dp"
