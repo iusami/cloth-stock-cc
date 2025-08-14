@@ -154,7 +154,10 @@ class DetailActivity : AppCompatActivity() {
         // エラーメッセージの監視
         viewModel.errorMessage.observe(this) { errorMessage ->
             if (BuildConfig.DEBUG) {
-                android.util.Log.d("DetailActivity", "observeViewModel: errorMessage changed, errorMessage=$errorMessage")
+                android.util.Log.d(
+                    "DetailActivity", 
+                    "observeViewModel: errorMessage changed, errorMessage=$errorMessage"
+                )
             }
             if (errorMessage != null) {
                 showError(errorMessage)

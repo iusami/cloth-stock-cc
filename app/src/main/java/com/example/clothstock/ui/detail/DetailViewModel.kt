@@ -157,7 +157,10 @@ class DetailViewModel(
                 retryCount++
                 // 真の指数バックオフ: 1秒, 2秒, 4秒の遅延
                 val delayMs = (1000L * (2.0.pow(retryCount - 1))).toLong()
-                android.util.Log.d("DetailViewModel", "handleLoadingError: retrying with delayMs=$delayMs, retryCount=$retryCount")
+                android.util.Log.d(
+                    "DetailViewModel", 
+                    "handleLoadingError: retrying with delayMs=$delayMs, retryCount=$retryCount"
+                )
                 delay(delayMs)
                 try {
                     val item = repository.getItemById(clothItemId)

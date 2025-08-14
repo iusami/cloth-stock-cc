@@ -41,15 +41,12 @@ class DetailPreferencesManager(context: Context) {
             } else {
                 Log.e(TAG, "Failed to save panel state: $state")
             }
-        } catch (e: Exception) {
-            when (e) {
-                is SecurityException, is IllegalStateException -> {
-                    Log.e(TAG, "${e.javaClass.simpleName} while saving panel state: $state", e)
-                    // エラー時はキャッシュだけ更新（セッション中は維持される）
-                    cachedPanelState = state
-                }
-                else -> throw e
-            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while saving panel state: $state", e)
+            cachedPanelState = state
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException while saving panel state: $state", e)
+            cachedPanelState = state
         }
     }
     
@@ -73,26 +70,30 @@ class DetailPreferencesManager(context: Context) {
      * SharedPreferences からパネル状態を読み込む
      */
     private fun loadPanelStateFromPreferences(): SwipeableDetailPanel.PanelState {
-        try {
-            val stateName = sharedPreferences.getString(KEY_LAST_PANEL_STATE, null)
-            val resolvedState = resolveStateFromString(stateName)
-            
-            // キャッシュを更新
-            cachedPanelState = resolvedState
-            hasCacheBeenLoaded = true
-            
-            Log.d(TAG, "Panel state loaded: $resolvedState (from: $stateName)")
-            return resolvedState
-            
-        } catch (e: Exception) {
-            when (e) {
-                is SecurityException, is IllegalStateException -> {
-                    Log.e(TAG, "${e.javaClass.simpleName} while loading panel state", e)
-                    return getDefaultStateAndUpdateCache()
-                }
-                else -> throw e
-            }
+        return try {
+            loadStateFromSharedPreferences()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while loading panel state", e)
+            getDefaultStateAndUpdateCache()
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException while loading panel state", e)
+            getDefaultStateAndUpdateCache()
         }
+    }
+    
+    /**
+     * SharedPreferencesから実際に状態を読み込む処理
+     */
+    private fun loadStateFromSharedPreferences(): SwipeableDetailPanel.PanelState {
+        val stateName = sharedPreferences.getString(KEY_LAST_PANEL_STATE, null)
+        val resolvedState = resolveStateFromString(stateName)
+        
+        // キャッシュを更新
+        cachedPanelState = resolvedState
+        hasCacheBeenLoaded = true
+        
+        Log.d(TAG, "Panel state loaded: $resolvedState (from: $stateName)")
+        return resolvedState
     }
     
     /**
