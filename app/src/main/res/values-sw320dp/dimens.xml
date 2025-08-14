@@ -21,4 +21,17 @@
     <dimen name="compact_text_size_headline">18sp</dimen>
     <dimen name="compact_text_size_body">14sp</dimen>
     <dimen name="compact_text_size_caption">12sp</dimen>
+    
+    <!-- Task 11.2: SwipeableDetailPanel（小画面用、コンパクト） -->
+    <!-- スワイプハンドル -->
+    <dimen name="swipe_handle_height_compact">20dp</dimen>
+    <dimen name="swipe_handle_margin_top_compact">6dp</dimen>
+    
+    <!-- パネルコンテンツ（パディング削減） -->
+    <dimen name="panel_content_padding_compact">12dp</dimen>
+    <dimen name="memo_input_margin_bottom_compact">12dp</dimen>
+    
+    <!-- タグ情報（マージン最小化） -->
+    <dimen name="tag_info_margin_top_compact">8dp</dimen>
+    <dimen name="tag_text_margin_compact">4dp</dimen>
 </resources>

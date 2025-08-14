@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="androidx.constraintlayout.widget.ConstraintLayout">
+
+    <!-- スワイプハンドル（横向き用、コンパクト） -->
+    <com.example.clothstock.ui.common.SwipeHandleView
+        android:id="@+id/swipeHandle"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/swipe_handle_height_landscape"
+        android:layout_marginTop="@dimen/swipe_handle_margin_top_landscape"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- コンテンツコンテナー（横向き用、水平スクロール可能） -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/swipeHandle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:id="@+id/contentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/panel_content_padding_landscape">
+
+            <!-- メモ入力ビュー（横向き用、最小高さ指定） -->
+            <com.example.clothstock.ui.common.MemoInputView
+                android:id="@+id/memoInputView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/memo_input_min_height_landscape"
+                android:layout_marginBottom="@dimen/memo_input_margin_bottom_landscape" />
+
+            <!-- タグ情報コンテナー（横向き用、すべて横並び） -->
+            <LinearLayout
+                android:id="@+id/tagInfoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="@dimen/tag_info_margin_top_landscape">
+
+                <!-- サイズ -->
+                <TextView
+                    android:id="@+id/textSize"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_marginEnd="@dimen/tag_text_horizontal_margin_landscape"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    tools:text="サイズ: 100" />
+
+                <!-- 色 -->
+                <TextView
+                    android:id="@+id/textColor"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_marginEnd="@dimen/tag_text_horizontal_margin_landscape"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    tools:text="色: 青" />
+
+                <!-- カテゴリ -->
+                <TextView
+                    android:id="@+id/textCategory"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_marginEnd="@dimen/tag_text_horizontal_margin_landscape"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    tools:text="カテゴリ: トップス" />
+
+                <!-- 作成日 -->
+                <TextView
+                    android:id="@+id/textCreatedDate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    tools:text="2023年1月1日" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</merge>

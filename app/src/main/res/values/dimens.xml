@@ -31,4 +31,41 @@
     <dimen name="large_text_size_caption">18sp</dimen>
     <dimen name="detail_column_width">320dp</dimen>
     <dimen name="divider_width">1dp</dimen>
+    
+    <!-- Task 11.2: SwipeableDetailPanel 横向きレイアウト用 -->
+    <!-- スワイプハンドル（横向き用、コンパクト） -->
+    <dimen name="swipe_handle_height_landscape">20dp</dimen>
+    <dimen name="swipe_handle_margin_top_landscape">4dp</dimen>
+    
+    <!-- パネルコンテンツ（横向き用、高さ制限対応） -->
+    <dimen name="panel_content_padding_landscape">12dp</dimen>
+    <dimen name="memo_input_margin_bottom_landscape">8dp</dimen>
+    <dimen name="memo_input_min_height_landscape">80dp</dimen>
+    
+    <!-- タグ情報（横向き用、コンパクト） -->
+    <dimen name="tag_info_margin_top_landscape">8dp</dimen>
+    <dimen name="tag_text_horizontal_margin_landscape">8dp</dimen>
+    
+    <!-- パネルアニメーション用ディメンション -->
+    <dimen name="panel_animation_translation_distance">300dp</dimen>
+    <dimen name="panel_peek_height">120dp</dimen>
+    <dimen name="panel_collapsed_height">80dp</dimen>
+    
+    <!-- Task 11.2: SwipeableDetailPanel デフォルト値（画面サイズ別に上書きされる） -->
+    <!-- コンパクト用ディメンション（デフォルト値） -->
+    <dimen name="swipe_handle_height_compact">24dp</dimen>
+    <dimen name="swipe_handle_margin_top_compact">8dp</dimen>
+    <dimen name="panel_content_padding_compact">16dp</dimen>
+    <dimen name="memo_input_margin_bottom_compact">16dp</dimen>
+    <dimen name="tag_info_margin_top_compact">12dp</dimen>
+    <dimen name="tag_text_margin_compact">8dp</dimen>
+    
+    <!-- 大画面用ディメンション（デフォルト値） -->
+    <dimen name="swipe_handle_height_large">24dp</dimen>
+    <dimen name="swipe_handle_margin_top_large">8dp</dimen>
+    <dimen name="panel_content_padding_large">16dp</dimen>
+    <dimen name="memo_input_margin_bottom_large">16dp</dimen>
+    <dimen name="tag_info_margin_top_large">12dp</dimen>
+    <dimen name="tag_text_margin_large">8dp</dimen>
+    <dimen name="tag_text_horizontal_margin">8dp</dimen>
 </resources>
