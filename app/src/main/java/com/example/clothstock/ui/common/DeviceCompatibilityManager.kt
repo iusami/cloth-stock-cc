@@ -18,7 +18,11 @@ import android.view.WindowManager
 class DeviceCompatibilityManager(private val context: Context) {
 
     companion object {
-        private const val LOG_TAG = "DeviceCompatibility"
+        private val LOG_TAG = DeviceCompatibilityManager::class.java.simpleName
+        
+        // アクセシビリティ設定キー定数（ハードコーディング防止）
+        private const val ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED = "accessibility_high_text_contrast_enabled"
+        private const val TOUCH_EXPLORATION_ENABLED = "touch_exploration_enabled"
         
         // デバイス性能判定用の定数
         private const val LOW_END_MEMORY_THRESHOLD_MB = 1024    // 低性能デバイス判定のメモリ閾値（MB）
@@ -155,10 +159,10 @@ class DeviceCompatibilityManager(private val context: Context) {
     fun isHighContrastEnabled(): Boolean {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                // 正しい定数名: ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED
+                // ハードコーディング防止のため定数を使用
                 val isHighContrastTextEnabled = Settings.Secure.getInt(
                     context.contentResolver,
-                    "accessibility_high_text_contrast_enabled", // 文字列リテラルを使用
+                    ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED,
                     0
                 ) == 1
                 
@@ -195,7 +199,7 @@ class DeviceCompatibilityManager(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 val touchExplorationEnabled = Settings.Secure.getInt(
                     context.contentResolver,
-                    "touch_exploration_enabled", // 文字列リテラルを使用
+                    TOUCH_EXPLORATION_ENABLED,
                     0
                 ) == 1
                 
