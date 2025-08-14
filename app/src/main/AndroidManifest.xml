@@ -68,10 +68,12 @@
             android:theme="@style/Theme.ClothStock" />
         
         <!-- 詳細表示アクティビティ -->
+        <!-- configChanges: SwipeableDetailPanelの画面向き変更時のUI連続性保持のため -->
+        <!-- Activity再生成を抑制し、onConfigurationChangedで状態を手動管理 -->
         <activity
             android:name=".ui.detail.DetailActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.ClothStock" />
         
         <!-- FileProviderの設定（カメラで撮影した写真の一時保存用） -->

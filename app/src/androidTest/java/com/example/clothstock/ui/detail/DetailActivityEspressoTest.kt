@@ -8,6 +8,7 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.action.ViewActions.clearText
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
@@ -341,6 +342,154 @@ class DetailActivityEspressoTest {
             // Then: 警告アイコンが表示される
             onView(withId(R.id.iconWarning))
                 .check(matches(isDisplayed()))
+        }
+    }
+
+    // ===== Task 10.1: 新しいレイアウト構造のインストルメンテーションテスト =====
+
+    /**
+     * テスト14: SwipeableDetailPanel統合レイアウト構造
+     * Requirements: 2.3, 2.4 - 新しいレイアウト構造の検証
+     */
+    @Test
+    fun detailActivity_SwipeableDetailPanel統合時_新レイアウト構造が表示される() {
+        // Given: SwipeableDetailPanel統合後のDetailActivity
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        
+        // When: DetailActivityを起動
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            
+            // Then: 新しいレイアウト構造が表示される
+            // フルスクリーン画像表示
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanelが表示されることを確認（統合後は成功、統合前は失敗予想）
+            // TDD Red: 現在は統合されていないため失敗する
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+                
+            // SwipeHandleViewが表示される
+            onView(withId(R.id.swipeHandle))
+                .check(matches(isDisplayed()))
+                .check(matches(isClickable()))
+        }
+    }
+
+    /**
+     * テスト15: フルスクリーン画像表示とSwipeableDetailPanelの統合
+     * Requirements: 2.3, 2.4 - フルスクリーン画像とパネルの統合
+     */
+    @Test
+    fun detailActivity_フルスクリーン画像統合時_画像とパネルが適切に配置される() {
+        // Given: 統合後のレイアウト
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        
+        // When: DetailActivityを起動
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            
+            // Then: 画像とパネルが適切に配置される
+            // 画像が全画面に表示される
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanelが画像の上にオーバーレイ表示される
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+            
+            // 既存のlayoutTagInfoは非表示になる
+            onView(withId(R.id.layoutTagInfo))
+                .check(matches(withEffectiveVisibility(Visibility.GONE)))
+        }
+    }
+
+    /**
+     * テスト16: 画面向き変更対応
+     * Requirements: 4.2, 4.3 - 画面向き対応の検証
+     */
+    @Test
+    fun detailActivity_画面向き変更時_レイアウトが適切に再構築される() {
+        // Given: DetailActivityが表示されている
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        
+        // When: 画面向きを変更
+        ActivityScenario.launch<DetailActivity>(intent).use { scenario ->
+            
+            // 縦向きでの初期状態確認
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            // 横向きに変更
+            scenario.onActivity { activity ->
+                activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+            
+            // Then: 横向きでもレイアウトが適切に表示される
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.layoutTagInfo))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanel統合後の向き変更対応
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    /**
+     * テスト17: レイアウト統合の失敗テスト
+     * Requirements: 5.3 - レイアウト統合の検証
+     */
+    @Test
+    fun detailActivity_レイアウト統合失敗時_既存レイアウトが維持される() {
+        // Given: 統合に失敗する可能性があるシナリオ
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        
+        // When: DetailActivityを起動
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            
+            // Then: 既存レイアウトが維持される
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.layoutTagInfo))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.memoInputView))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanelが統合されている
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    /**
+     * テスト18: MemoInputViewのSwipeableDetailPanel内配置
+     * Requirements: 2.3, 2.4 - 既存コンポーネントの新レイアウトへの統合
+     */
+    @Test
+    fun detailActivity_MemoInputView統合時_SwipeableDetailPanel内で動作する() {
+        // Given: MemoInputViewがSwipeableDetailPanel内に統合されたレイアウト
+        val intent = createDetailIntent(TEST_CLOTH_ITEM_ID)
+        val testMemo = "統合テスト用メモ"
+        
+        // When: DetailActivityを起動してメモを入力
+        ActivityScenario.launch<DetailActivity>(intent).use {
+            
+            // Then: MemoInputViewがSwipeableDetailPanel内で動作する
+            // SwipeableDetailPanel内のMemoInputViewを確認
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanel内のMemoInputViewでメモ入力
+            onView(withId(R.id.editTextMemo))
+                .perform(clearText(), typeText(testMemo))
+            
+            // 文字数カウンターが正常動作
+            onView(withId(R.id.textCharacterCount))
+                .check(matches(withText(containsString("${testMemo.length}/1000"))))
         }
     }
 
