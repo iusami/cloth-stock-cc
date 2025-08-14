@@ -643,7 +643,9 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun setupSwipeableDetailPanelComponents(panel: SwipeableDetailPanel) {
         try {
-            android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化開始")
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化開始")
+            }
             
             // SwipeableDetailPanel内のMemoInputViewを取得
             val panelMemoInputView = panel.findViewById<MemoInputView>(R.id.memoInputView)
@@ -670,7 +672,9 @@ class DetailActivity : AppCompatActivity() {
                 }
             }
             
-            android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化完了")
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化完了")
+            }
         } catch (e: Exception) {
             android.util.Log.e("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化失敗", e)
             
@@ -718,7 +722,9 @@ class DetailActivity : AppCompatActivity() {
      * SwipeableDetailPanelまたはフォールバックレイアウトを表示
      */
     private fun showDetailPanel() {
-        android.util.Log.d("DetailActivity", "詳細パネル表示開始 - SwipeableDetailPanel: ${swipeableDetailPanel != null}")
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("DetailActivity", "詳細パネル表示開始 - SwipeableDetailPanel: ${swipeableDetailPanel != null}")
+        }
         
         try {
             if (swipeableDetailPanel != null) {

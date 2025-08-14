@@ -7,6 +7,7 @@ import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
@@ -216,7 +217,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
         }
         
         // SwipeableDetailPanel自体は常に表示状態を維持
-        visibility = android.view.View.VISIBLE
+        visibility = View.VISIBLE
         alpha = 1.0f
         
         // コンテンツコンテナーの表示制御
@@ -224,7 +225,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             when (newState) {
                 PanelState.SHOWN -> {
                     // パネル表示状態：コンテンツを表示
-                    contentContainer.visibility = android.view.View.VISIBLE
+                    contentContainer.visibility = View.VISIBLE
                     contentContainer.alpha = 1.0f
                     if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
                         android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
@@ -232,7 +233,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
                 }
                 PanelState.HIDDEN -> {
                     // パネル非表示状態：コンテンツのみ非表示、ハンドルは表示維持
-                    contentContainer.visibility = android.view.View.GONE
+                    contentContainer.visibility = View.GONE
                     if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
                         android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
                     }
