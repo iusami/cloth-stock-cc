@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="androidx.constraintlayout.widget.ConstraintLayout">
+
+    <!-- スワイプハンドル（小画面用、よりコンパクト） -->
+    <com.example.clothstock.ui.common.SwipeHandleView
+        android:id="@+id/swipeHandle"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/swipe_handle_height_compact"
+        android:layout_marginTop="@dimen/swipe_handle_margin_top_compact"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- コンテンツコンテナー（小画面用、パディング削減） -->
+    <LinearLayout
+        android:id="@+id/contentContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/panel_content_padding_compact"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/swipeHandle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- メモ入力ビュー（小画面用、マージン調整） -->
+        <com.example.clothstock.ui.common.MemoInputView
+            android:id="@+id/memoInputView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/memo_input_margin_bottom_compact" />
+
+        <!-- タグ情報コンテナー（小画面用、コンパクト表示） -->
+        <LinearLayout
+            android:id="@+id/tagInfoContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/tag_info_margin_top_compact">
+
+            <!-- サイズ（小画面用テキストサイズ） -->
+            <TextView
+                android:id="@+id/textSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_marginBottom="@dimen/tag_text_margin_compact"
+                tools:text="サイズ: 100" />
+
+            <!-- 色 -->
+            <TextView
+                android:id="@+id/textColor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_marginBottom="@dimen/tag_text_margin_compact"
+                tools:text="色: 青" />
+
+            <!-- カテゴリ -->
+            <TextView
+                android:id="@+id/textCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_marginBottom="@dimen/tag_text_margin_compact"
+                tools:text="カテゴリ: トップス" />
+
+            <!-- 作成日（小画面では小さめテキスト） -->
+            <TextView
+                android:id="@+id/textCreatedDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="2023年1月1日" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</merge>

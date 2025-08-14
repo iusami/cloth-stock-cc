@@ -74,8 +74,17 @@
     <color name="memo_indicator_background">@color/md_theme_light_tertiaryContainer</color>
     <color name="memo_indicator_icon">@color/md_theme_light_onTertiaryContainer</color>
     
-    <!-- SwipeHandleView colors -->
+    <!-- Task 11.2: SwipeHandleView colors -->
     <color name="swipe_handle_color">@color/md_theme_light_onSurfaceVariant</color>
     <color name="swipe_handle_color_high_contrast">#000000</color>
+    
+    <!-- Task 11.2: Memo background colors -->
     <color name="memo_background">@color/md_theme_light_surfaceVariant</color>
+    <color name="memo_background_high_contrast">#F5F5F5</color>
+    <color name="memo_background_with_content">@color/md_theme_light_tertiaryContainer</color>
+    <color name="memo_background_with_content_high_contrast">#E8E8E8</color>
+    
+    <!-- Task 11.2: Panel animation colors -->
+    <color name="panel_scrim_color">#80000000</color>
+    <color name="panel_shadow_color">#40000000</color>
 </resources>

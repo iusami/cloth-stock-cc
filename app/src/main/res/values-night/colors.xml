@@ -10,4 +10,18 @@
     <color name="snackbar_warning_text">#FFFFFF</color>
     <color name="snackbar_info_background">@color/md_theme_dark_surfaceVariant</color>
     <color name="snackbar_info_text">@color/md_theme_dark_onSurfaceVariant</color>
+    
+    <!-- Task 11.2: SwipeHandleView colors for dark theme -->
+    <color name="swipe_handle_color">@color/md_theme_dark_onSurfaceVariant</color>
+    <color name="swipe_handle_color_high_contrast">#FFFFFF</color>
+    
+    <!-- Task 11.2: Memo background colors for dark theme -->
+    <color name="memo_background">@color/md_theme_dark_surfaceVariant</color>
+    <color name="memo_background_high_contrast">#2A2A2A</color>
+    <color name="memo_background_with_content">@color/md_theme_dark_tertiaryContainer</color>
+    <color name="memo_background_with_content_high_contrast">#3A3A3A</color>
+    
+    <!-- Task 11.2: Panel animation colors for dark theme -->
+    <color name="panel_scrim_color">#80000000</color>
+    <color name="panel_shadow_color">#60000000</color>
 </resources>

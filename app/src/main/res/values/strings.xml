@@ -158,15 +158,51 @@
     <string name="memo_load_error">メモの読み込みに失敗しました</string>
     <string name="memo_retry_action">再試行</string>
     
-    <!-- SwipeHandleView -->
+    <!-- Task 11.3: SwipeHandleView -->
     <string name="swipe_handle_description">詳細パネルの表示・非表示を切り替えるハンドル</string>
     <string name="swipe_handle_role">スワイプハンドル</string>
     <string name="detail_panel_shown">詳細パネルが表示されました</string>
     <string name="detail_panel_hidden">詳細パネルが非表示になりました</string>
     
-    <!-- MemoInputView Background -->
+    <!-- Task 11.3: SwipeableDetailPanel状態変更アナウンス -->
+    <string name="panel_state_expanding">詳細パネルを展開中です</string>
+    <string name="panel_state_collapsing">詳細パネルを縮小中です</string>
+    <string name="panel_state_expanded">詳細パネルが展開されました</string>
+    <string name="panel_state_collapsed">詳細パネルが縮小されました</string>
+    <string name="panel_animation_started">パネルアニメーションを開始しました</string>
+    <string name="panel_animation_completed">パネルアニメーションが完了しました</string>
+    
+    <!-- Task 11.3: SwipeableDetailPanelアクセシビリティ -->
+    <string name="swipeable_panel_description">スワイプ可能な詳細情報パネル</string>
+    <string name="swipeable_panel_content_description">衣服の詳細情報とメモ入力エリア</string>
+    <string name="swipe_gesture_hint">上にスワイプして詳細を非表示、下にスワイプして詳細を表示</string>
+    <string name="tap_handle_hint">ハンドルをタップして詳細パネルの表示を切り替え</string>
+    
+    <!-- Task 11.3: パネル操作エラーメッセージ -->
+    <string name="panel_operation_error">パネル操作でエラーが発生しました</string>
+    <string name="panel_animation_error">パネルアニメーションでエラーが発生しました</string>
+    <string name="panel_state_error">パネル状態の管理でエラーが発生しました</string>
+    <string name="panel_gesture_conflict_error">ジェスチャー競合が発生しました</string>
+    <string name="panel_memory_error">メモリ不足のためアニメーションを無効化しました</string>
+    <string name="panel_preference_save_error">パネル設定の保存に失敗しました</string>
+    <string name="panel_preference_load_error">パネル設定の読み込みに失敗しました</string>
+    
+    <!-- Task 11.3: パネル状態復旧メッセージ -->
+    <string name="panel_recovery_message">パネル状態を復旧しました</string>
+    <string name="panel_fallback_message">標準レイアウトにフォールバックしました</string>
+    <string name="panel_retry_message">パネル操作を再試行してください</string>
+    
+    <!-- Task 11.3: MemoInputView Background -->
     <string name="memo_with_background_description">メモテキスト（背景付き）</string>
     <string name="memo_input_description">メモ入力フィールド</string>
+    <string name="memo_background_visible_announcement">メモ背景が表示されました</string>
+    <string name="memo_background_hidden_announcement">メモ背景が非表示になりました</string>
+    
+    <!-- Task 11.3: デバイス対応メッセージ -->
+    <string name="device_performance_optimization">デバイス性能に合わせて最適化されました</string>
+    <string name="low_performance_mode">低性能モードが有効になりました</string>
+    <string name="high_contrast_mode_enabled">ハイコントラストモードが有効です</string>
+    <string name="accessibility_service_detected">アクセシビリティサービスが検出されました</string>
     
     <!-- 共通 -->
     <string name="ok">OK</string>

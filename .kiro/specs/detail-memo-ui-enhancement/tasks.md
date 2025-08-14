@@ -198,22 +198,22 @@
   - メモリ使用量の最適化を実施する
   - _Requirements: 6.3, 6.4, 7.4_
 
-- [ ] 10. DetailActivity のレイアウト更新（TDD）
-- [ ] 10.1 DetailActivity レイアウトのインストルメンテーションテスト作成
+- [x] 10. DetailActivity のレイアウト更新（TDD）
+- [x] 10.1 DetailActivity レイアウトのインストルメンテーションテスト作成
 
   - 新しいレイアウト構造の失敗テストを作成する
   - 画面向き対応の失敗テストを作成する
   - レイアウト統合の失敗テストを作成する
   - _Requirements: 2.3, 2.4, 4.2, 4.3, 5.3_
 
-- [ ] 10.2 DetailActivity レイアウトの最小実装
+- [x] 10.2 DetailActivity レイアウトの最小実装
 
   - テストを通すための最小限のレイアウト変更を実装する
   - フルスクリーン画像表示と SwipeableDetailPanel の基本統合を追加する
   - 既存の MemoInputView を SwipeableDetailPanel 内に配置する
   - _Requirements: 2.3, 2.4_
 
-- [ ] 10.3 DetailActivity レイアウトのリファクタリング
+- [x] 10.3 DetailActivity レイアウトのリファクタリング
 
   - 縦向き・横向きでのレイアウト最適化を完全実装する
   - 向き変更時のパネル状態保持を追加する

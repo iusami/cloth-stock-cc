@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="androidx.constraintlayout.widget.ConstraintLayout">
+
+    <!-- スワイプハンドル（大画面用、より大きく） -->
+    <com.example.clothstock.ui.common.SwipeHandleView
+        android:id="@+id/swipeHandle"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/swipe_handle_height_large"
+        android:layout_marginTop="@dimen/swipe_handle_margin_top_large"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- コンテンツコンテナー（大画面用、広いパディング） -->
+    <LinearLayout
+        android:id="@+id/contentContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/panel_content_padding_large"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/swipeHandle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- メモ入力ビュー（大画面用、ゆったりマージン） -->
+        <com.example.clothstock.ui.common.MemoInputView
+            android:id="@+id/memoInputView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/memo_input_margin_bottom_large" />
+
+        <!-- タグ情報コンテナー（大画面用、2列表示も可能） -->
+        <LinearLayout
+            android:id="@+id/tagInfoContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/tag_info_margin_top_large">
+
+            <!-- タグ情報上段（サイズと色を横並び） -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="@dimen/tag_text_margin_large">
+
+                <!-- サイズ -->
+                <TextView
+                    android:id="@+id/textSize"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:layout_marginEnd="@dimen/tag_text_horizontal_margin"
+                    tools:text="サイズ: 100" />
+
+                <!-- 色 -->
+                <TextView
+                    android:id="@+id/textColor"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    tools:text="色: 青" />
+
+            </LinearLayout>
+
+            <!-- タグ情報下段（カテゴリと作成日） -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <!-- カテゴリ -->
+                <TextView
+                    android:id="@+id/textCategory"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:layout_marginEnd="@dimen/tag_text_horizontal_margin"
+                    tools:text="カテゴリ: トップス" />
+
+                <!-- 作成日 -->
+                <TextView
+                    android:id="@+id/textCreatedDate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="2023年1月1日" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</merge>

@@ -25,4 +25,18 @@
     <!-- タブレット詳細分割用 -->
     <dimen name="detail_column_width">400dp</dimen>
     <dimen name="divider_width">1dp</dimen>
+    
+    <!-- Task 11.2: SwipeableDetailPanel（大画面用、ゆったり） -->
+    <!-- スワイプハンドル -->
+    <dimen name="swipe_handle_height_large">32dp</dimen>
+    <dimen name="swipe_handle_margin_top_large">12dp</dimen>
+    
+    <!-- パネルコンテンツ（広いパディング） -->
+    <dimen name="panel_content_padding_large">24dp</dimen>
+    <dimen name="memo_input_margin_bottom_large">24dp</dimen>
+    
+    <!-- タグ情報（ゆったりマージン） -->
+    <dimen name="tag_info_margin_top_large">16dp</dimen>
+    <dimen name="tag_text_margin_large">12dp</dimen>
+    <dimen name="tag_text_horizontal_margin">16dp</dimen>
 </resources>
