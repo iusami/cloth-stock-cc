@@ -801,7 +801,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun adjustSwipeThresholdForSmallScreen() {
         // 小画面では指の移動量が制限されるため、閾値を緩くする
-        // 実装は将来のバージョンで拡張予定
+        // NOTE: [Task11]で具体的なスワイプ閾値調整ロジックを実装予定
         if (BuildConfig.DEBUG) {
             android.util.Log.d("DetailActivity", "Adjusted swipe threshold for small screen")
         }
@@ -812,7 +812,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun adjustSwipeThresholdForLargeScreen() {
         // 大画面では誤操作防止のため、閾値を厳しくする
-        // 実装は将来のバージョンで拡張予定
+        // NOTE: [Task11]で具体的なスワイプ閾値調整ロジックを実装予定
         if (BuildConfig.DEBUG) {
             android.util.Log.d("DetailActivity", "Adjusted swipe threshold for large screen")
         }
@@ -846,7 +846,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun optimizePanelHeightForLandscape() {
         // 横向きでは画面の高さが制限されるため、パネルサイズを調整
-        // 実装は将来のバージョンで拡張予定
+        // NOTE: [Task11]で具体的なパネル高さ調整ロジックを実装予定
         if (BuildConfig.DEBUG) {
             android.util.Log.d("DetailActivity", "Optimized panel height for landscape")
         }
@@ -857,7 +857,7 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun optimizePanelHeightForPortrait() {
         // 縦向きでは標準的なパネル高さを使用
-        // 実装は将来のバージョンで拡張予定
+        // NOTE: [Task11]で具体的なパネル高さ調整ロジックを実装予定
         if (BuildConfig.DEBUG) {
             android.util.Log.d("DetailActivity", "Optimized panel height for portrait")
         }

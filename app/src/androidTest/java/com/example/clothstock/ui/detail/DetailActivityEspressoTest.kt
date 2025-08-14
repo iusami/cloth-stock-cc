@@ -8,6 +8,7 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.action.ViewActions.clearText
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
@@ -363,25 +364,15 @@ class DetailActivityEspressoTest {
             onView(withId(R.id.imageViewClothDetail))
                 .check(matches(isDisplayed()))
             
-            // SwipeableDetailPanelが表示される (まだ統合前なので失敗する)
-            try {
-                onView(withId(R.id.swipeableDetailPanel))
-                    .check(matches(isDisplayed()))
+            // SwipeableDetailPanelが表示されることを確認（統合後は成功、統合前は失敗予想）
+            // TDD Red: 現在は統合されていないため失敗する
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
                 
-                // SwipeHandleViewが表示される
-                onView(withId(R.id.swipeHandle))
-                    .check(matches(isDisplayed()))
-                    .check(matches(isClickable()))
-                
-                // MemoInputViewがSwipeableDetailPanel内に配置される
-                onView(withId(R.id.memoInputView))
-                    .check(matches(isDisplayed()))
-                
-                assert(false) // まだ統合前なので、ここに到達したら失敗
-            } catch (e: androidx.test.espresso.NoMatchingViewException) {
-                // 期待される動作: SwipeableDetailPanelはまだ統合されていない
-                assert(true)
-            }
+            // SwipeHandleViewが表示される
+            onView(withId(R.id.swipeHandle))
+                .check(matches(isDisplayed()))
+                .check(matches(isClickable()))
         }
     }
 
@@ -397,25 +388,18 @@ class DetailActivityEspressoTest {
         // When: DetailActivityを起動
         ActivityScenario.launch<DetailActivity>(intent).use {
             
-            // Then: 画像とパネルが適切に配置される（統合前なので失敗する）
-            try {
-                // 画像が全画面に表示される
-                onView(withId(R.id.imageViewClothDetail))
-                    .check(matches(isDisplayed()))
-                
-                // SwipeableDetailPanelが画像の上にオーバーレイ表示される
-                onView(withId(R.id.swipeableDetailPanel))
-                    .check(matches(isDisplayed()))
-                
-                // 既存のlayoutTagInfoは非表示になる
-                onView(withId(R.id.layoutTagInfo))
-                    .check(matches(withEffectiveVisibility(Visibility.GONE)))
-                
-                assert(false) // まだ統合前なので、ここに到達したら失敗
-            } catch (e: androidx.test.espresso.NoMatchingViewException) {
-                // 期待される動作: まだ統合されていない
-                assert(true)
-            }
+            // Then: 画像とパネルが適切に配置される
+            // 画像が全画面に表示される
+            onView(withId(R.id.imageViewClothDetail))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanelが画像の上にオーバーレイ表示される
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+            
+            // 既存のlayoutTagInfoは非表示になる
+            onView(withId(R.id.layoutTagInfo))
+                .check(matches(withEffectiveVisibility(Visibility.GONE)))
         }
     }
 
@@ -447,16 +431,9 @@ class DetailActivityEspressoTest {
             onView(withId(R.id.layoutTagInfo))
                 .check(matches(isDisplayed()))
             
-            // SwipeableDetailPanel統合後の向き変更対応（統合前なので失敗する）
-            try {
-                onView(withId(R.id.swipeableDetailPanel))
-                    .check(matches(isDisplayed()))
-                
-                assert(false) // まだ統合前なので、ここに到達したら失敗
-            } catch (e: androidx.test.espresso.NoMatchingViewException) {
-                // 期待される動作: まだ統合されていない
-                assert(true)
-            }
+            // SwipeableDetailPanel統合後の向き変更対応
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
         }
     }
 
@@ -482,16 +459,9 @@ class DetailActivityEspressoTest {
             onView(withId(R.id.memoInputView))
                 .check(matches(isDisplayed()))
             
-            // SwipeableDetailPanelはまだ存在しない（期待される動作）
-            try {
-                onView(withId(R.id.swipeableDetailPanel))
-                    .check(matches(isDisplayed()))
-                
-                assert(false) // まだ統合前なので、ここに到達したら失敗
-            } catch (e: androidx.test.espresso.NoMatchingViewException) {
-                // 期待される動作: SwipeableDetailPanelはまだ統合されていない
-                assert(true)
-            }
+            // SwipeableDetailPanelが統合されている
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
         }
     }
 
@@ -508,30 +478,18 @@ class DetailActivityEspressoTest {
         // When: DetailActivityを起動してメモを入力
         ActivityScenario.launch<DetailActivity>(intent).use {
             
-            // Then: MemoInputViewがSwipeableDetailPanel内で動作する（統合前なので失敗する）
-            try {
-                // SwipeableDetailPanel内のMemoInputViewを確認
-                onView(withId(R.id.swipeableDetailPanel))
-                    .check(matches(isDisplayed()))
-                
-                // SwipeableDetailPanel内のMemoInputViewでメモ入力
-                onView(withId(R.id.editTextMemo))
-                    .perform(clearText(), typeText(testMemo))
-                
-                // 文字数カウンターが正常動作
-                onView(withId(R.id.textCharacterCount))
-                    .check(matches(withText(containsString("${testMemo.length}/1000"))))
-                
-                assert(false) // まだ統合前なので、ここに到達したら失敗
-            } catch (e: androidx.test.espresso.NoMatchingViewException) {
-                // 期待される動作: まだ統合されていない
-                // 既存のMemoInputViewで動作確認
-                onView(withId(R.id.editTextMemo))
-                    .perform(clearText(), typeText(testMemo))
-                
-                onView(withId(R.id.textCharacterCount))
-                    .check(matches(withText(containsString("${testMemo.length}/1000"))))
-            }
+            // Then: MemoInputViewがSwipeableDetailPanel内で動作する
+            // SwipeableDetailPanel内のMemoInputViewを確認
+            onView(withId(R.id.swipeableDetailPanel))
+                .check(matches(isDisplayed()))
+            
+            // SwipeableDetailPanel内のMemoInputViewでメモ入力
+            onView(withId(R.id.editTextMemo))
+                .perform(clearText(), typeText(testMemo))
+            
+            // 文字数カウンターが正常動作
+            onView(withId(R.id.textCharacterCount))
+                .check(matches(withText(containsString("${testMemo.length}/1000"))))
         }
     }
 
