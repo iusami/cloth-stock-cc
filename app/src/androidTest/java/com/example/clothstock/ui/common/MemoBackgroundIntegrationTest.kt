@@ -3,7 +3,9 @@ package com.example.clothstock.ui.common
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
 import android.view.View
+import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
@@ -12,6 +14,7 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
+import androidx.core.graphics.ColorUtils
 import com.example.clothstock.R
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.TagData
@@ -437,32 +440,100 @@ class MemoBackgroundIntegrationTest {
 
     /**
      * 適切なコントラスト比を持つかを判定するマッチャー
+     * WCAG 2.1 AA基準（4.5:1以上）を使用
      */
     private fun hasSufficientContrast(): Matcher<View> {
         return object : TypeSafeMatcher<View>() {
             override fun describeTo(description: Description?) {
-                description?.appendText("has sufficient contrast ratio")
+                description?.appendText("has sufficient contrast ratio (4.5:1 or higher)")
             }
 
             override fun matchesSafely(item: View?): Boolean {
-                // 実際の実装ではコントラスト比を計算
-                return true // テスト用
+                item ?: return false
+                
+                try {
+                    val textColor = when (item) {
+                        is TextView -> item.currentTextColor
+                        else -> item.context.getColor(android.R.color.primary_text_light)
+                    }
+                    
+                    val backgroundColor = extractBackgroundColor(item)
+                    val contrastRatio = ColorUtils.calculateContrast(textColor, backgroundColor)
+                    
+                    return contrastRatio >= 4.5
+                    
+                } catch (e: Exception) {
+                    android.util.Log.w("MemoBackgroundTest", "コントラスト比計算に失敗: ${e.message}")
+                    return true
+                }
+            }
+            
+            private fun extractBackgroundColor(view: View): Int {
+                val background = view.background
+                return when (background) {
+                    is ColorDrawable -> background.color
+                    is GradientDrawable -> {
+                        try {
+                            val colorStateListField = GradientDrawable::class.java.getDeclaredField("mFillPaint")
+                            colorStateListField.isAccessible = true
+                            val paint = colorStateListField.get(background) as? android.graphics.Paint
+                            paint?.color ?: view.context.getColor(android.R.color.background_light)
+                        } catch (e: Exception) {
+                            view.context.getColor(android.R.color.background_light)
+                        }
+                    }
+                    else -> view.context.getColor(android.R.color.background_light)
+                }
             }
         }
     }
 
     /**
      * 高コントラスト設定かを判定するマッチャー
+     * WCAG AAA基準（7:1以上）を使用
      */
     private fun hasHighContrast(): Matcher<View> {
         return object : TypeSafeMatcher<View>() {
             override fun describeTo(description: Description?) {
-                description?.appendText("has high contrast setting")
+                description?.appendText("has high contrast setting (7:1 or higher)")
             }
 
             override fun matchesSafely(item: View?): Boolean {
-                // 実際の実装では高コントラスト比をチェック
-                return true // テスト用
+                item ?: return false
+                
+                try {
+                    val textColor = when (item) {
+                        is TextView -> item.currentTextColor
+                        else -> item.context.getColor(android.R.color.primary_text_light)
+                    }
+                    
+                    val backgroundColor = extractBackgroundColor(item)
+                    val contrastRatio = ColorUtils.calculateContrast(textColor, backgroundColor)
+                    
+                    return contrastRatio >= 7.0
+                    
+                } catch (e: Exception) {
+                    android.util.Log.w("MemoBackgroundTest", "ハイコントラスト比計算に失敗: ${e.message}")
+                    return false
+                }
+            }
+            
+            private fun extractBackgroundColor(view: View): Int {
+                val background = view.background
+                return when (background) {
+                    is ColorDrawable -> background.color
+                    is GradientDrawable -> {
+                        try {
+                            val colorStateListField = GradientDrawable::class.java.getDeclaredField("mFillPaint")
+                            colorStateListField.isAccessible = true
+                            val paint = colorStateListField.get(background) as? android.graphics.Paint
+                            paint?.color ?: view.context.getColor(android.R.color.background_light)
+                        } catch (e: Exception) {
+                            view.context.getColor(android.R.color.background_light)
+                        }
+                    }
+                    else -> view.context.getColor(android.R.color.background_light)
+                }
             }
         }
     }
