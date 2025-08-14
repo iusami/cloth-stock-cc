@@ -188,6 +188,9 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             val oldState = panelState
             panelState = state
             
+            // 視覚的状態変更を適用
+            applyVisualStateChange(state)
+            
             // パフォーマンス最適化：不要な通知を避ける
             if (notifyListener) {
                 onPanelStateChangedListener?.invoke(state)
@@ -197,6 +200,46 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             // リリースビルドとテスト時はログを無効化、不要な文字列構築を回避
             if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG) && !isTestEnvironment()) {
                 android.util.Log.d(LOG_TAG, "Panel state changed: $oldState -> $state")
+            }
+        }
+    }
+    
+    /**
+     * パネル状態変更時の視覚的変更を適用
+     * @param newState 新しい状態
+     */
+    private fun applyVisualStateChange(newState: PanelState) {
+        // アニメーション進行中フラグを設定
+        if (newState == PanelState.ANIMATING) {
+            // アニメーション状態では視覚的変更なし
+            return
+        }
+        
+        // SwipeableDetailPanel自体は常に表示状態を維持
+        visibility = android.view.View.VISIBLE
+        alpha = 1.0f
+        
+        // コンテンツコンテナーの表示制御
+        binding?.contentContainer?.let { contentContainer ->
+            when (newState) {
+                PanelState.SHOWN -> {
+                    // パネル表示状態：コンテンツを表示
+                    contentContainer.visibility = android.view.View.VISIBLE
+                    contentContainer.alpha = 1.0f
+                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                        android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
+                    }
+                }
+                PanelState.HIDDEN -> {
+                    // パネル非表示状態：コンテンツのみ非表示、ハンドルは表示維持
+                    contentContainer.visibility = android.view.View.GONE
+                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                        android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
+                    }
+                }
+                PanelState.ANIMATING -> {
+                    // アニメーション中（上で既に処理済み）
+                }
             }
         }
     }

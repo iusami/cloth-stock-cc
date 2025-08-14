@@ -580,6 +580,8 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun setupSwipeableDetailPanel() {
         try {
+            android.util.Log.i("DetailActivity", "SwipeableDetailPanel初期化を開始")
+            
             swipeableDetailPanel = binding.swipeableDetailPanel
             swipeableDetailPanel?.let { panel ->
                 
@@ -594,15 +596,45 @@ class DetailActivity : AppCompatActivity() {
                 // Task 10.3: 画面サイズとレイアウト最適化
                 optimizeLayoutForScreenSize()
                 
-                if (BuildConfig.DEBUG) {
-                    android.util.Log.d("DetailActivity", "SwipeableDetailPanel初期化完了")
-                }
+                android.util.Log.i("DetailActivity", "SwipeableDetailPanel初期化完了")
+            } ?: run {
+                // binding.swipeableDetailPanelがnullの場合
+                android.util.Log.w("DetailActivity", "binding.swipeableDetailPanelがnullです。レイアウトファイルを確認してください。")
+                swipeableDetailPanel = null
             }
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                android.util.Log.w("DetailActivity", "SwipeableDetailPanel初期化失敗、フォールバックを使用", e)
-            }
+            // 初期化失敗時は常にログ出力（DEBUGビルドに関係なく）
+            android.util.Log.e("DetailActivity", "SwipeableDetailPanel初期化失敗、フォールバックを使用", e)
             swipeableDetailPanel = null
+            
+            // 初期化失敗時はフォールバックを確実に有効化
+            ensureFallbackLayoutIsAvailable()
+        }
+    }
+    
+    /**
+     * フォールバックレイアウトが利用可能であることを確実にする
+     */
+    private fun ensureFallbackLayoutIsAvailable() {
+        try {
+            // フォールバックレイアウト（layoutTagInfo）が存在することを確認
+            val fallbackLayout = binding.layoutTagInfo
+            if (fallbackLayout != null) {
+                android.util.Log.i("DetailActivity", "フォールバックレイアウト（layoutTagInfo）を使用します")
+                
+                // フォールバックレイアウトが確実に使えるように準備
+                // MemoInputViewの初期化もフォールバック用で行う
+                val fallbackMemoInputView = fallbackLayout.findViewById<MemoInputView>(R.id.memoInputView)
+                if (fallbackMemoInputView != null && !::memoInputView.isInitialized) {
+                    memoInputView = fallbackMemoInputView
+                    setupMemoInputView()
+                    android.util.Log.i("DetailActivity", "フォールバック用MemoInputView初期化完了")
+                }
+            } else {
+                android.util.Log.e("DetailActivity", "フォールバックレイアウト（layoutTagInfo）も見つかりません！レイアウトファイルに重大な問題があります。")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DetailActivity", "フォールバックレイアウトの初期化に失敗", e)
         }
     }
     
@@ -611,6 +643,8 @@ class DetailActivity : AppCompatActivity() {
      */
     private fun setupSwipeableDetailPanelComponents(panel: SwipeableDetailPanel) {
         try {
+            android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化開始")
+            
             // SwipeableDetailPanel内のMemoInputViewを取得
             val panelMemoInputView = panel.findViewById<MemoInputView>(R.id.memoInputView)
             panelMemoInputView?.let { memoView ->
@@ -622,13 +656,36 @@ class DetailActivity : AppCompatActivity() {
                 // SwipeableDetailPanel内のMemoInputViewを使用
                 memoInputView = memoView
                 
-                if (BuildConfig.DEBUG) {
-                    android.util.Log.d("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
+                android.util.Log.i("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
+            } ?: run {
+                android.util.Log.w("DetailActivity", "SwipeableDetailPanel内にMemoInputViewが見つかりません")
+                // MemoInputViewが見つからない場合の対処
+                if (!::memoInputView.isInitialized) {
+                    // フォールバック用のMemoInputViewを使用
+                    val fallbackMemoInputView = binding.layoutTagInfo.findViewById<MemoInputView>(R.id.memoInputView)
+                    fallbackMemoInputView?.let { fallbackMemo ->
+                        memoInputView = fallbackMemo
+                        android.util.Log.i("DetailActivity", "フォールバック用MemoInputViewを使用")
+                    }
                 }
             }
+            
+            android.util.Log.d("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化完了")
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                android.util.Log.w("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化失敗", e)
+            android.util.Log.e("DetailActivity", "SwipeableDetailPanel内コンポーネント初期化失敗", e)
+            
+            // 初期化失敗時もMemoInputViewだけは確保する
+            if (!::memoInputView.isInitialized) {
+                try {
+                    val fallbackMemoInputView = binding.layoutTagInfo.findViewById<MemoInputView>(R.id.memoInputView)
+                    fallbackMemoInputView?.let { fallbackMemo ->
+                        memoInputView = fallbackMemo
+                        setupMemoInputView()
+                        android.util.Log.i("DetailActivity", "エラー回復: フォールバック用MemoInputView初期化完了")
+                    }
+                } catch (fallbackException: Exception) {
+                    android.util.Log.e("DetailActivity", "フォールバック用MemoInputView初期化も失敗", fallbackException)
+                }
             }
         }
     }
@@ -661,30 +718,57 @@ class DetailActivity : AppCompatActivity() {
      * SwipeableDetailPanelまたはフォールバックレイアウトを表示
      */
     private fun showDetailPanel() {
-        if (swipeableDetailPanel != null) {
-            // SwipeableDetailPanelを使用
-            binding.swipeableDetailPanel.visibility = View.VISIBLE
-            binding.swipeableDetailPanel.alpha = 0f
-            binding.swipeableDetailPanel.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .setStartDelay(150)
-                .start()
-            
-            // フォールバックレイアウトは非表示
-            binding.layoutTagInfo.visibility = View.GONE
-        } else {
-            // フォールバック: 既存のlayoutTagInfoを使用
-            binding.layoutTagInfo.visibility = View.VISIBLE
-            binding.layoutTagInfo.alpha = 0f
-            binding.layoutTagInfo.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .setStartDelay(150)
-                .start()
-            
-            // SwipeableDetailPanelは非表示
-            binding.swipeableDetailPanel.visibility = View.GONE
+        android.util.Log.d("DetailActivity", "詳細パネル表示開始 - SwipeableDetailPanel: ${swipeableDetailPanel != null}")
+        
+        try {
+            if (swipeableDetailPanel != null) {
+                // SwipeableDetailPanelを使用
+                android.util.Log.i("DetailActivity", "SwipeableDetailPanelを表示")
+                
+                binding.swipeableDetailPanel.visibility = View.VISIBLE
+                binding.swipeableDetailPanel.alpha = 0f
+                binding.swipeableDetailPanel.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .setStartDelay(150)
+                    .start()
+                
+                // フォールバックレイアウトは非表示
+                binding.layoutTagInfo.visibility = View.GONE
+            } else {
+                // フォールバック: 既存のlayoutTagInfoを使用
+                android.util.Log.i("DetailActivity", "フォールバックレイアウト（layoutTagInfo）を表示")
+                
+                // フォールバックレイアウトが存在することを確認
+                if (binding.layoutTagInfo != null) {
+                    binding.layoutTagInfo.visibility = View.VISIBLE
+                    binding.layoutTagInfo.alpha = 0f
+                    binding.layoutTagInfo.animate()
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setStartDelay(150)
+                        .start()
+                    
+                    // SwipeableDetailPanelは非表示
+                    binding.swipeableDetailPanel.visibility = View.GONE
+                    
+                    android.util.Log.i("DetailActivity", "フォールバックレイアウト表示完了")
+                } else {
+                    android.util.Log.e("DetailActivity", "フォールバックレイアウトも見つからません！")
+                    // 最後の手段：エラーメッセージ表示
+                    showError("詳細情報の表示に失敗しました")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DetailActivity", "詳細パネル表示中にエラーが発生", e)
+            // エラー時はフォールバックレイアウトを強制表示
+            try {
+                binding.layoutTagInfo.visibility = View.VISIBLE
+                binding.swipeableDetailPanel.visibility = View.GONE
+            } catch (fallbackException: Exception) {
+                android.util.Log.e("DetailActivity", "フォールバック表示も失敗", fallbackException)
+                showError("詳細情報の表示に失敗しました")
+            }
         }
     }
     
