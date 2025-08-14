@@ -24,6 +24,10 @@ class DeviceCompatibilityManager(private val context: Context) {
         private const val ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED = "accessibility_high_text_contrast_enabled"
         private const val TOUCH_EXPLORATION_ENABLED = "touch_exploration_enabled"
         
+        // アクセシビリティ判定用の定数（マジックナンバー防止）
+        private const val ANIMATION_SCALE_DEFAULT = 1.0f           // デフォルトアニメーション倍率
+        private const val ANIMATION_SCALE_REDUCED_THRESHOLD = 2.0f // モーション削減判定の閾値
+        
         // デバイス性能判定用の定数
         private const val LOW_END_MEMORY_THRESHOLD_MB = 1024    // 低性能デバイス判定のメモリ閾値（MB）
         private const val LOW_END_CORES_THRESHOLD = 4           // 低性能デバイス判定のCPUコア数閾値
@@ -134,11 +138,11 @@ class DeviceCompatibilityManager(private val context: Context) {
             val animationScale = Settings.Global.getFloat(
                 context.contentResolver,
                 Settings.Global.ANIMATOR_DURATION_SCALE,
-                1.0f
+                ANIMATION_SCALE_DEFAULT
             )
             
             // アニメーション無効または大幅減速の場合
-            val result = animationScale == 0f || animationScale >= 2.0f
+            val result = animationScale == 0f || animationScale >= ANIMATION_SCALE_REDUCED_THRESHOLD
             logDeviceInfo("Motion reduction detected: $result (animation scale: $animationScale)")
             
             result

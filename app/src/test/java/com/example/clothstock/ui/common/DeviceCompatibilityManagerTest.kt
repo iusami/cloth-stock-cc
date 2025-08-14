@@ -1,19 +1,22 @@
 package com.example.clothstock.ui.common
 
+import android.app.ActivityManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowActivityManager
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
  * DeviceCompatibilityManager のユニットテスト
  * 
- * TDD Red フェーズ - 失敗テスト作成
- * Task 9.1: デバイス対応機能のユニットテスト作成
+ * PR修正対応 - Shadow APIを使用した実際のロジック検証テスト
+ * Task 9.1: デバイス対応機能のユニットテスト作成（TDDテスト品質向上）
  */
 @RunWith(RobolectricTestRunner::class)
 class DeviceCompatibilityManagerTest {
@@ -33,27 +36,26 @@ class DeviceCompatibilityManagerTest {
     
     @Test
     fun `device manager should detect low end devices with limited memory`() {
-        // Given - 低メモリデバイスの設定をシミュレート
+        // Given - 低メモリデバイスの環境をシミュレート
         simulateLowMemoryDevice()
         
         // When - デバイス性能を検出
         val isLowEndDevice = deviceManager.isLowEndDevice()
         
-        // Then - メソッドが正常に実行されることを確認（Robolectricでは実際の値は変更困難）
-        // PR修正: 基本的な動作確認テストとして実装
-        kotlin.test.assertNotNull(isLowEndDevice, "isLowEndDevice()は非null値を返すべき")
+        // Then - ローエンドデバイスとして検出される（PR修正: 実際のロジック検証）
+        assertTrue(isLowEndDevice, "低メモリデバイス（512MB）はローエンドとして検出されるべき")
     }
     
     @Test
-    fun `device manager should detect low end devices with slow CPU`() {
-        // Given - 低性能CPUデバイスの設定をシミュレート
-        simulateSlowCpuDevice()
+    fun `device manager should detect high end devices with sufficient memory`() {
+        // Given - 高メモリデバイスの環境をシミュレート（PR修正: ロジック検証）
+        simulateHighMemoryDevice()
         
         // When - デバイス性能を検出
         val isLowEndDevice = deviceManager.isLowEndDevice()
         
-        // Then - メソッドが正常に実行されることを確認（PR修正: 基本的な動作確認テスト）
-        kotlin.test.assertNotNull(isLowEndDevice, "isLowEndDevice()は非null値を返すべき")
+        // Then - ハイエンドデバイスとして検出される（メモリが十分）
+        assertFalse(isLowEndDevice, "高メモリデバイス（2048MB）はハイエンドとして検出されるべき")
     }
     
     @Test
@@ -64,8 +66,8 @@ class DeviceCompatibilityManagerTest {
         // When - アニメーション設定を確認
         val shouldDisableAnimations = deviceManager.shouldDisableAnimations()
         
-        // Then - メソッドが正常に実行されることを確認（PR修正: 基本的な動作確認テスト）
-        kotlin.test.assertNotNull(shouldDisableAnimations, "shouldDisableAnimations()は非null値を返すべき")
+        // Then - アニメーションが無効化される（PR修正: 実際のロジック検証）
+        assertTrue(shouldDisableAnimations, "ローエンドデバイスではアニメーションが無効化されるべき")
     }
     
     @Test
@@ -89,8 +91,8 @@ class DeviceCompatibilityManagerTest {
         // When - メモリ最適化設定を確認
         val shouldOptimizeMemory = deviceManager.shouldOptimizeMemoryUsage()
         
-        // Then - メソッドが正常に実行されることを確認（PR修正: 基本的な動作確認テスト）
-        kotlin.test.assertNotNull(shouldOptimizeMemory, "shouldOptimizeMemoryUsage()は非null値を返すべき")
+        // Then - メモリ最適化が有効になる（PR修正: 実際のロジック検証）
+        assertTrue(shouldOptimizeMemory, "ローエンドデバイスではメモリ使用量が最適化されるべき")
     }
     
     @Test
@@ -174,8 +176,9 @@ class DeviceCompatibilityManagerTest {
         // When - 画面サイズを検出
         val isSmallScreen = deviceManager.isSmallScreen()
         
-        // Then - メソッドが正常に実行されることを確認（PR修正: 基本的な動作確認テスト）
-        kotlin.test.assertNotNull(isSmallScreen, "isSmallScreen()は非null値を返すべき")
+        // Then - 小画面として検出される（PR修正: 実際のロジック検証）
+        // 注意: Robolectricでは画面サイズ変更が困難なため、実装の基本動作を確認
+        kotlin.test.assertNotNull(isSmallScreen, "isSmallScreen()は有効な値を返すべき")
     }
     
     @Test
@@ -236,15 +239,27 @@ class DeviceCompatibilityManagerTest {
      */
     
     private fun simulateLowMemoryDevice() {
-        // 低メモリデバイスの環境をシミュレート
-        // Robolectricでは実際のメモリ情報変更は困難なため、基本的な動作確認のみ
-        // DeviceCompatibilityManagerのisLowEndDevice()が正常に呼び出せることを確認
+        // 低メモリデバイスの環境をシミュレート（PR修正: Shadow API使用）
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val shadowActivityManager = shadowOf(activityManager)
+        val memoryInfo = ActivityManager.MemoryInfo()
+        memoryInfo.totalMem = 512L * 1024 * 1024 // 512MB (閾値1024MB未満)
+        shadowActivityManager.setMemoryInfo(memoryInfo)
+    }
+    
+    private fun simulateHighMemoryDevice() {
+        // 高メモリデバイスの環境をシミュレート（PR修正: Shadow API使用）
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val shadowActivityManager = shadowOf(activityManager)
+        val memoryInfo = ActivityManager.MemoryInfo()
+        memoryInfo.totalMem = 2048L * 1024 * 1024 // 2048MB (閾値1024MBを超過)
+        shadowActivityManager.setMemoryInfo(memoryInfo)
     }
     
     private fun simulateSlowCpuDevice() {
         // 低性能CPUデバイスの環境をシミュレート
-        // Robolectricでは実際のCPUコア数変更は困難なため、基本的な動作確認のみ
-        // DeviceCompatibilityManagerのisLowEndDevice()が正常に呼び出せることを確認
+        // RobolectricでCPUコア数の直接変更は困難なので、コメントで説明
+        // 実際の環境では4コア未満のデバイスでテストが必要
     }
     
     private fun simulateLowEndDevice() {
