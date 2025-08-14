@@ -347,7 +347,10 @@ class DetailViewModelTest {
         // When: ViewModelを破棄（onClearedを間接的にトリガー）
         // AndroidのViewModelStoreを使ってライフサイクルをシミュレート
         val viewModelStore = ViewModelStore()
-        val viewModelProvider = ViewModelProvider(viewModelStore, DetailViewModelFactory(repository, preferencesManager))
+        val viewModelProvider = ViewModelProvider(
+            viewModelStore, 
+            DetailViewModelFactory(repository, preferencesManager)
+        )
         val testViewModel = viewModelProvider.get(DetailViewModel::class.java)
         testViewModel.setPanelState(testPanelState)
         
