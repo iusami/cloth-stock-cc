@@ -35,15 +35,22 @@ class SwipeHandleView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val handleRect = RectF()
+    private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val buttonRect = RectF()
     
-    private var handleColor: Int = ContextCompat.getColor(context, R.color.swipe_handle_color)
+    private var buttonBackgroundColor: Int = ContextCompat.getColor(context, R.color.md_theme_light_surface)
+    private var buttonStrokeColor: Int = ContextCompat.getColor(context, R.color.md_theme_light_outline)
     private var isVisible: Boolean = true
+    
+    // dp to px 変換用
+    private val density = context.resources.displayMetrics.density
 
     companion object {
-        private const val HANDLE_WIDTH_RATIO = 0.3f
-        private const val HANDLE_HEIGHT_RATIO = 0.4f
+        private const val BUTTON_WIDTH_DP = 120f  // ボタン幅（dp）
+        private const val BUTTON_HEIGHT_DP = 32f  // ボタン高さ（dp）
+        private const val CORNER_RADIUS_DP = 16f  // 角丸半径（dp）
+        private const val STROKE_WIDTH_DP = 1f    // ボーダー幅（dp）
     }
 
     init {
@@ -65,10 +72,12 @@ class SwipeHandleView @JvmOverloads constructor(
      * ハイコントラストモードに応じた色設定
      */
     private fun setupColors() {
-        handleColor = if (isHighContrastEnabled()) {
-            ContextCompat.getColor(context, R.color.swipe_handle_color_high_contrast)
+        if (isHighContrastEnabled()) {
+            buttonBackgroundColor = ContextCompat.getColor(context, R.color.md_theme_dark_surface)
+            buttonStrokeColor = ContextCompat.getColor(context, R.color.md_theme_dark_outline)
         } else {
-            ContextCompat.getColor(context, R.color.swipe_handle_color)
+            buttonBackgroundColor = ContextCompat.getColor(context, R.color.md_theme_light_surface)
+            buttonStrokeColor = ContextCompat.getColor(context, R.color.md_theme_light_outline)
         }
     }
 
@@ -89,31 +98,40 @@ class SwipeHandleView @JvmOverloads constructor(
         super.onDraw(canvas)
         if (!isVisible) return
         
-        // Material Design準拠のハンドル描画（改良版）
-        val handleWidthRatio = HANDLE_WIDTH_RATIO
-        val handleHeightRatio = HANDLE_HEIGHT_RATIO
+        // ボタン風UIの描画
+        val buttonWidth = BUTTON_WIDTH_DP * density
+        val buttonHeight = BUTTON_HEIGHT_DP * density
+        val cornerRadius = CORNER_RADIUS_DP * density
+        val strokeWidth = STROKE_WIDTH_DP * density
         
-        val handleWidth = width * handleWidthRatio
-        val handleHeight = height * handleHeightRatio
         val centerX = width / 2f
         val centerY = height / 2f
         
-        handleRect.set(
-            centerX - handleWidth / 2,
-            centerY - handleHeight / 2,
-            centerX + handleWidth / 2,
-            centerY + handleHeight / 2
+        buttonRect.set(
+            centerX - buttonWidth / 2,
+            centerY - buttonHeight / 2,
+            centerX + buttonWidth / 2,
+            centerY + buttonHeight / 2
         )
         
-        // Paint設定の改善
-        paint.apply {
-            color = handleColor
+        // 背景描画
+        backgroundPaint.apply {
+            color = buttonBackgroundColor
             style = Paint.Style.FILL
             isAntiAlias = true
         }
+        canvas.drawRoundRect(buttonRect, cornerRadius, cornerRadius, backgroundPaint)
         
-        val cornerRadius = handleHeight / 2
-        canvas.drawRoundRect(handleRect, cornerRadius, cornerRadius, paint)
+        // ボーダー描画
+        strokePaint.apply {
+            color = buttonStrokeColor
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+            isAntiAlias = true
+        }
+        canvas.drawRoundRect(buttonRect, cornerRadius, cornerRadius, strokePaint)
+        
+        // テキストは描画しない（ボタン外観のみ）
     }
 
     /**
@@ -132,13 +150,22 @@ class SwipeHandleView @JvmOverloads constructor(
     }
 
     /**
-     * ハンドル色の更新（動的変更対応）
+     * ボタン色の更新（動的変更対応）
      * 
-     * @param color 新しいハンドル色
+     * @param backgroundColor 新しい背景色
+     * @param strokeColor 新しいボーダー色
      */
-    fun setHandleColor(color: Int) {
-        if (handleColor != color) {
-            handleColor = color
+    fun setButtonColors(backgroundColor: Int, strokeColor: Int) {
+        var changed = false
+        if (buttonBackgroundColor != backgroundColor) {
+            buttonBackgroundColor = backgroundColor
+            changed = true
+        }
+        if (buttonStrokeColor != strokeColor) {
+            buttonStrokeColor = strokeColor
+            changed = true
+        }
+        if (changed) {
             invalidate()
         }
     }
