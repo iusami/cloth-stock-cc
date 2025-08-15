@@ -62,6 +62,9 @@ class MemoInputView @JvmOverloads constructor(
     // 現在の文字数とカウント
     private var currentCharacterCount: Int = 0
     
+    // TextWatcher無限ループ防止フラグ
+    private var isUpdatingText: Boolean = false
+    
     // 警告表示の閾値（90%）
     private val warningThreshold = (ClothItem.MAX_MEMO_LENGTH * WARNING_THRESHOLD_RATIO).toInt()
     
@@ -101,6 +104,9 @@ class MemoInputView @JvmOverloads constructor(
             @Suppress("EmptyFunctionBlock")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                // 無限ループ防止：プログラムによるテキスト更新中は処理をスキップ
+                if (isUpdatingText) return
+                
                 val text = s?.toString() ?: ""
                 handleTextChange(text)
             }
@@ -139,8 +145,13 @@ class MemoInputView @JvmOverloads constructor(
         
         // 文字数制限でトリミングされた場合はテキストを更新
         if (trimmedText != text) {
-            editTextMemo.setText(trimmedText)
-            editTextMemo.setSelection(trimmedText.length)
+            isUpdatingText = true // 無限ループ防止フラグを設定
+            try {
+                editTextMemo.setText(trimmedText)
+                editTextMemo.setSelection(trimmedText.length)
+            } finally {
+                isUpdatingText = false // フラグを必ずリセット
+            }
             return // TextWatcherが再度呼ばれるため、ここで終了
         }
         
@@ -233,20 +244,13 @@ class MemoInputView @JvmOverloads constructor(
         val safeText = memo ?: ""
         val trimmedText = safeText.take(ClothItem.MAX_MEMO_LENGTH)
         
-        // TextWatcherがnullでないことを確認してから操作
-        if (textWatcher != null) {
-            editTextMemo.removeTextChangedListener(textWatcher)
+        // 無限ループ防止フラグを使用してテキストを設定
+        isUpdatingText = true
+        try {
             editTextMemo.setText(trimmedText)
             editTextMemo.setSelection(trimmedText.length)
-            editTextMemo.addTextChangedListener(textWatcher)
-        } else {
-            // TextWatcherがnullの場合、エラーをログに出力
-            if (BuildConfig.DEBUG) {
-                android.util.Log.e("MemoInputView", "textWatcher is null")
-            }
-            // 通常のsetTextを実行
-            editTextMemo.setText(trimmedText)
-            editTextMemo.setSelection(trimmedText.length)
+        } finally {
+            isUpdatingText = false
         }
         
         // 手動で文字数カウント更新

@@ -216,26 +216,36 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             return
         }
         
-        // SwipeableDetailPanel自体は常に表示状態を維持
-        visibility = View.VISIBLE
-        alpha = 1.0f
+        // SwipeableDetailPanel自体は常に表示状態を維持（変更が必要な場合のみ）
+        if (visibility != View.VISIBLE) {
+            visibility = View.VISIBLE
+        }
+        if (alpha != 1.0f) {
+            alpha = 1.0f
+        }
         
-        // コンテンツコンテナーの表示制御
+        // コンテンツコンテナーの表示制御（変更が必要な場合のみ）
         binding?.contentContainer?.let { contentContainer ->
             when (newState) {
                 PanelState.SHOWN -> {
                     // パネル表示状態：コンテンツを表示
-                    contentContainer.visibility = View.VISIBLE
-                    contentContainer.alpha = 1.0f
-                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
-                        android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
+                    if (contentContainer.visibility != View.VISIBLE) {
+                        contentContainer.visibility = View.VISIBLE
+                        if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                            android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
+                        }
+                    }
+                    if (contentContainer.alpha != 1.0f) {
+                        contentContainer.alpha = 1.0f
                     }
                 }
                 PanelState.HIDDEN -> {
                     // パネル非表示状態：コンテンツのみ非表示、ハンドルは表示維持
-                    contentContainer.visibility = View.GONE
-                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
-                        android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
+                    if (contentContainer.visibility != View.GONE) {
+                        contentContainer.visibility = View.GONE
+                        if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                            android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
+                        }
                     }
                 }
                 PanelState.ANIMATING -> {

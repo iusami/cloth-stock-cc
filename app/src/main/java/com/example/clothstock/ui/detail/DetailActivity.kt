@@ -52,6 +52,10 @@ class DetailActivity : AppCompatActivity() {
     private var swipeableDetailPanel: SwipeableDetailPanel? = null // Task 10.2: SwipeableDetailPanel
     private var clothItemId: Long = INVALID_CLOTH_ITEM_ID
     private var shouldFocusMemo: Boolean = false // Task6: メモフォーカス用フラグ
+    
+    // メモ保存フィードバック制御用
+    private var lastFeedbackTime: Long = 0
+    private val FEEDBACK_COOLDOWN_MS = 2000L // 2秒間のクールダウン
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -439,12 +443,20 @@ class DetailActivity : AppCompatActivity() {
     
     /**
      * メモ保存完了のUIフィードバック表示
+     * 頻繁な保存による画面点滅を防ぐため、クールダウン期間を設ける
      */
     private fun showMemoSavedFeedback() {
-        // 短時間のSnackbarで保存完了を通知
-        Snackbar.make(binding.root, "メモを保存しました", Snackbar.LENGTH_SHORT)
-            .setAnchorView(binding.buttonEdit) // 編集ボタンの上に表示
-            .show()
+        val currentTime = System.currentTimeMillis()
+        
+        // 前回のフィードバックから十分な時間が経過した場合のみ表示
+        if (currentTime - lastFeedbackTime > FEEDBACK_COOLDOWN_MS) {
+            lastFeedbackTime = currentTime
+            
+            // 短時間のSnackbarで保存完了を通知
+            Snackbar.make(binding.root, "メモを保存しました", Snackbar.LENGTH_SHORT)
+                .setAnchorView(binding.buttonEdit) // 編集ボタンの上に表示
+                .show()
+        }
     }
     
     // Task 8: 旧メソッドを削除し、新しいエラーハンドリングメソッドに置き換え
@@ -785,7 +797,13 @@ class DetailActivity : AppCompatActivity() {
     private fun displayMemoInformation(clothItem: com.example.clothstock.data.model.ClothItem) {
         try {
             if (::memoInputView.isInitialized) {
-                memoInputView.setMemo(clothItem.memo)
+                // 現在のメモと異なる場合のみ更新（無駄な更新を防ぐ）
+                val currentMemo = memoInputView.getMemo()
+                val newMemo = clothItem.memo ?: ""
+                
+                if (currentMemo != newMemo) {
+                    memoInputView.setMemo(clothItem.memo)
+                }
             } else {
                 android.util.Log.e("DetailActivity", "memoInputView is not initialized")
             }

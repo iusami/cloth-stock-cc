@@ -54,6 +54,9 @@ class DetailViewModel(
     private val _memoSaveState = MutableLiveData<MemoSaveState>()
     val memoSaveState: LiveData<MemoSaveState> = _memoSaveState
     
+    // 保存フィードバック制御用
+    private var lastSaveCompletionTime: Long = 0
+    
     // メモ保存用のFlowとdebounceによる自動保存
     @OptIn(FlowPreview::class)
     private val memoUpdateFlow = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
@@ -72,7 +75,7 @@ class DetailViewModel(
     
     companion object {
         private const val MEMO_SAVE_DEBOUNCE_MS = 1000L // 1秒のdebounce
-        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L // 保存成功表示時間
+        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 500L // 保存成功表示時間（短縮）
         private const val ERROR_DISPLAY_TIME_MS = 5000L // エラー表示時間
     }
     
@@ -357,6 +360,11 @@ class DetailViewModel(
     private suspend fun saveMemoInternal(memo: String, isRetry: Boolean = false) {
         val currentItem = _clothItem.value ?: return
         
+        // 現在のメモと同じ場合は保存をスキップ（無駄な更新を防ぐ）
+        if (currentItem.memo == memo) {
+            return
+        }
+        
         try {
             _memoSaveState.value = MemoSaveState.Saving
             
@@ -368,14 +376,23 @@ class DetailViewModel(
             
             // 成功時は現在のClothItemも更新
             _clothItem.value = updatedItem
-            _memoSaveState.value = MemoSaveState.Saved
             
             // 成功時はリトライカウントをリセット
             memoSaveRetryCount = 0
             
-            // 2秒後にIdleに戻す（UIフィードバックのため）
-            delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
-            _memoSaveState.value = MemoSaveState.Idle
+            // 頻繁な保存時はフィードバックを制限
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastSaveCompletionTime > SAVE_SUCCESS_DISPLAY_TIME_MS * 2) {
+                _memoSaveState.value = MemoSaveState.Saved
+                // 短時間後にIdleに戻す
+                delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
+                _memoSaveState.value = MemoSaveState.Idle
+            } else {
+                // 頻繁な保存時はSavedをスキップして直接Idleに
+                _memoSaveState.value = MemoSaveState.Idle
+            }
+            
+            lastSaveCompletionTime = currentTime
             
         } catch (e: Exception) {
             handleMemoSaveError(e, memo, isRetry)
