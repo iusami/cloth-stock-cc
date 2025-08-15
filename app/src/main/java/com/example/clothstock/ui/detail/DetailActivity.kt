@@ -43,6 +43,9 @@ class DetailActivity : AppCompatActivity() {
         // Task 10.3: 画面サイズ閾値の定数
         private const val SMALL_SCREEN_WIDTH_DP = 360f
         private const val LARGE_SCREEN_WIDTH_DP = 720f
+        
+        // フィードバック制御の定数
+        private const val FEEDBACK_COOLDOWN_MILLISECONDS = 2000L
     }
 
     private lateinit var binding: ActivityDetailBinding
@@ -55,7 +58,28 @@ class DetailActivity : AppCompatActivity() {
     
     // メモ保存フィードバック制御用
     private var lastFeedbackTime: Long = 0
-    private val FEEDBACK_COOLDOWN_MS = 2000L // 2秒間のクールダウン
+    private val feedbackCooldownMs = FEEDBACK_COOLDOWN_MILLISECONDS // 2秒間のクールダウン
+    
+    // Observer実行制御改善用（点滅防止）
+    private var lastClothItemHash: Int? = null
+    private var lastLoadingState: Boolean? = null
+    private var lastErrorMessage: String? = null
+    private var lastImageLoadingState: Boolean? = null
+    
+    // バインディング実行最適化用（点滅防止）
+    private var lastBoundClothItem: com.example.clothstock.data.model.ClothItem? = null
+    
+    // View可視性制御改善用（点滅防止）
+    private var currentLayoutState: LayoutState? = null
+    
+    /**
+     * レイアウト状態の定義
+     */
+    private enum class LayoutState {
+        MAIN_CONTENT,
+        LOADING,
+        ERROR
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,37 +164,46 @@ class DetailActivity : AppCompatActivity() {
     }
 
     /**
-     * ViewModelの監視設定
+     * ViewModelの監視設定（Observer実行制御改善版）
      */
     private fun observeViewModel() {
-        // ClothItemデータの監視
+        // ClothItemデータの監視（重複実行防止）
         viewModel.clothItem.observe(this) { clothItem ->
             if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "observeViewModel: clothItem changed, clothItem=$clothItem")
             }
             if (clothItem != null) {
-                displayClothItem(clothItem)
-                showMainContent()
-                
-                // Task6: メモフォーカス処理
-                if (shouldFocusMemo) {
-                    focusOnMemoField()
-                    shouldFocusMemo = false // 一度だけ実行
+                // ハッシュコードで実際の内容変更をチェック（点滅防止）
+                val currentHash = clothItem.hashCode()
+                if (lastClothItemHash != currentHash) {
+                    lastClothItemHash = currentHash
+                    displayClothItem(clothItem)
+                    showMainContent()
+                    
+                    // Task6: メモフォーカス処理
+                    if (shouldFocusMemo) {
+                        focusOnMemoField()
+                        shouldFocusMemo = false // 一度だけ実行
+                    }
                 }
             }
         }
 
-        // ローディング状態の監視
+        // ローディング状態の監視（重複実行防止）
         viewModel.isLoading.observe(this) { isLoading ->
             if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "observeViewModel: isLoading changed, isLoading=$isLoading")
             }
-            if (isLoading) {
-                showLoading()
+            // 状態が実際に変更された場合のみ処理（点滅防止）
+            if (lastLoadingState != isLoading) {
+                lastLoadingState = isLoading
+                if (isLoading) {
+                    showLoading()
+                }
             }
         }
 
-        // エラーメッセージの監視
+        // エラーメッセージの監視（重複実行防止）
         viewModel.errorMessage.observe(this) { errorMessage ->
             if (BuildConfig.DEBUG) {
                 android.util.Log.d(
@@ -178,24 +211,36 @@ class DetailActivity : AppCompatActivity() {
                     "observeViewModel: errorMessage changed, errorMessage=$errorMessage"
                 )
             }
-            if (errorMessage != null) {
+            // エラーメッセージが実際に変更された場合のみ処理（点滅防止）
+            if (lastErrorMessage != errorMessage && errorMessage != null) {
+                lastErrorMessage = errorMessage
                 showError(errorMessage)
                 viewModel.clearErrorMessage()
             }
         }
 
-        // 画像読み込み状態の監視
+        // 画像読み込み状態の監視（重複実行防止）
         viewModel.isImageLoading.observe(this) { isImageLoading ->
-            binding.progressBarImage.visibility = if (isImageLoading) {
-                View.VISIBLE
-            } else {
-                View.GONE
+            // 状態が実際に変更された場合のみ処理（点滅防止）
+            if (lastImageLoadingState != isImageLoading) {
+                lastImageLoadingState = isImageLoading
+                binding.progressBarImage.visibility = if (isImageLoading) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
             }
         }
         
         // メモ保存状態の監視
         viewModel.memoSaveState.observe(this) { saveState ->
             handleMemoSaveState(saveState)
+        }
+        
+        // メモ専用LiveDataの監視（点滅防止用）
+        viewModel.memoContent.observe(this) { memoContent ->
+            // メモのみの更新時は軽量な処理のみ実行
+            displayMemoInformation(memoContent)
         }
         
         // Task 10.2: パネル状態の監視（SwipeableDetailPanel統合時のみ）
@@ -211,8 +256,11 @@ class DetailActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=$clothItem")
             }
-        // データバインディングでClothItemをセット
-        binding.clothItem = clothItem
+        // データバインディング実行最適化：実際に変更された場合のみ更新（点滅防止）
+        if (lastBoundClothItem != clothItem) {
+            lastBoundClothItem = clothItem
+            binding.clothItem = clothItem
+        }
 
         // パフォーマンス最適化されたGlide設定
         viewModel.onImageLoadStart()
@@ -299,6 +347,14 @@ class DetailActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "showMainContent: called")
             }
+        
+        // レイアウト状態が既にメインコンテンツの場合は処理をスキップ（点滅防止）
+        if (currentLayoutState == LayoutState.MAIN_CONTENT) {
+            return
+        }
+        
+        currentLayoutState = LayoutState.MAIN_CONTENT
+        
         binding.imageViewClothDetail.visibility = View.VISIBLE
         
         // Task 10.2: SwipeableDetailPanelまたはフォールバック表示
@@ -323,6 +379,14 @@ class DetailActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "showLoading: called")
             }
+        
+        // レイアウト状態が既にローディングの場合は処理をスキップ（点滅防止）
+        if (currentLayoutState == LayoutState.LOADING) {
+            return
+        }
+        
+        currentLayoutState = LayoutState.LOADING
+        
         binding.layoutLoading.visibility = View.VISIBLE
         binding.imageViewClothDetail.visibility = View.GONE
         binding.layoutTagInfo.visibility = View.GONE
@@ -336,6 +400,14 @@ class DetailActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "showError: called with message=$message")
             }
+        
+        // レイアウト状態が既にエラーで、同じメッセージの場合は処理をスキップ（点滅防止）
+        if (currentLayoutState == LayoutState.ERROR && binding.textErrorMessage.text.toString() == message) {
+            return
+        }
+        
+        currentLayoutState = LayoutState.ERROR
+        
         binding.layoutError.visibility = View.VISIBLE
         binding.textErrorMessage.text = message
         binding.imageViewClothDetail.visibility = View.GONE
@@ -449,7 +521,7 @@ class DetailActivity : AppCompatActivity() {
         val currentTime = System.currentTimeMillis()
         
         // 前回のフィードバックから十分な時間が経過した場合のみ表示
-        if (currentTime - lastFeedbackTime > FEEDBACK_COOLDOWN_MS) {
+        if (currentTime - lastFeedbackTime > feedbackCooldownMs) {
             lastFeedbackTime = currentTime
             
             // 短時間のSnackbarで保存完了を通知
@@ -811,9 +883,52 @@ class DetailActivity : AppCompatActivity() {
             android.util.Log.e("DetailActivity", "メモ情報表示でエラー", e)
         }
     }
+
+    /**
+     * メモ情報のみを表示（軽量版・点滅防止用）
+     * 
+     * @param memoContent メモ内容
+     */
+    private fun displayMemoInformation(memoContent: String) {
+        try {
+            if (::memoInputView.isInitialized) {
+                // 現在のメモと異なる場合のみ更新（無駄な更新を防ぐ）
+                val currentMemo = memoInputView.getMemo()
+                
+                if (currentMemo != memoContent) {
+                    memoInputView.setMemo(memoContent)
+                }
+            } else {
+                android.util.Log.e("DetailActivity", "memoInputView is not initialized")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DetailActivity", "メモ情報表示でエラー（軽量版）", e)
+        }
+    }
+
+
+    /**
+     * バインディング状態をリセット（画面復帰時など）
+     */
+    private fun resetBindingCache() {
+        lastBoundClothItem = null
+        lastClothItemHash = null
+        lastLoadingState = null
+        lastErrorMessage = null
+        lastImageLoadingState = null
+        currentLayoutState = null // View可視性制御のキャッシュもリセット
+    }
     
+    override fun onResume() {
+        super.onResume()
+        // 画面復帰時はバインディングキャッシュをリセット（状態の整合性確保）
+        resetBindingCache()
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        // 向き変更時もバインディングキャッシュをリセット
+        resetBindingCache()
         
         // Task 10.3: 向き変更時のレイアウト再最適化
         optimizeLayoutForScreenSize()

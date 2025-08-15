@@ -31,6 +31,10 @@ class DetailViewModel(
     private val _clothItem = MutableLiveData<ClothItem?>()
     val clothItem: LiveData<ClothItem?> = _clothItem
 
+    // メモ専用LiveData（点滅防止用）
+    private val _memoContent = MutableLiveData<String>()
+    val memoContent: LiveData<String> = _memoContent
+
     // ローディング状態
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -136,6 +140,8 @@ class DetailViewModel(
                 android.util.Log.d("DetailViewModel", "loadClothItem: repository.getItemById returned item=$item")
                 if (item != null) {
                     _clothItem.value = item
+                    // メモ専用LiveDataも初期化（点滅防止用）
+                    _memoContent.value = item.memo ?: ""
                 } else {
                     _errorMessage.value = "アイテムが見つかりません"
                 }
@@ -170,6 +176,8 @@ class DetailViewModel(
                     android.util.Log.d("DetailViewModel", "handleLoadingError: retry success, item=$item")
                     if (item != null) {
                         _clothItem.value = item
+                        // リトライ成功時もメモ専用LiveDataを初期化（点滅防止用）
+                        _memoContent.value = item.memo ?: ""
                         return
                     }
                 } catch (retryException: Exception) {
@@ -376,6 +384,8 @@ class DetailViewModel(
             
             // 成功時は現在のClothItemも更新
             _clothItem.value = updatedItem
+            // メモ専用LiveDataも更新（点滅防止用）
+            _memoContent.value = memo
             
             // 成功時はリトライカウントをリセット
             memoSaveRetryCount = 0
@@ -441,6 +451,15 @@ class DetailViewModel(
      */
     fun getCurrentMemo(): String {
         return _clothItem.value?.memo ?: ""
+    }
+
+    /**
+     * メモ専用LiveDataから現在のメモテキストを取得（点滅防止用）
+     * 
+     * @return 現在のメモテキスト（空文字列の場合もある）
+     */
+    fun getCurrentMemoFromLiveData(): String {
+        return _memoContent.value ?: ""
     }
     
     /**

@@ -2,6 +2,7 @@ package com.example.clothstock.ui.common
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.TextWatcher
@@ -75,6 +76,17 @@ class MemoInputView @JvmOverloads constructor(
     private val backgroundDrawable: GradientDrawable
     private var memoBackgroundColor: Int = ContextCompat.getColor(context, R.color.memo_background)
     
+    // 背景状態キャッシュ（点滅防止用）
+    private var cachedBackgroundState: Boolean? = null
+    
+    // 部分invalidate用のRect（再利用してGC負荷軽減）
+    private val invalidateRect = Rect()
+    
+    // 描画処理軽量化用キャッシュ
+    private var cachedWarningColor: Int? = null
+    private var cachedNormalColor: Int? = null
+    private var cachedWarningState: Boolean? = null
+    
     companion object {
         // 文字数警告の閾値比率（90%）
         private const val WARNING_THRESHOLD_RATIO = 0.9
@@ -131,40 +143,49 @@ class MemoInputView @JvmOverloads constructor(
     }
 
     /**
-     * テキスト変更時の処理
+     * テキスト変更時の処理（軽量化版）
      * 
      * @param text 現在のテキスト内容
      */
     private fun handleTextChange(text: String) {
-        // 文字数制限の適用
-        val trimmedText = if (text.length > ClothItem.MAX_MEMO_LENGTH) {
-            text.take(ClothItem.MAX_MEMO_LENGTH)
-        } else {
-            text
-        }
+        // 文字数チェック（文字列生成を避けるため、lengthを先にチェック）
+        val textLength = text.length
+        val needsTrimming = textLength > ClothItem.MAX_MEMO_LENGTH
         
-        // 文字数制限でトリミングされた場合はテキストを更新
-        if (trimmedText != text) {
+        val finalText: String
+        val finalLength: Int
+        
+        if (needsTrimming) {
+            // 文字数制限でトリミング（substring使用でGC負荷軽減）
+            finalText = text.substring(0, ClothItem.MAX_MEMO_LENGTH)
+            finalLength = ClothItem.MAX_MEMO_LENGTH
+            
+            // トリミングされた場合はテキストを更新
             isUpdatingText = true // 無限ループ防止フラグを設定
             try {
-                editTextMemo.setText(trimmedText)
-                editTextMemo.setSelection(trimmedText.length)
+                editTextMemo.setText(finalText)
+                editTextMemo.setSelection(finalLength)
             } finally {
                 isUpdatingText = false // フラグを必ずリセット
             }
             return // TextWatcherが再度呼ばれるため、ここで終了
+        } else {
+            finalText = text
+            finalLength = textLength
         }
         
-        // 文字数カウント更新
-        currentCharacterCount = trimmedText.length
-        updateCharacterCount(currentCharacterCount)
+        // 文字数カウント更新（変更された場合のみ）
+        if (currentCharacterCount != finalLength) {
+            currentCharacterCount = finalLength
+            updateCharacterCount(currentCharacterCount)
+        }
         
         // リスナーを呼び出し
-        onMemoChangedListener?.invoke(trimmedText)
+        onMemoChangedListener?.invoke(finalText)
     }
 
     /**
-     * 文字数カウント表示を更新
+     * 文字数カウント表示を更新（部分invalidate版）
      * 
      * @param count 現在の文字数
      */
@@ -178,41 +199,46 @@ class MemoInputView @JvmOverloads constructor(
         
         // アクセシビリティ用のcontentDescriptionを更新
         textCharacterCount.contentDescription = "${count}文字中、最大${ClothItem.MAX_MEMO_LENGTH}文字"
+        
+        // 文字数カウンター領域のみ部分invalidate
+        invalidateCharacterCountArea()
     }
 
     /**
-     * 警告状態の表示を更新
+     * 警告状態の表示を更新（軽量化・キャッシュ版）
      * 
      * @param isWarning 警告状態かどうか
      */
     private fun updateWarningState(isWarning: Boolean) {
+        // 状態が変更されていない場合は処理をスキップ（描画処理軽量化）
+        if (cachedWarningState == isWarning) {
+            return
+        }
+        
+        // 状態キャッシュを更新
+        cachedWarningState = isWarning
+        
         if (isWarning) {
-            // 警告状態: テキスト色を警告色に変更、警告アイコン表示
-            val warningColor = MaterialColors.getColor(
-                context, 
-                com.google.android.material.R.attr.colorError, 
-                "colorError"
-            )
-            textCharacterCount.setTextColor(warningColor)
+            // 警告状態: キャッシュされた警告色を使用、警告アイコン表示
+            textCharacterCount.setTextColor(getWarningColor())
             iconWarning.visibility = View.VISIBLE
             
             // アクセシビリティ: 警告状態を音声読み上げに含める
             textCharacterCount.contentDescription = 
                 "警告: ${currentCharacterCount}文字中、最大${ClothItem.MAX_MEMO_LENGTH}文字。文字数制限に近づいています。"
         } else {
-            // 通常状態: Material Design 3テーマ色、警告アイコン非表示
-            val normalColor = MaterialColors.getColor(
-                context, 
-                com.google.android.material.R.attr.colorOnSurfaceVariant, 
-                "colorOnSurfaceVariant"
-            )
-            textCharacterCount.setTextColor(normalColor)
+            // 通常状態: キャッシュされた通常色を使用、警告アイコン非表示
+            textCharacterCount.setTextColor(getNormalColor())
             iconWarning.visibility = View.GONE
             
             // アクセシビリティ: 通常状態の読み上げ
             textCharacterCount.contentDescription = 
                 "${currentCharacterCount}文字中、最大${ClothItem.MAX_MEMO_LENGTH}文字"
         }
+        
+        // 部分invalidateで描画負荷を軽減
+        invalidateCharacterCountArea()
+        invalidateWarningIconArea()
     }
 
     /**
@@ -231,6 +257,66 @@ class MemoInputView @JvmOverloads constructor(
         // ビュー全体にフォーカス可能性を設定
         isFocusable = true
         isFocusableInTouchMode = true
+    }
+
+    // ===== 部分invalidate機能（点滅防止用） =====
+
+    /**
+     * 文字数カウンター領域のみを部分invalidate
+     */
+    private fun invalidateCharacterCountArea() {
+        if (textCharacterCount.visibility == View.VISIBLE) {
+            getViewBounds(textCharacterCount, invalidateRect)
+            invalidate(invalidateRect)
+        }
+    }
+
+    /**
+     * 警告アイコン領域のみを部分invalidate
+     */
+    private fun invalidateWarningIconArea() {
+        if (iconWarning.visibility == View.VISIBLE) {
+            getViewBounds(iconWarning, invalidateRect)
+            invalidate(invalidateRect)
+        }
+    }
+
+    /**
+     * 指定されたビューの領域を取得
+     * 
+     * @param view 領域を取得するビュー
+     * @param outRect 結果を格納するRect
+     */
+    private fun getViewBounds(view: View, outRect: Rect) {
+        outRect.set(view.left, view.top, view.right, view.bottom)
+    }
+
+    /**
+     * 警告色をキャッシュ付きで取得（描画処理軽量化）
+     */
+    private fun getWarningColor(): Int {
+        if (cachedWarningColor == null) {
+            cachedWarningColor = MaterialColors.getColor(
+                context, 
+                com.google.android.material.R.attr.colorError, 
+                "colorError"
+            )
+        }
+        return cachedWarningColor!!
+    }
+
+    /**
+     * 通常色をキャッシュ付きで取得（描画処理軽量化）
+     */
+    private fun getNormalColor(): Int {
+        if (cachedNormalColor == null) {
+            cachedNormalColor = MaterialColors.getColor(
+                context, 
+                com.google.android.material.R.attr.colorOnSurfaceVariant, 
+                "colorOnSurfaceVariant"
+            )
+        }
+        return cachedNormalColor!!
     }
 
     // ===== パブリックAPI =====
@@ -381,11 +467,20 @@ class MemoInputView @JvmOverloads constructor(
     }
 
     /**
-     * 背景の表示・非表示を更新
+     * 背景の表示・非表示を更新（点滅防止キャッシュ機能付き）
      * 
      * @param hasMemo メモにコンテンツがある場合true
      */
     private fun updateBackgroundVisibility(hasMemo: Boolean) {
+        // 背景状態が実際に変更された場合のみ更新（点滅防止）
+        if (cachedBackgroundState == hasMemo) {
+            return // 状態変更なし、冗長な更新を回避
+        }
+        
+        // キャッシュ状態を更新
+        cachedBackgroundState = hasMemo
+        
+        // 背景の実際の更新（状態変更時のみ）
         background = if (hasMemo) backgroundDrawable else null
         
         // アクセシビリティ用の状態更新
