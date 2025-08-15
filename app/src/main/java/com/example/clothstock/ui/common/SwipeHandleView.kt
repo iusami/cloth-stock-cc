@@ -72,13 +72,15 @@ class SwipeHandleView @JvmOverloads constructor(
      * ハイコントラストモードに応じた色設定
      */
     private fun setupColors() {
-        if (isHighContrastEnabled()) {
-            buttonBackgroundColor = ContextCompat.getColor(context, R.color.md_theme_dark_surface)
-            buttonStrokeColor = ContextCompat.getColor(context, R.color.md_theme_dark_outline)
+        val (bgColor, strokeColor) = if (isHighContrastEnabled()) {
+            ContextCompat.getColor(context, R.color.md_theme_dark_surface) to
+                ContextCompat.getColor(context, R.color.md_theme_dark_outline)
         } else {
-            buttonBackgroundColor = ContextCompat.getColor(context, R.color.md_theme_light_surface)
-            buttonStrokeColor = ContextCompat.getColor(context, R.color.md_theme_light_outline)
+            ContextCompat.getColor(context, R.color.md_theme_light_surface) to
+                ContextCompat.getColor(context, R.color.md_theme_light_outline)
         }
+        buttonBackgroundColor = bgColor
+        buttonStrokeColor = strokeColor
     }
 
     /**
@@ -156,18 +158,12 @@ class SwipeHandleView @JvmOverloads constructor(
      * @param strokeColor 新しいボーダー色
      */
     fun setButtonColors(backgroundColor: Int, strokeColor: Int) {
-        var changed = false
-        if (buttonBackgroundColor != backgroundColor) {
-            buttonBackgroundColor = backgroundColor
-            changed = true
+        if (buttonBackgroundColor == backgroundColor && buttonStrokeColor == strokeColor) {
+            return
         }
-        if (buttonStrokeColor != strokeColor) {
-            buttonStrokeColor = strokeColor
-            changed = true
-        }
-        if (changed) {
-            invalidate()
-        }
+        buttonBackgroundColor = backgroundColor
+        buttonStrokeColor = strokeColor
+        invalidate()
     }
 
     /**
