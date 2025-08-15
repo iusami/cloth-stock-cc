@@ -46,6 +46,9 @@ class DetailViewModel(
     // 画像読み込み状態
     private val _isImageLoading = MutableLiveData<Boolean>()  
     val isImageLoading: LiveData<Boolean> = _isImageLoading
+    
+    // 画像状態管理強化（Phase 2追加）
+    private var lastImageLoadState: Boolean? = null
 
     // パフォーマンス最適化: コルーチンJob管理
     private var loadingJob: Job? = null
@@ -207,24 +210,36 @@ class DetailViewModel(
     }
 
     /**
-     * 画像読み込み開始
+     * 画像読み込み開始（Phase 2: 状態管理強化版）
      */
     fun onImageLoadStart() {
-        _isImageLoading.value = true
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != true) {
+            lastImageLoadState = true
+            _isImageLoading.value = true
+        }
     }
 
     /**
-     * 画像読み込み完了
+     * 画像読み込み完了（Phase 2: 状態管理強化版）
      */
     fun onImageLoadComplete() {
-        _isImageLoading.value = false
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != false) {
+            lastImageLoadState = false
+            _isImageLoading.value = false
+        }
     }
 
     /**
-     * 画像読み込み失敗
+     * 画像読み込み失敗（Phase 2: 状態管理強化版）
      */
     fun onImageLoadFailed() {
-        _isImageLoading.value = false
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != false) {
+            lastImageLoadState = false
+            _isImageLoading.value = false
+        }
     }
 
     /**

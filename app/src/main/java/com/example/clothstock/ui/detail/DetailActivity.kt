@@ -72,6 +72,11 @@ class DetailActivity : AppCompatActivity() {
     // View可視性制御改善用（点滅防止）
     private var currentLayoutState: LayoutState? = null
     
+    // 画像点滅防止用（Phase 2追加）
+    private var currentImagePath: String? = null
+    private var isImageProcessing: Boolean = false
+    private var imageViewAnimationInProgress: Boolean = false
+    
     /**
      * レイアウト状態の定義
      */
@@ -239,7 +244,7 @@ class DetailActivity : AppCompatActivity() {
         
         // メモ専用LiveDataの監視（点滅防止用）
         viewModel.memoContent.observe(this) { memoContent ->
-            // メモのみの更新時は軽量な処理のみ実行
+            // メモのみの更新時は軽量な処理のみ実行（画像処理は完全にバイパス）
             displayMemoInformation(memoContent)
         }
         
@@ -256,24 +261,60 @@ class DetailActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) {
                 android.util.Log.d("DetailActivity", "displayClothItem: called with clothItem=$clothItem")
             }
+        
         // データバインディング実行最適化：実際に変更された場合のみ更新（点滅防止）
         if (lastBoundClothItem != clothItem) {
             lastBoundClothItem = clothItem
             binding.clothItem = clothItem
         }
 
+        // 画像処理とデータ処理を分離（Phase 2改善）
+        displayClothItemImage(clothItem)
+        displayClothItemData(clothItem)
+    }
+
+    /**
+     * ClothItem画像の表示（Phase 2: 点滅防止版）
+     */
+    private fun displayClothItemImage(clothItem: com.example.clothstock.data.model.ClothItem) {
+        val imagePath = clothItem.imagePath
+        
+        // 同じ画像パスの場合は処理をスキップ（点滅防止）
+        if (currentImagePath == imagePath && !isImageProcessing) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("DetailActivity", "Same image path, skipping image load: $imagePath")
+            }
+            return
+        }
+        
+        // 画像処理状態を更新
+        currentImagePath = imagePath
+        isImageProcessing = true
+        
         // パフォーマンス最適化されたGlide設定
         viewModel.onImageLoadStart()
         
         // フルサイズ表示用の最適化設定（ハードウェアビットマップ有効）
         val requestOptions = GlideUtils.getFullSizeDisplayOptions()
         
-        Glide.with(this)
-            .load(clothItem.imagePath)
+        // Glide設定（アニメーション条件制御・キャッシュ戦略最適化）
+        val glideRequest = Glide.with(this)
+            .load(imagePath)
             .apply(requestOptions)
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE) // リソースキャッシュ戦略
+            .skipMemoryCache(false) // メモリキャッシュを有効化
             .placeholder(R.drawable.ic_photo_placeholder)
             .error(R.drawable.ic_error_photo)
-            .transition(DrawableTransitionOptions.withCrossFade(300)) // アニメーション時間最適化
+        
+        // 初回読み込み時のみクロスフェードアニメーションを実行（点滅防止）
+        val finalRequest = if (currentImagePath == null) {
+            glideRequest.transition(DrawableTransitionOptions.withCrossFade(300))
+        } else {
+            // 同じ種類の画像の場合はアニメーションをスキップ
+            glideRequest
+        }
+        
+        finalRequest
             .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
                 override fun onLoadFailed(
                     e: com.bumptech.glide.load.engine.GlideException?,
@@ -282,6 +323,7 @@ class DetailActivity : AppCompatActivity() {
                     isFirstResource: Boolean
                 ): Boolean {
                     android.util.Log.e("DetailActivity", "Glide image load failed", e)
+                    isImageProcessing = false // 処理完了
                     viewModel.onImageLoadFailed()
                     return false
                 }
@@ -294,16 +336,36 @@ class DetailActivity : AppCompatActivity() {
                     isFirstResource: Boolean
                 ): Boolean {
                     android.util.Log.d("DetailActivity", "Glide image load success")
+                    isImageProcessing = false // 処理完了
                     viewModel.onImageLoadComplete()
-                    // 画像表示成功時のスケールインアニメーション
-                    binding.imageViewClothDetail.startAnimation(
-                        AnimationUtils.loadAnimation(this@DetailActivity, R.anim.scale_in)
-                    )
+                    
+                    // 画像表示成功時のスケールインアニメーション（アニメーション重複防止）
+                    if (!imageViewAnimationInProgress && isFirstResource) {
+                        imageViewAnimationInProgress = true
+                        val animation = AnimationUtils.loadAnimation(this@DetailActivity, R.anim.scale_in)
+                        animation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                            override fun onAnimationStart(animation: android.view.animation.Animation?) {
+                                // アニメーション開始時の処理（必要に応じて実装）
+                            }
+                            override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                                imageViewAnimationInProgress = false
+                            }
+                            override fun onAnimationRepeat(animation: android.view.animation.Animation?) {
+                                // アニメーション繰り返し時の処理（必要に応じて実装）
+                            }
+                        })
+                        binding.imageViewClothDetail.startAnimation(animation)
+                    }
                     return false
                 }
             })
             .into(binding.imageViewClothDetail)
+    }
 
+    /**
+     * ClothItemデータの表示（画像以外）
+     */
+    private fun displayClothItemData(clothItem: com.example.clothstock.data.model.ClothItem) {
         // Task 10.2: SwipeableDetailPanelまたはフォールバックにタグ情報を表示
         displayTagInformation(clothItem)
         
@@ -917,6 +979,11 @@ class DetailActivity : AppCompatActivity() {
         lastErrorMessage = null
         lastImageLoadingState = null
         currentLayoutState = null // View可視性制御のキャッシュもリセット
+        
+        // Phase 2: 画像点滅防止キャッシュもリセット
+        currentImagePath = null
+        isImageProcessing = false
+        imageViewAnimationInProgress = false
     }
     
     override fun onResume() {
