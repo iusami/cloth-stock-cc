@@ -31,6 +31,10 @@ class DetailViewModel(
     private val _clothItem = MutableLiveData<ClothItem?>()
     val clothItem: LiveData<ClothItem?> = _clothItem
 
+    // メモ専用LiveData（点滅防止用）
+    private val _memoContent = MutableLiveData<String>()
+    val memoContent: LiveData<String> = _memoContent
+
     // ローディング状態
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -42,6 +46,9 @@ class DetailViewModel(
     // 画像読み込み状態
     private val _isImageLoading = MutableLiveData<Boolean>()  
     val isImageLoading: LiveData<Boolean> = _isImageLoading
+    
+    // 画像状態管理強化（Phase 2追加）
+    private var lastImageLoadState: Boolean? = null
 
     // パフォーマンス最適化: コルーチンJob管理
     private var loadingJob: Job? = null
@@ -53,6 +60,9 @@ class DetailViewModel(
     // メモ保存機能
     private val _memoSaveState = MutableLiveData<MemoSaveState>()
     val memoSaveState: LiveData<MemoSaveState> = _memoSaveState
+    
+    // 保存フィードバック制御用
+    private var lastSaveCompletionTime: Long = 0
     
     // メモ保存用のFlowとdebounceによる自動保存
     @OptIn(FlowPreview::class)
@@ -72,7 +82,7 @@ class DetailViewModel(
     
     companion object {
         private const val MEMO_SAVE_DEBOUNCE_MS = 1000L // 1秒のdebounce
-        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 2000L // 保存成功表示時間
+        private const val SAVE_SUCCESS_DISPLAY_TIME_MS = 500L // 保存成功表示時間（短縮）
         private const val ERROR_DISPLAY_TIME_MS = 5000L // エラー表示時間
     }
     
@@ -133,6 +143,8 @@ class DetailViewModel(
                 android.util.Log.d("DetailViewModel", "loadClothItem: repository.getItemById returned item=$item")
                 if (item != null) {
                     _clothItem.value = item
+                    // メモ専用LiveDataも初期化（点滅防止用）
+                    _memoContent.value = item.memo ?: ""
                 } else {
                     _errorMessage.value = "アイテムが見つかりません"
                 }
@@ -167,6 +179,8 @@ class DetailViewModel(
                     android.util.Log.d("DetailViewModel", "handleLoadingError: retry success, item=$item")
                     if (item != null) {
                         _clothItem.value = item
+                        // リトライ成功時もメモ専用LiveDataを初期化（点滅防止用）
+                        _memoContent.value = item.memo ?: ""
                         return
                     }
                 } catch (retryException: Exception) {
@@ -196,24 +210,36 @@ class DetailViewModel(
     }
 
     /**
-     * 画像読み込み開始
+     * 画像読み込み開始（Phase 2: 状態管理強化版）
      */
     fun onImageLoadStart() {
-        _isImageLoading.value = true
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != true) {
+            lastImageLoadState = true
+            _isImageLoading.value = true
+        }
     }
 
     /**
-     * 画像読み込み完了
+     * 画像読み込み完了（Phase 2: 状態管理強化版）
      */
     fun onImageLoadComplete() {
-        _isImageLoading.value = false
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != false) {
+            lastImageLoadState = false
+            _isImageLoading.value = false
+        }
     }
 
     /**
-     * 画像読み込み失敗
+     * 画像読み込み失敗（Phase 2: 状態管理強化版）
      */
     fun onImageLoadFailed() {
-        _isImageLoading.value = false
+        // 状態が実際に変更された場合のみ更新（点滅防止）
+        if (lastImageLoadState != false) {
+            lastImageLoadState = false
+            _isImageLoading.value = false
+        }
     }
 
     /**
@@ -357,6 +383,11 @@ class DetailViewModel(
     private suspend fun saveMemoInternal(memo: String, isRetry: Boolean = false) {
         val currentItem = _clothItem.value ?: return
         
+        // 現在のメモと同じ場合は保存をスキップ（無駄な更新を防ぐ）
+        if (currentItem.memo == memo) {
+            return
+        }
+        
         try {
             _memoSaveState.value = MemoSaveState.Saving
             
@@ -368,14 +399,25 @@ class DetailViewModel(
             
             // 成功時は現在のClothItemも更新
             _clothItem.value = updatedItem
-            _memoSaveState.value = MemoSaveState.Saved
+            // メモ専用LiveDataも更新（点滅防止用）
+            _memoContent.value = memo
             
             // 成功時はリトライカウントをリセット
             memoSaveRetryCount = 0
             
-            // 2秒後にIdleに戻す（UIフィードバックのため）
-            delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
-            _memoSaveState.value = MemoSaveState.Idle
+            // 頻繁な保存時はフィードバックを制限
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastSaveCompletionTime > SAVE_SUCCESS_DISPLAY_TIME_MS * 2) {
+                _memoSaveState.value = MemoSaveState.Saved
+                // 短時間後にIdleに戻す
+                delay(SAVE_SUCCESS_DISPLAY_TIME_MS)
+                _memoSaveState.value = MemoSaveState.Idle
+            } else {
+                // 頻繁な保存時はSavedをスキップして直接Idleに
+                _memoSaveState.value = MemoSaveState.Idle
+            }
+            
+            lastSaveCompletionTime = currentTime
             
         } catch (e: Exception) {
             handleMemoSaveError(e, memo, isRetry)
@@ -424,6 +466,15 @@ class DetailViewModel(
      */
     fun getCurrentMemo(): String {
         return _clothItem.value?.memo ?: ""
+    }
+
+    /**
+     * メモ専用LiveDataから現在のメモテキストを取得（点滅防止用）
+     * 
+     * @return 現在のメモテキスト（空文字列の場合もある）
+     */
+    fun getCurrentMemoFromLiveData(): String {
+        return _memoContent.value ?: ""
     }
     
     /**

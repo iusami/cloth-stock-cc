@@ -157,8 +157,8 @@ class DetailViewModelTest {
         viewModel.loadClothItem(1L)
         advanceTimeBy(100L)
         
-        // When
-        viewModel.saveMemoImmediately("Test memo")
+        // When - 現在のメモと異なる内容で保存を試行
+        viewModel.saveMemoImmediately("Different memo content")
         advanceTimeBy(1L)
         
         // Then

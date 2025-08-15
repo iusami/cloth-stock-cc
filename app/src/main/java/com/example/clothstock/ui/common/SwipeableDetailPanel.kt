@@ -179,7 +179,7 @@ class SwipeableDetailPanel @JvmOverloads constructor(
     fun getPanelState(): PanelState = panelState
     
     /**
-     * パネル状態を設定する（品質向上版）
+     * パネル状態を設定する（更新最適化版）
      * 
      * @param state 新しいパネル状態
      * @param notifyListener リスナーに通知するかどうか（デフォルト: true）
@@ -189,8 +189,8 @@ class SwipeableDetailPanel @JvmOverloads constructor(
             val oldState = panelState
             panelState = state
             
-            // 視覚的状態変更を適用
-            applyVisualStateChange(state)
+            // 視覚的状態変更を適用（最適化版）
+            applyVisualStateChangeOptimized(state)
             
             // パフォーマンス最適化：不要な通知を避ける
             if (notifyListener) {
@@ -205,37 +205,65 @@ class SwipeableDetailPanel @JvmOverloads constructor(
         }
     }
     
+
     /**
-     * パネル状態変更時の視覚的変更を適用
+     * パネル状態変更時の視覚的変更を適用（更新最適化版）
+     * より効率的なView更新でパフォーマンスを向上
      * @param newState 新しい状態
      */
-    private fun applyVisualStateChange(newState: PanelState) {
+    private fun applyVisualStateChangeOptimized(newState: PanelState) {
         // アニメーション進行中フラグを設定
         if (newState == PanelState.ANIMATING) {
             // アニメーション状態では視覚的変更なし
             return
         }
         
-        // SwipeableDetailPanel自体は常に表示状態を維持
-        visibility = View.VISIBLE
-        alpha = 1.0f
+        // 事前にバインディングを取得してnullチェックを1回だけ実行
+        val safeBinding = binding ?: return
         
-        // コンテンツコンテナーの表示制御
-        binding?.contentContainer?.let { contentContainer ->
+        // SwipeableDetailPanel自体は常に表示状態を維持（バッチ更新）
+        var needsPanelUpdate = false
+        if (visibility != View.VISIBLE) {
+            visibility = View.VISIBLE
+            needsPanelUpdate = true
+        }
+        if (alpha != 1.0f) {
+            alpha = 1.0f
+            needsPanelUpdate = true
+        }
+        
+        // コンテンツコンテナーの表示制御（バッチ更新）
+        safeBinding.contentContainer.let { contentContainer ->
             when (newState) {
                 PanelState.SHOWN -> {
                     // パネル表示状態：コンテンツを表示
-                    contentContainer.visibility = View.VISIBLE
-                    contentContainer.alpha = 1.0f
-                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
-                        android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
+                    var needsContentUpdate = false
+                    if (contentContainer.visibility != View.VISIBLE) {
+                        contentContainer.visibility = View.VISIBLE
+                        needsContentUpdate = true
+                        if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                            android.util.Log.d(LOG_TAG, "パネルコンテンツを表示状態に設定")
+                        }
+                    }
+                    if (contentContainer.alpha != 1.0f) {
+                        contentContainer.alpha = 1.0f
+                        needsContentUpdate = true
+                    }
+                    
+                    // 必要な場合のみinvalidate実行
+                    if (needsContentUpdate || needsPanelUpdate) {
+                        contentContainer.invalidate()
                     }
                 }
                 PanelState.HIDDEN -> {
                     // パネル非表示状態：コンテンツのみ非表示、ハンドルは表示維持
-                    contentContainer.visibility = View.GONE
-                    if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
-                        android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
+                    if (contentContainer.visibility != View.GONE) {
+                        contentContainer.visibility = View.GONE
+                        if (android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) {
+                            android.util.Log.d(LOG_TAG, "パネルコンテンツを非表示状態に設定（ハンドルは表示維持）")
+                        }
+                        // コンテンツが非表示になる場合のみinvalidate
+                        contentContainer.invalidate()
                     }
                 }
                 PanelState.ANIMATING -> {
