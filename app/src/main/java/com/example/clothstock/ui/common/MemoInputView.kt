@@ -468,6 +468,7 @@ class MemoInputView @JvmOverloads constructor(
 
     /**
      * 背景の表示・非表示を更新（点滅防止キャッシュ機能付き）
+     * 修正版：メモが空でも薄い背景を維持して視認性を確保
      * 
      * @param hasMemo メモにコンテンツがある場合true
      */
@@ -480,8 +481,11 @@ class MemoInputView @JvmOverloads constructor(
         // キャッシュ状態を更新
         cachedBackgroundState = hasMemo
         
-        // 背景の実際の更新（状態変更時のみ）
-        background = if (hasMemo) backgroundDrawable else null
+        // 背景の実際の更新（常に背景を表示、完全不透明で固定）
+        background = backgroundDrawable
+        
+        // 透過問題解決：alpha値を常に完全不透明に固定
+        alpha = 1.0f
         
         // アクセシビリティ用の状態更新
         contentDescription = if (hasMemo) {

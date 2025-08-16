@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    
+    <!-- ダークモード用：完全に不透明な濃いグレー（透過なし） -->
+    <solid android:color="#2D2D2D" />
+    
+    <!-- 角丸でカード風デザイン -->
+    <corners android:radius="16dp" />
+    
+    <!-- ダークモード用：明確な境界線でコンテンツを区別 -->
+    <stroke 
+        android:width="2dp" 
+        android:color="#505050" />
+        
+</shape>
