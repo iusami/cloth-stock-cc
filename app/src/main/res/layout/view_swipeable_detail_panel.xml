@@ -23,7 +23,8 @@
         android:padding="@dimen/panel_content_padding"
         android:layout_marginHorizontal="8dp"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/detail_panel_background"
+        android:background="#FFFFFF"
+        android:alpha="1.0"
         android:elevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -44,6 +45,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="#FFFFFF"
+            android:alpha="1.0"
             android:padding="12dp"
             android:layout_marginTop="8dp"
             android:elevation="2dp">
@@ -55,6 +57,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                 android:background="#FFFFFF"
+                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="サイズ: 100" />
 
@@ -65,6 +68,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                 android:background="#FFFFFF"
+                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="色: 青" />
 
@@ -75,6 +79,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                 android:background="#FFFFFF"
+                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="カテゴリ: トップス" />
 
@@ -86,6 +91,7 @@
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:background="#FFFFFF"
+                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="2023年1月1日" />
 

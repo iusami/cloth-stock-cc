@@ -805,7 +805,7 @@ class DetailActivity : AppCompatActivity() {
                 memoInputView = memoView
                 
                 // プログラマティック背景強制：確実に白色背景を設定
-                forceProgrammaticBackgrounds(panel)
+                forceDetailTextViewBackgrounds(panel)
                 
                 android.util.Log.i("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
             } ?: run {
@@ -844,26 +844,25 @@ class DetailActivity : AppCompatActivity() {
     }
     
     /**
-     * プログラマティック背景強制設定
+     * 詳細パネル全体と各エリアの背景強制設定
      * XMLで設定した背景が確実に適用されることを保証
      */
-    private fun forceProgrammaticBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
+    private fun forceDetailTextViewBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
         try {
-            android.util.Log.i("DetailActivity", "プログラマティック背景強制開始")
+            android.util.Log.i("DetailActivity", "詳細パネル全体背景強制開始")
             
-            // contentContainerの背景強制
+            // contentContainer（パネル全体）の背景強制
             val contentContainer = panel.findViewById<android.widget.LinearLayout>(R.id.contentContainer)
-            contentContainer?.setBackgroundColor(android.graphics.Color.WHITE)
+            contentContainer?.let { container ->
+                container.setBackgroundColor(android.graphics.Color.WHITE)
+                container.alpha = 1.0f
+            }
             
             // tagInfoContainerの背景強制
             val tagInfoContainer = panel.findViewById<android.widget.LinearLayout>(R.id.tagInfoContainer)
-            tagInfoContainer?.setBackgroundColor(android.graphics.Color.WHITE)
-            
-            // MemoInputViewの背景とalpha強制
-            val memoInputView = panel.findViewById<com.example.clothstock.ui.common.MemoInputView>(R.id.memoInputView)
-            memoInputView?.let { memo ->
-                memo.setBackgroundColor(android.graphics.Color.WHITE)
-                memo.alpha = 1.0f // 完全不透明に強制
+            tagInfoContainer?.let { container ->
+                container.setBackgroundColor(android.graphics.Color.WHITE)
+                container.alpha = 1.0f
             }
             
             // 各TextViewの背景強制
@@ -876,9 +875,9 @@ class DetailActivity : AppCompatActivity() {
             panel.findViewById<android.widget.TextView>(R.id.textCreatedDate)
                 ?.setBackgroundColor(android.graphics.Color.WHITE)
             
-            android.util.Log.i("DetailActivity", "プログラマティック背景強制完了")
+            android.util.Log.i("DetailActivity", "詳細パネル全体背景強制完了")
         } catch (e: Exception) {
-            android.util.Log.e("DetailActivity", "プログラマティック背景強制失敗", e)
+            android.util.Log.e("DetailActivity", "詳細パネル全体背景強制失敗", e)
         }
     }
     
