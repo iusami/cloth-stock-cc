@@ -6,7 +6,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp">
+    android:paddingVertical="8dp"
+    android:background="#FFFFFF">
 
     <!-- メモ入力用のテキストラベル -->
     <TextView
