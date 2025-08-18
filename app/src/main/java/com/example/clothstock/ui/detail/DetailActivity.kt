@@ -804,8 +804,8 @@ class DetailActivity : AppCompatActivity() {
                 // SwipeableDetailPanel内のMemoInputViewを使用
                 memoInputView = memoView
                 
-                // 軽量プログラマティック補強：コンテナ背景を確実に白色設定
-                ensureContainerBackgrounds(panel)
+                // テーマ対応背景補強：XML設定をテーマ情報で補強
+                ensureThemeCompatibleBackgrounds(panel)
                 
                 android.util.Log.i("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
             } ?: run {
@@ -844,26 +844,31 @@ class DetailActivity : AppCompatActivity() {
     }
     
     /**
-     * コンテナ背景の確実な白色設定を保証（軽量版）
-     * XML設定を補強し、確実な背景表示を実現
+     * テーマ対応背景補強（PRレビュー対応版）
+     * ハードコード色を使わず、テーマから動的に色を取得
      */
-    private fun ensureContainerBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
+    private fun ensureThemeCompatibleBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
         try {
+            // テーマから背景色を動的取得
+            val backgroundColor = androidx.core.content.ContextCompat.getColor(
+                this, R.color.detail_tag_info_background
+            )
+            
             // contentContainerの背景確実設定
             val contentContainer = panel.findViewById<android.widget.LinearLayout>(R.id.contentContainer)
             contentContainer?.let { container ->
-                container.setBackgroundColor(android.graphics.Color.WHITE)
+                container.setBackgroundColor(backgroundColor)
                 container.alpha = 1.0f
             }
             
             // tagInfoContainerの背景確実設定
             val tagInfoContainer = panel.findViewById<android.widget.LinearLayout>(R.id.tagInfoContainer)
             tagInfoContainer?.let { container ->
-                container.setBackgroundColor(android.graphics.Color.WHITE)
+                container.setBackgroundColor(backgroundColor)
                 container.alpha = 1.0f
             }
         } catch (e: Exception) {
-            android.util.Log.w("DetailActivity", "コンテナ背景設定で警告", e)
+            android.util.Log.w("DetailActivity", "テーマ対応背景設定で警告", e)
         }
     }
     
