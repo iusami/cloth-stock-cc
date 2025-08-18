@@ -804,8 +804,8 @@ class DetailActivity : AppCompatActivity() {
                 // SwipeableDetailPanel内のMemoInputViewを使用
                 memoInputView = memoView
                 
-                // プログラマティック背景強制：確実に白色背景を設定
-                forceDetailTextViewBackgrounds(panel)
+                // 軽量プログラマティック補強：コンテナ背景を確実に白色設定
+                ensureContainerBackgrounds(panel)
                 
                 android.util.Log.i("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
             } ?: run {
@@ -844,40 +844,26 @@ class DetailActivity : AppCompatActivity() {
     }
     
     /**
-     * 詳細パネル全体と各エリアの背景強制設定
-     * XMLで設定した背景が確実に適用されることを保証
+     * コンテナ背景の確実な白色設定を保証（軽量版）
+     * XML設定を補強し、確実な背景表示を実現
      */
-    private fun forceDetailTextViewBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
+    private fun ensureContainerBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
         try {
-            android.util.Log.i("DetailActivity", "詳細パネル全体背景強制開始")
-            
-            // contentContainer（パネル全体）の背景強制
+            // contentContainerの背景確実設定
             val contentContainer = panel.findViewById<android.widget.LinearLayout>(R.id.contentContainer)
             contentContainer?.let { container ->
                 container.setBackgroundColor(android.graphics.Color.WHITE)
                 container.alpha = 1.0f
             }
             
-            // tagInfoContainerの背景強制
+            // tagInfoContainerの背景確実設定
             val tagInfoContainer = panel.findViewById<android.widget.LinearLayout>(R.id.tagInfoContainer)
             tagInfoContainer?.let { container ->
                 container.setBackgroundColor(android.graphics.Color.WHITE)
                 container.alpha = 1.0f
             }
-            
-            // 各TextViewの背景強制
-            panel.findViewById<android.widget.TextView>(R.id.textSize)
-                ?.setBackgroundColor(android.graphics.Color.WHITE)
-            panel.findViewById<android.widget.TextView>(R.id.textColor)
-                ?.setBackgroundColor(android.graphics.Color.WHITE)
-            panel.findViewById<android.widget.TextView>(R.id.textCategory)
-                ?.setBackgroundColor(android.graphics.Color.WHITE)
-            panel.findViewById<android.widget.TextView>(R.id.textCreatedDate)
-                ?.setBackgroundColor(android.graphics.Color.WHITE)
-            
-            android.util.Log.i("DetailActivity", "詳細パネル全体背景強制完了")
         } catch (e: Exception) {
-            android.util.Log.e("DetailActivity", "詳細パネル全体背景強制失敗", e)
+            android.util.Log.w("DetailActivity", "コンテナ背景設定で警告", e)
         }
     }
     

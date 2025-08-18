@@ -56,8 +56,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                android:background="#FFFFFF"
-                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="サイズ: 100" />
 
@@ -67,8 +65,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                android:background="#FFFFFF"
-                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="色: 青" />
 
@@ -78,8 +74,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                android:background="#FFFFFF"
-                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="カテゴリ: トップス" />
 
@@ -90,8 +84,6 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:background="#FFFFFF"
-                android:alpha="1.0"
                 android:padding="4dp"
                 tools:text="2023年1月1日" />
 
