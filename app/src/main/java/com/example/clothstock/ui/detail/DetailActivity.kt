@@ -804,6 +804,9 @@ class DetailActivity : AppCompatActivity() {
                 // SwipeableDetailPanel内のMemoInputViewを使用
                 memoInputView = memoView
                 
+                // テーマ対応背景補強：XML設定をテーマ情報で補強
+                ensureThemeCompatibleBackgrounds(panel)
+                
                 android.util.Log.i("DetailActivity", "SwipeableDetailPanel内のMemoInputView初期化完了")
             } ?: run {
                 android.util.Log.w("DetailActivity", "SwipeableDetailPanel内にMemoInputViewが見つかりません")
@@ -837,6 +840,35 @@ class DetailActivity : AppCompatActivity() {
                     android.util.Log.e("DetailActivity", "フォールバック用MemoInputView初期化も失敗", fallbackException)
                 }
             }
+        }
+    }
+    
+    /**
+     * テーマ対応背景補強（PRレビュー対応版）
+     * ハードコード色を使わず、テーマから動的に色を取得
+     */
+    private fun ensureThemeCompatibleBackgrounds(panel: com.example.clothstock.ui.common.SwipeableDetailPanel) {
+        try {
+            // テーマから背景色を動的取得
+            val backgroundColor = androidx.core.content.ContextCompat.getColor(
+                this, R.color.detail_tag_info_background
+            )
+            
+            // contentContainerの背景確実設定
+            val contentContainer = panel.findViewById<android.widget.LinearLayout>(R.id.contentContainer)
+            contentContainer?.let { container ->
+                container.setBackgroundColor(backgroundColor)
+                container.alpha = 1.0f
+            }
+            
+            // tagInfoContainerの背景確実設定
+            val tagInfoContainer = panel.findViewById<android.widget.LinearLayout>(R.id.tagInfoContainer)
+            tagInfoContainer?.let { container ->
+                container.setBackgroundColor(backgroundColor)
+                container.alpha = 1.0f
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("DetailActivity", "テーマ対応背景設定で警告", e)
         }
     }
     
