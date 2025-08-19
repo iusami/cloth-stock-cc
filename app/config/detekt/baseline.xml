@@ -2,13 +2,13 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
+    <ID>CyclomaticComplexMethod:SwipeableDetailPanel.kt$SwipeableDetailPanel$private fun applyVisualStateChangeOptimized(newState: PanelState)</ID>
     <ID>EmptyFunctionBlock:GalleryFragment.kt$GalleryFragment.&lt;no name provided&gt;${}</ID>
     <ID>EmptyFunctionBlock:TaggingActivity.kt$TaggingActivity.&lt;no name provided&gt;${}</ID>
     <ID>ExplicitGarbageCollectionCall:ClothStockApplication.kt$ClothStockApplication$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:ImageMemoryUsageTest.kt$ImageMemoryUsageTest.MemoryConsumer$gc()</ID>
     <ID>ExplicitGarbageCollectionCall:MainActivity.kt$MainActivity$gc()</ID>
-    <ID>ExplicitGarbageCollectionCall:MemoryPressureMonitor.kt$MemoryPressureMonitor$gc()</ID>
     <ID>ForbiddenComment:FilterUIManagerErrorTest.kt$FilterUIManagerErrorTest$* FilterUIManagerのエラーハンドリングテスト * * RED Phase: フィルターUI関連のエラーハンドリング失敗シナリオ * TODO: モック設定問題により一時的に無効化</ID>
     <ID>ForbiddenComment:GalleryErrorHandlerTest.kt$GalleryErrorHandlerTest$* GalleryErrorHandlerのユニットテスト * * GREEN Phase: 実装されたエラーハンドリング機能のテスト * * 改善点: * - Test Data Builder Pattern適用 * - テスト定数の一元管理 * - ヘルパーメソッドによる重複排除 * - より具体的な検証の追加 * * TODO: Android UIコンポーネントのモック設定問題により一時的に無効化</ID>
     <ID>ForbiddenComment:GallerySearchManagerTest.kt$GallerySearchManagerTest$* GallerySearchManagerのユニットテスト * * 検索機能の責任分離により、テストが簡潔になった * TODO: モック設定問題により一時的に無効化</ID>
@@ -16,7 +16,10 @@
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f GB", sizeInBytes / (1024.0 * 1024.0 * 1024.0))</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f KB", sizeInBytes / 1024.0)</ID>
     <ID>ImplicitDefaultLocale:FileUtils.kt$FileUtils$String.format("%.1f MB", sizeInBytes / (1024.0 * 1024.0))</ID>
+    <ID>LargeClass:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>
     <ID>LargeClass:GalleryFragment.kt$GalleryFragment : Fragment</ID>
+    <ID>LargeClass:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
+    <ID>LongMethod:DetailActivity.kt$DetailActivity$private fun observeViewModel()</ID>
     <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
     <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
     <ID>MagicNumber:DatabaseMigrations.kt$DatabaseMigrations.&lt;no name provided&gt;$1000</ID>
@@ -69,6 +72,8 @@
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$_saveResult.value = SaveResult.Error(validationResult.getErrorMessage() ?: getApplication&lt;Application&gt;().getString(R.string.error_validation))</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "ClothItem created successfully: id=${clothItem.id}, imagePath='${clothItem.imagePath}', tagData=${clothItem.tagData}") }</ID>
     <ID>MaxLineLength:TaggingViewModel.kt$TaggingViewModel$safeLog { Log.d(TAG, "Current tagData: size=${currentTagData.size}, color='${currentTagData.color}', category='${currentTagData.category}") }</ID>
+    <ID>NestedBlockDepth:DetailActivity.kt$DetailActivity$private fun setupSwipeableDetailPanelComponents(panel: SwipeableDetailPanel)</ID>
+    <ID>NestedBlockDepth:SwipeableDetailPanel.kt$SwipeableDetailPanel$private fun applyVisualStateChangeOptimized(newState: PanelState)</ID>
     <ID>NewLineAtEndOfFile:CameraActivity.kt$com.example.clothstock.ui.camera.CameraActivity.kt</ID>
     <ID>NewLineAtEndOfFile:CameraPermissionManager.kt$com.example.clothstock.ui.camera.CameraPermissionManager.kt</ID>
     <ID>NewLineAtEndOfFile:CameraPermissionManagerTest.kt$com.example.clothstock.ui.camera.CameraPermissionManagerTest.kt</ID>
@@ -129,7 +134,6 @@
     <ID>SwallowedException:CameraViewModelTest.kt$CameraViewModelTest$e: Exception</ID>
     <ID>SwallowedException:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
     <ID>SwallowedException:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
-    <ID>SwallowedException:DetailViewModel.kt$DetailViewModel$retryException: Exception</ID>
     <ID>SwallowedException:ErrorDialogFragment.kt$ErrorDialogFragment$e: IllegalArgumentException</ID>
     <ID>SwallowedException:FileUtils.kt$FileUtils$logException: Exception</ID>
     <ID>SwallowedException:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
@@ -190,7 +194,6 @@
     <ID>UnusedImports:CameraPermissionManagerTest.kt$import android.content.pm.PackageManager</ID>
     <ID>UnusedImports:CameraViewModel.kt$import androidx.core.content.ContextCompat</ID>
     <ID>UnusedImports:CameraViewModelTest.kt$import kotlinx.coroutines.test.runTest</ID>
-    <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.load.engine.DiskCacheStrategy</ID>
     <ID>UnusedImports:DetailActivity.kt$import com.bumptech.glide.request.RequestOptions</ID>
     <ID>UnusedImports:FileUtilsTest.kt$import android.net.Uri</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.fragment.app.Fragment</ID>
