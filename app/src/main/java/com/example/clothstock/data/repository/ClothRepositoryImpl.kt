@@ -7,6 +7,7 @@ import com.example.clothstock.data.database.ClothDatabase
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.model.PaginationSearchParameters
+import com.example.clothstock.data.model.DeletionResult
 
 /**
  * ClothRepository の実装クラス
@@ -113,6 +114,119 @@ class ClothRepositoryImpl(
 
     override suspend fun deleteAllItems(): Int {
         return clothDao.deleteAll()
+    }
+
+    override suspend fun deleteItems(items: List<ClothItem>): DeletionResult {
+        // 🟢 TDD Green Phase: 例外処理とバリデーション対応を追加
+        if (items.isEmpty()) {
+            return DeletionResult(
+                totalRequested = 0,
+                successfulDeletions = 0,
+                failedDeletions = 0,
+                failedItems = emptyList()
+            )
+        }
+        
+        // 改良された実装：例外処理とバリデーションエラーを適切に処理
+        var successCount = 0
+        val failures = mutableListOf<com.example.clothstock.data.model.DeletionFailure>()
+        
+        for (item in items) {
+            try {
+                // バリデーション実行
+                validateClothItem(item)
+                
+                // データベースから削除
+                val deletedRows = clothDao.delete(item)
+                if (deletedRows > 0) {
+                    successCount++
+                } else {
+                    failures.add(
+                        com.example.clothstock.data.model.DeletionFailure(
+                            itemId = item.id,
+                            reason = "削除に失敗しました（対象が見つかりません）",
+                            exception = null
+                        )
+                    )
+                }
+            } catch (validationException: IllegalArgumentException) {
+                // バリデーションエラーの場合
+                failures.add(
+                    com.example.clothstock.data.model.DeletionFailure(
+                        itemId = item.id,
+                        reason = "バリデーションエラー: ${validationException.message}",
+                        exception = validationException
+                    )
+                )
+            } catch (databaseException: Exception) {
+                // データベースエラーやその他の例外の場合
+                failures.add(
+                    com.example.clothstock.data.model.DeletionFailure(
+                        itemId = item.id,
+                        reason = "削除に失敗しました: ${databaseException.message ?: "不明なエラー"}",
+                        exception = databaseException
+                    )
+                )
+            }
+        }
+        
+        return DeletionResult(
+            totalRequested = items.size,
+            successfulDeletions = successCount,
+            failedDeletions = failures.size,
+            failedItems = failures
+        )
+    }
+
+    override suspend fun deleteItemWithFileCleanup(item: ClothItem): Boolean {
+        // 🔄 TDD REFACTOR Phase: 堅牢なデータベース+ファイルシステム協調削除
+        // 削除処理では空画像パスを許可するため、カスタムバリデーションを実行
+        validateClothItemForDeletion(item)
+        
+        // Step 1: データベースから削除を試行
+        val deletedRows = clothDao.delete(item)
+        if (deletedRows <= 0) {
+            // データベース削除失敗 - ファイル削除は実行しない
+            return false
+        }
+        
+        // Step 2: 画像パスが存在する場合はファイル削除を実行（ロールバック対応）
+        if (item.imagePath.isNotBlank()) {
+            return try {
+                // FileUtilsを使用してファイル削除
+                val fileDeleted = com.example.clothstock.util.FileUtils.deleteImageFile(item.imagePath)
+                
+                if (!fileDeleted) {
+                    // ファイル削除失敗 - データベースロールバックを試行
+                    try {
+                        clothDao.insert(item)
+                        // ロールバック成功の場合も全体的には失敗扱い
+                        false
+                    } catch (rollbackException: Exception) {
+                        // ロールバック失敗 - より深刻な問題として記録
+                        // 実環境では適切なロギング・アラート機能が必要
+                        false
+                    }
+                } else {
+                    // ファイル削除成功
+                    true
+                }
+            } catch (e: Exception) {
+                // ファイル削除で例外が発生 - データベースロールバックを試行
+                try {
+                    clothDao.insert(item)
+                    // ロールバック成功の場合も全体的には失敗扱い
+                    false
+                } catch (rollbackException: Exception) {
+                    // ロールバック失敗 - より深刻な問題として記録
+                    // 実環境では適切なロギング・アラート機能が必要
+                    false
+                }
+            }
+        }
+        
+        // 空の画像パスの場合はデータベース削除のみで成功
+        return true
     }
 
     // ===== 統計・集計操作 =====
@@ -232,6 +346,28 @@ class ClothRepositoryImpl(
         val validationResult = clothItem.validate() // Validatable.validate()を呼び出し
         if (!validationResult.isSuccess()) {
             throw IllegalArgumentException("バリデーションエラー: ${validationResult.getErrorMessage()}")
+        }
+    }
+    
+    /**
+     * 削除処理用のClothItemバリデーションを実行
+     * 
+     * 通常のvalidateClothItem()と異なり、空の画像パスを許可する
+     * 削除処理では画像パスが空でも問題ないため
+     * 
+     * @param clothItem バリデーション対象のアイテム
+     * @throws IllegalArgumentException バリデーションエラーの場合
+     */
+    private fun validateClothItemForDeletion(clothItem: ClothItem) {
+        // TagDataのバリデーションのみ実行（画像パスのチェックはスキップ）
+        val tagValidation = clothItem.tagData.validate()
+        if (!tagValidation.isSuccess()) {
+            throw IllegalArgumentException("バリデーションエラー: ${tagValidation.getErrorMessage()}")
+        }
+        
+        // メモの文字数制限チェック
+        if (clothItem.memo.length > ClothItem.MAX_MEMO_LENGTH) {
+            throw IllegalArgumentException("バリデーションエラー: メモが${ClothItem.MAX_MEMO_LENGTH}文字を超えています（現在: ${clothItem.memo.length}文字）")
         }
     }
 
