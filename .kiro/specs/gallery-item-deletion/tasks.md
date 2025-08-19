@@ -28,7 +28,7 @@ Each task follows the Red-Green-Refactor cycle:
   - **REFACTOR**: Add comprehensive error categorization and reporting
   - _Requirements: 3.4, 3.5, 5.3, 5.4_
 
-- [ ] 3. TDD: Enhance GalleryViewModel with selection state management
+- [x] 3. TDD: Enhance GalleryViewModel with selection state management
 
   - **RED**: Write failing unit tests for selection LiveData properties and initial state
   - **GREEN**: Add minimal LiveData properties for selection state to GalleryViewModel
@@ -38,7 +38,7 @@ Each task follows the Red-Green-Refactor cycle:
   - **REFACTOR**: Add comprehensive selection logic with validation and error handling
   - _Requirements: 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 4. TDD: Add batch deletion coordination to GalleryViewModel
+- [x] 4. TDD: Add batch deletion coordination to GalleryViewModel
 
   - **RED**: Write failing unit tests for deleteSelectedItems() method and deletion progress tracking
   - **GREEN**: Implement minimal deleteSelectedItems() method with basic Repository calls
@@ -48,7 +48,7 @@ Each task follows the Red-Green-Refactor cycle:
   - **REFACTOR**: Optimize deletion workflow and add retry mechanisms
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.1, 4.2_
 
-- [ ] 5. TDD: Implement file system deletion utilities
+- [x] 5. TDD: Implement file system deletion utilities
 
   - **RED**: Write failing unit tests for FileUtils.deleteImageFile() method
   - **GREEN**: Create minimal FileUtils class with basic file deletion functionality

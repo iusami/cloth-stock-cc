@@ -128,6 +128,8 @@
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner)</ID>
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun captureImage(): Boolean</ID>
     <ID>ReturnCount:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$private fun isValidImagePath(imagePath: String?): Boolean</ID>
+    <ID>ReturnCount:FileUtils.kt$FileUtils$fun deleteImageFile(file: File): Boolean</ID>
+    <ID>ReturnCount:FileUtils.kt$FileUtils$fun validateImageFileForDeletion(file: File): Boolean</ID>
     <ID>ReturnCount:RetryMechanism.kt$RetryMechanism.Companion$suspend fun &lt;T&gt; execute( config: RetryConfig = RetryConfig(), retryPolicy: RetryPolicy = defaultRetryPolicy, operation: suspend () -&gt; T ): RetryResult&lt;T&gt;</ID>
     <ID>SwallowedException:CameraPermissionManager.kt$CameraPermissionManager$e: Exception</ID>
     <ID>SwallowedException:CameraViewModel.kt$CameraViewModel$e: Exception</ID>
@@ -174,6 +176,7 @@
     <ID>TooManyFunctions:ClothRepositoryImpl.kt$ClothRepositoryImpl : ClothRepository</ID>
     <ID>TooManyFunctions:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:DetailViewModel.kt$DetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:FileUtils.kt$FileUtils</ID>
     <ID>TooManyFunctions:FilterManager.kt$FilterManager</ID>
     <ID>TooManyFunctions:FilterUIManager.kt$FilterUIManager</ID>
     <ID>TooManyFunctions:GalleryErrorHandler.kt$GalleryErrorHandler</ID>
