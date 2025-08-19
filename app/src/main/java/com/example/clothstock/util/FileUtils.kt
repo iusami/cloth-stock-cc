@@ -154,4 +154,133 @@ object FileUtils {
             0L
         }
     }
+    
+    /**
+     * ログ出力を安全に実行するヘルパー関数
+     * テスト環境でのログ制限に対する統一的な例外処理
+     */
+    private fun safeLog(logFunction: () -> Unit) {
+        try {
+            logFunction()
+        } catch (logException: Exception) {
+            // ログ出力の例外は無視（テスト環境での制限）
+        }
+    }
+    
+    /**
+     * 指定されたパスの画像ファイルを削除
+     * 
+     * @param imagePath 削除する画像ファイルのパス
+     * @return 削除成功時はtrue、失敗時はfalse
+     */
+    fun deleteImageFile(imagePath: String): Boolean {
+        // REFACTOR Phase: 入力検証とファイル処理の強化
+        if (imagePath.isBlank()) {
+            safeLog { Log.w(TAG, "削除対象のファイルパスが空です") }
+            return false
+        }
+        
+        val file = File(imagePath)
+        return deleteImageFile(file)
+    }
+    
+    /**
+     * 指定されたFileオブジェクトの画像ファイルを削除
+     * 
+     * @param file 削除する画像ファイル
+     * @return 削除成功時はtrue、失敗時はfalse
+     */
+    fun deleteImageFile(file: File): Boolean {
+        // REFACTOR Phase: 包括的な検証、権限チェック、エラーハンドリング
+        return try {
+            if (!validateImageFileForDeletion(file)) {
+                return false
+            }
+
+            // 削除実行
+            val deletionResult = file.delete()
+
+            if (deletionResult) {
+                safeLog { Log.d(TAG, "ファイル削除成功: ${file.absolutePath}") }
+            } else {
+                safeLog { Log.w(TAG, "ファイル削除失敗（削除処理でfalseが返された）: ${file.absolutePath}") }
+            }
+
+            deletionResult
+
+        } catch (e: SecurityException) {
+            safeLog { Log.e(TAG, "ファイル削除でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
+            false
+        } catch (e: Exception) {
+            safeLog { Log.e(TAG, "ファイル削除で予期しない例外が発生しました: ${file.absolutePath}", e) }
+            false
+        }
+    }
+    
+    /**
+     * 削除前のファイル検証を実行
+     * 
+     * @param file 検証対象のファイル
+     * @return 削除可能な場合はtrue、削除不可能な場合はfalse
+     */
+    fun validateImageFileForDeletion(file: File): Boolean {
+        // 最終REFACTOR Phase: 包括的な検証とログ記録
+        return try {
+            // ファイル存在確認
+            if (!file.exists()) {
+                safeLog { Log.d(TAG, "検証: ファイルが存在しません: ${file.absolutePath}") }
+                return false
+            }
+            
+            // ディレクトリでないことを確認
+            if (file.isDirectory) {
+                safeLog { Log.w(TAG, "検証: 削除対象がディレクトリです: ${file.absolutePath}") }
+                return false
+            }
+            
+            // 書き込み権限確認
+            if (!file.canWrite()) {
+                safeLog { Log.w(TAG, "検証: ファイルに書き込み権限がありません: ${file.absolutePath}") }
+                return false
+            }
+            
+            safeLog { Log.d(TAG, "検証: ファイル削除可能確認完了: ${file.absolutePath}") }
+            true
+            
+        } catch (e: SecurityException) {
+            safeLog { Log.e(TAG, "検証でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
+            false
+        } catch (e: Exception) {
+            safeLog { Log.e(TAG, "検証で予期しない例外が発生しました: ${file.absolutePath}", e) }
+            false
+        }
+    }
+    
+    /**
+     * ファイル削除後の検証を実行
+     * 
+     * @param file 検証対象のファイル
+     * @return ファイルが削除されていればtrue、削除されていなければfalse
+     */
+    fun verifyFileDeletion(file: File): Boolean {
+        // 最終REFACTOR Phase: 包括的な削除後検証とログ記録
+        return try {
+            val fileExists = file.exists()
+            
+            if (!fileExists) {
+                safeLog { Log.d(TAG, "削除検証: ファイルは正常に削除されました: ${file.absolutePath}") }
+                true
+            } else {
+                safeLog { Log.w(TAG, "削除検証: ファイルが削除されていません: ${file.absolutePath}") }
+                false
+            }
+            
+        } catch (e: SecurityException) {
+            safeLog { Log.e(TAG, "削除検証でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
+            false
+        } catch (e: Exception) {
+            safeLog { Log.e(TAG, "削除検証で予期しない例外が発生しました: ${file.absolutePath}", e) }
+            false
+        }
+    }
 }

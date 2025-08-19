@@ -248,4 +248,173 @@ class FileUtilsTest {
         assertEquals("filesDirが正しく設定されるべき", mockFilesDir, filesDir)
         assertNotNull("filesDirはnullではないべき", filesDir)
     }
+
+    // ===== 画像ファイル削除テスト（RED Phase） =====
+
+    @Test
+    fun `deleteImageFile_with_string_path_有効なファイル_trueを返す`() {
+        // Given
+        // ユニットテストでは実際のファイルシステムを使わず、モックを使用すべきだが、
+        // String版のテストは内部でFile(path)を作成するため、テスト設計を変更する必要がある
+        // ここでは一時的にファイルを作成してテストし、削除を検証する
+        val tempFile = kotlin.io.path.createTempFile("test_image", ".jpg").toFile()
+        try {
+            // When
+            val result = FileUtils.deleteImageFile(tempFile.absolutePath)
+
+            // Then
+            assertTrue("有効なファイル削除はtrueを返すべき", result)
+            assertFalse("削除後はファイルが存在しないべき", tempFile.exists())
+        } finally {
+            // Cleanup: テストファイルが残っている場合は削除
+            if (tempFile.exists()) tempFile.delete()
+        }
+    }
+
+    @Test
+    fun `deleteImageFile_with_string_path_存在しないファイル_falseを返す`() {
+        // Given
+        val nonExistentPath = "/storage/emulated/0/Android/data/com.example.clothstock/files/images/not_exist.jpg"
+
+        // When & Then
+        // REDフェーズ: まだdeleteImageFile(String)メソッドが存在しないため、このテストは失敗する
+        assertFalse("存在しないファイル削除はfalseを返すべき", FileUtils.deleteImageFile(nonExistentPath))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_有効なファイル_trueを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+        `when`(mockFile.canWrite()).thenReturn(true)
+        `when`(mockFile.delete()).thenReturn(true)
+
+        // When & Then
+        // REDフェーズ: まだdeleteImageFile(File)メソッドが存在しないため、このテストは失敗する
+        assertTrue("有効なファイル削除はtrueを返すべき", FileUtils.deleteImageFile(mockFile))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_存在しないファイル_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(false)
+
+        // When & Then
+        // REDフェーズ: まだdeleteImageFile(File)メソッドが存在しないため、このテストは失敗する
+        assertFalse("存在しないファイル削除はfalseを返すべき", FileUtils.deleteImageFile(mockFile))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_書き込み権限なし_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+        `when`(mockFile.canWrite()).thenReturn(false)
+
+        // When & Then
+        // REDフェーズ: まだdeleteImageFile(File)メソッドが存在しないため、このテストは失敗する
+        assertFalse("書き込み権限なしファイル削除はfalseを返すべき", FileUtils.deleteImageFile(mockFile))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_削除失敗_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+        `when`(mockFile.canWrite()).thenReturn(true)
+        `when`(mockFile.delete()).thenReturn(false)
+
+        // When & Then
+        // REDフェーズ: まだdeleteImageFile(File)メソッドが存在しないため、このテストは失敗する
+        assertFalse("削除失敗の場合はfalseを返すべき", FileUtils.deleteImageFile(mockFile))
+    }
+
+    // ===== 第2REDフェーズ: 検証とクリーンアップテスト =====
+
+    @Test
+    fun `deleteImageFile_with_string_path_空文字_falseを返す`() {
+        // When & Then
+        // 第2REDフェーズ: 空文字の入力検証がまだ実装されていないため、このテストは失敗する
+        assertFalse("空文字パスの削除はfalseを返すべき", FileUtils.deleteImageFile(""))
+    }
+
+    @Test
+    fun `deleteImageFile_with_string_path_空白文字_falseを返す`() {
+        // When & Then
+        // 第2REDフェーズ: 空白文字の入力検証がまだ実装されていないため、このテストは失敗する
+        assertFalse("空白文字パスの削除はfalseを返すべき", FileUtils.deleteImageFile("   "))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_ディレクトリ_falseを返す`() {
+        // Given
+        val mockDirectory = mock(File::class.java)
+        `when`(mockDirectory.exists()).thenReturn(true)
+        `when`(mockDirectory.isDirectory).thenReturn(true)
+
+        // When & Then
+        // 第2REDフェーズ: ディレクトリ削除防止機能がまだ実装されていないため、このテストは失敗する
+        assertFalse("ディレクトリ削除はfalseを返すべき", FileUtils.deleteImageFile(mockDirectory))
+    }
+
+    @Test
+    fun `deleteImageFile_with_file_object_SecurityException_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+        `when`(mockFile.isDirectory).thenReturn(false)
+        `when`(mockFile.canWrite()).thenReturn(true)
+        `when`(mockFile.delete()).thenThrow(SecurityException("セキュリティ制限により削除できません"))
+
+        // When & Then
+        // 第2REDフェーズ: SecurityException処理がまだ実装されていないため、このテストは失敗する
+        assertFalse("SecurityException発生時はfalseを返すべき", FileUtils.deleteImageFile(mockFile))
+    }
+
+    @Test
+    fun `validateImageFileForDeletion_存在する有効ファイル_trueを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+        `when`(mockFile.isDirectory).thenReturn(false)
+        `when`(mockFile.canWrite()).thenReturn(true)
+
+        // When & Then
+        // 第2REDフェーズ: validateImageFileForDeletionメソッドがまだ存在しないため、このテストは失敗する
+        assertTrue("有効ファイルの検証はtrueを返すべき", FileUtils.validateImageFileForDeletion(mockFile))
+    }
+
+    @Test
+    fun `validateImageFileForDeletion_存在しないファイル_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(false)
+
+        // When & Then
+        // 第2REDフェーズ: validateImageFileForDeletionメソッドがまだ存在しないため、このテストは失敗する
+        assertFalse("存在しないファイルの検証はfalseを返すべき", FileUtils.validateImageFileForDeletion(mockFile))
+    }
+
+    @Test
+    fun `verifyFileDeletion_削除済みファイル_trueを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(false)
+
+        // When & Then
+        // 第2REDフェーズ: verifyFileDeletionメソッドがまだ存在しないため、このテストは失敗する
+        assertTrue("削除済みファイルの検証はtrueを返すべき", FileUtils.verifyFileDeletion(mockFile))
+    }
+
+    @Test
+    fun `verifyFileDeletion_削除されていないファイル_falseを返す`() {
+        // Given
+        val mockFile = mock(File::class.java)
+        `when`(mockFile.exists()).thenReturn(true)
+
+        // When & Then
+        // 第2REDフェーズ: verifyFileDeletionメソッドがまだ存在しないため、このテストは失敗する
+        assertFalse("削除されていないファイルの検証はfalseを返すべき", FileUtils.verifyFileDeletion(mockFile))
+    }
 }
