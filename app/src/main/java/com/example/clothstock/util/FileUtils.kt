@@ -156,6 +156,18 @@ object FileUtils {
     }
     
     /**
+     * ログ出力を安全に実行するヘルパー関数
+     * テスト環境でのログ制限に対する統一的な例外処理
+     */
+    private fun safeLog(logFunction: () -> Unit) {
+        try {
+            logFunction()
+        } catch (logException: Exception) {
+            // ログ出力の例外は無視（テスト環境での制限）
+        }
+    }
+    
+    /**
      * 指定されたパスの画像ファイルを削除
      * 
      * @param imagePath 削除する画像ファイルのパス
@@ -164,11 +176,7 @@ object FileUtils {
     fun deleteImageFile(imagePath: String): Boolean {
         // REFACTOR Phase: 入力検証とファイル処理の強化
         if (imagePath.isBlank()) {
-            try {
-                Log.w(TAG, "削除対象のファイルパスが空です")
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.w(TAG, "削除対象のファイルパスが空です") }
             return false
         }
         
@@ -185,68 +193,26 @@ object FileUtils {
     fun deleteImageFile(file: File): Boolean {
         // REFACTOR Phase: 包括的な検証、権限チェック、エラーハンドリング
         return try {
-            // ファイル存在確認
-            if (!file.exists()) {
-                try {
-                    Log.d(TAG, "削除対象ファイルが存在しません: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+            if (!validateImageFileForDeletion(file)) {
                 return false
             }
-            
-            // ディレクトリでないことを確認
-            if (file.isDirectory) {
-                try {
-                    Log.w(TAG, "削除対象がディレクトリです（ファイルのみ削除可能）: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
-                return false
-            }
-            
-            // 書き込み権限確認
-            if (!file.canWrite()) {
-                try {
-                    Log.w(TAG, "ファイルに書き込み権限がありません: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
-                return false
-            }
-            
+
             // 削除実行
             val deletionResult = file.delete()
-            
+
             if (deletionResult) {
-                try {
-                    Log.d(TAG, "ファイル削除成功: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.d(TAG, "ファイル削除成功: ${file.absolutePath}") }
             } else {
-                try {
-                    Log.w(TAG, "ファイル削除失敗（削除処理でfalseが返された）: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.w(TAG, "ファイル削除失敗（削除処理でfalseが返された）: ${file.absolutePath}") }
             }
-            
+
             deletionResult
-            
+
         } catch (e: SecurityException) {
-            try {
-                Log.e(TAG, "ファイル削除でセキュリティ例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "ファイル削除でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
             false
         } catch (e: Exception) {
-            try {
-                Log.e(TAG, "ファイル削除で予期しない例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "ファイル削除で予期しない例外が発生しました: ${file.absolutePath}", e) }
             false
         }
     }
@@ -262,54 +228,30 @@ object FileUtils {
         return try {
             // ファイル存在確認
             if (!file.exists()) {
-                try {
-                    Log.d(TAG, "検証: ファイルが存在しません: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.d(TAG, "検証: ファイルが存在しません: ${file.absolutePath}") }
                 return false
             }
             
             // ディレクトリでないことを確認
             if (file.isDirectory) {
-                try {
-                    Log.w(TAG, "検証: 削除対象がディレクトリです: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.w(TAG, "検証: 削除対象がディレクトリです: ${file.absolutePath}") }
                 return false
             }
             
             // 書き込み権限確認
             if (!file.canWrite()) {
-                try {
-                    Log.w(TAG, "検証: ファイルに書き込み権限がありません: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.w(TAG, "検証: ファイルに書き込み権限がありません: ${file.absolutePath}") }
                 return false
             }
             
-            try {
-                Log.d(TAG, "検証: ファイル削除可能確認完了: ${file.absolutePath}")
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.d(TAG, "検証: ファイル削除可能確認完了: ${file.absolutePath}") }
             true
             
         } catch (e: SecurityException) {
-            try {
-                Log.e(TAG, "検証でセキュリティ例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "検証でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
             false
         } catch (e: Exception) {
-            try {
-                Log.e(TAG, "検証で予期しない例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "検証で予期しない例外が発生しました: ${file.absolutePath}", e) }
             false
         }
     }
@@ -326,34 +268,18 @@ object FileUtils {
             val fileExists = file.exists()
             
             if (!fileExists) {
-                try {
-                    Log.d(TAG, "削除検証: ファイルは正常に削除されました: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.d(TAG, "削除検証: ファイルは正常に削除されました: ${file.absolutePath}") }
                 true
             } else {
-                try {
-                    Log.w(TAG, "削除検証: ファイルが削除されていません: ${file.absolutePath}")
-                } catch (logException: Exception) {
-                    // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-                }
+                safeLog { Log.w(TAG, "削除検証: ファイルが削除されていません: ${file.absolutePath}") }
                 false
             }
             
         } catch (e: SecurityException) {
-            try {
-                Log.e(TAG, "削除検証でセキュリティ例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "削除検証でセキュリティ例外が発生しました: ${file.absolutePath}", e) }
             false
         } catch (e: Exception) {
-            try {
-                Log.e(TAG, "削除検証で予期しない例外が発生しました: ${file.absolutePath}", e)
-            } catch (logException: Exception) {
-                // ログ出力でも例外が発生した場合は無視（テスト環境での制限）
-            }
+            safeLog { Log.e(TAG, "削除検証で予期しない例外が発生しました: ${file.absolutePath}", e) }
             false
         }
     }
