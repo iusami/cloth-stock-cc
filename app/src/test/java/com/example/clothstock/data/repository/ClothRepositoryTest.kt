@@ -780,4 +780,5 @@ class ClothRepositoryTest {
         assertEquals(2, result)
         verify(clothDao).getFilteredItemCount(sizeFilters, null, null, searchText)
     }
+
 }

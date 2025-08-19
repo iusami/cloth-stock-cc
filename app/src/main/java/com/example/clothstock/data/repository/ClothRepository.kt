@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.model.PaginationSearchParameters
+import com.example.clothstock.data.model.DeletionResult
 
 /**
  * 衣服データアクセスのリポジトリインターフェース
@@ -163,6 +164,28 @@ interface ClothRepository {
      * @return 削除された行数
      */
     suspend fun deleteAllItems(): Int
+
+    /**
+     * 複数の衣服アイテムを一括削除（バッチ削除）
+     * 
+     * データベースとファイルシステムの両方から削除を行い、
+     * 削除結果の詳細情報を提供する
+     * 
+     * @param items 削除するアイテムのリスト
+     * @return 削除操作の結果（成功・失敗の詳細情報）
+     */
+    suspend fun deleteItems(items: List<ClothItem>): DeletionResult
+
+    /**
+     * ファイルクリーンアップ付きアイテム削除
+     * 
+     * データベースからのアイテム削除と関連するファイル削除を
+     * 協調して実行する。どちらかが失敗した場合は適切にロールバックする
+     * 
+     * @param item 削除するアイテム
+     * @return 削除が成功した場合true、失敗した場合false
+     */
+    suspend fun deleteItemWithFileCleanup(item: ClothItem): Boolean
 
     // ===== 統計・集計操作 =====
 
