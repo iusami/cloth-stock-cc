@@ -33,6 +33,10 @@ class ClothRepositoryDeletionTest {
     private lateinit var clothDao: ClothDao
 
     private lateinit var clothRepository: ClothRepository
+    
+    companion object {
+        private const val INVALID_SIZE = 50  // サイズ範囲外の無効な値
+    }
 
     private val testTagData = TagData(
         size = 100,
@@ -228,7 +232,7 @@ class ClothRepositoryDeletionTest {
         val validItem = testClothItem.copy(id = 1L)
         val invalidItem = testClothItem.copy(
             id = 2L,
-            tagData = TagData(size = 50, color = "青", category = "シャツ") // サイズ50は範囲外
+            tagData = TagData(size = INVALID_SIZE, color = "青", category = "シャツ") // サイズ範囲外
         )
         val items = listOf(validItem, invalidItem)
         

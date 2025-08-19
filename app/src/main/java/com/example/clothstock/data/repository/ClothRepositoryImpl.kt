@@ -8,6 +8,7 @@ import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.data.model.FilterOptions
 import com.example.clothstock.data.model.PaginationSearchParameters
 import com.example.clothstock.data.model.DeletionResult
+import com.example.clothstock.data.model.DeletionFailure
 
 /**
  * ClothRepository の実装クラス
@@ -129,7 +130,7 @@ class ClothRepositoryImpl(
         
         // 改良された実装：例外処理とバリデーションエラーを適切に処理
         var successCount = 0
-        val failures = mutableListOf<com.example.clothstock.data.model.DeletionFailure>()
+        val failures = mutableListOf<DeletionFailure>()
         
         for (item in items) {
             try {
@@ -142,7 +143,7 @@ class ClothRepositoryImpl(
                     successCount++
                 } else {
                     failures.add(
-                        com.example.clothstock.data.model.DeletionFailure(
+                        DeletionFailure(
                             itemId = item.id,
                             reason = "削除に失敗しました（対象が見つかりません）",
                             exception = null
@@ -152,7 +153,7 @@ class ClothRepositoryImpl(
             } catch (validationException: IllegalArgumentException) {
                 // バリデーションエラーの場合
                 failures.add(
-                    com.example.clothstock.data.model.DeletionFailure(
+                    DeletionFailure(
                         itemId = item.id,
                         reason = "バリデーションエラー: ${validationException.message}",
                         exception = validationException
@@ -161,7 +162,7 @@ class ClothRepositoryImpl(
             } catch (databaseException: RuntimeException) {
                 // データベースエラーやその他のランタイムエラーの場合
                 failures.add(
-                    com.example.clothstock.data.model.DeletionFailure(
+                    DeletionFailure(
                         itemId = item.id,
                         reason = "削除に失敗しました: ${databaseException.message ?: "不明なエラー"}",
                         exception = databaseException
