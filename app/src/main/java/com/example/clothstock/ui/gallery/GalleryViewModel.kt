@@ -13,11 +13,16 @@ import com.example.clothstock.data.repository.FilterManager
 import com.example.clothstock.data.model.FilterState
 import com.example.clothstock.data.model.FilterType
 import com.example.clothstock.data.preferences.FilterPreferencesManager
+import com.example.clothstock.data.model.SelectionState
+import com.example.clothstock.data.model.DeletionResult
+import com.example.clothstock.data.model.DeletionFailure
 import com.example.clothstock.ui.common.LoadingStateManager
 import com.example.clothstock.ui.common.RetryMechanism
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import android.util.Log
@@ -81,6 +86,17 @@ class GalleryViewModel(
     // 検索デバウンシング用
     private var searchJob: Job? = null
     private val searchDelayMs = SEARCH_DEBOUNCE_DELAY_MS
+
+    // ===== 選択状態管理のLiveData =====
+
+    private val _selectionState = MutableLiveData<SelectionState>()
+    val selectionState: LiveData<SelectionState> = _selectionState
+
+    private val _isDeletionInProgress = MutableLiveData<Boolean>()
+    val isDeletionInProgress: LiveData<Boolean> = _isDeletionInProgress
+
+    private val _deletionResult = MutableLiveData<DeletionResult?>()
+    val deletionResult: LiveData<DeletionResult?> = _deletionResult
     
     // ===== Task 12: プログレッシブローディング用フィールド =====
     
@@ -137,6 +153,11 @@ class GalleryViewModel(
         _currentFilters.value = filterManager.getCurrentState()
         _isFiltersActive.value = filterManager.getCurrentState().hasActiveFilters()
         _currentSearchText.value = filterManager.getCurrentState().searchText
+
+        // 選択状態管理の初期化
+        _selectionState.value = SelectionState()
+        _isDeletionInProgress.value = false
+        _deletionResult.value = null
 
         // 初期データ読み込み
         Log.d(TAG, "Starting initial data load")
@@ -833,4 +854,307 @@ class GalleryViewModel(
      */
     fun getCurrentImageQuality(): com.example.clothstock.ui.gallery.ImageQuality = 
         _currentImageQuality.value ?: com.example.clothstock.ui.gallery.ImageQuality.HIGH
+
+    // ===== 選択操作メソッド（Task3: TDD REFACTOR段階） =====
+
+    /**
+     * 選択モードに入り、指定されたアイテムを選択
+     * 
+     * @param itemId 初期選択するアイテムのID
+     */
+    fun enterSelectionMode(itemId: Long) {
+        try {
+            Log.d(TAG, "Entering selection mode with item ID: $itemId")
+            
+            val currentState = _selectionState.value ?: SelectionState()
+            val newState = currentState.copy(
+                isSelectionMode = true,
+                selectedItemIds = setOf(itemId),
+                totalSelectedCount = 1
+            )
+            _selectionState.value = newState
+            
+            Log.d(TAG, "Selection mode entered successfully. Selected items: ${newState.selectedItemIds}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error entering selection mode with item ID: $itemId", e)
+            // エラー時でも選択モードには入る（最小限の機能を保証）
+            _selectionState.value = SelectionState(isSelectionMode = true)
+        }
+    }
+
+    /**
+     * アイテムの選択状態をトグル
+     * 
+     * @param itemId 選択/非選択を切り替えるアイテムのID
+     */
+    fun toggleItemSelection(itemId: Long) {
+        try {
+            Log.d(TAG, "Toggling selection for item ID: $itemId")
+            
+            val currentState = _selectionState.value ?: SelectionState()
+            val newState = if (currentState.selectedItemIds.contains(itemId)) {
+                // 既に選択されている場合は削除
+                val newSelectedIds = currentState.selectedItemIds - itemId
+                currentState.copy(
+                    selectedItemIds = newSelectedIds,
+                    totalSelectedCount = newSelectedIds.size
+                )
+            } else {
+                // 選択されていない場合は追加
+                val newSelectedIds = currentState.selectedItemIds + itemId
+                currentState.copy(
+                    selectedItemIds = newSelectedIds,
+                    totalSelectedCount = newSelectedIds.size
+                )
+            }
+            _selectionState.value = newState
+            
+            Log.d(TAG, "Item selection toggled. Selected count: ${newState.totalSelectedCount}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error toggling selection for item ID: $itemId", e)
+            // エラー時は状態を変更しない
+        }
+    }
+
+    /**
+     * 選択状態をクリアし、選択モードを終了
+     */
+    fun clearSelection() {
+        try {
+            Log.d(TAG, "Clearing selection state")
+            _selectionState.value = SelectionState()
+            Log.d(TAG, "Selection state cleared successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing selection state", e)
+            // エラー時でもクリアを強制実行
+            _selectionState.value = SelectionState()
+        }
+    }
+
+    /**
+     * 現在選択されているアイテムのリストを取得
+     * 
+     * @return 選択されているClothItemのリスト。エラー時は空のリストを返す
+     */
+    fun getSelectedItems(): List<ClothItem> {
+        return try {
+            val currentSelection = _selectionState.value ?: SelectionState()
+            val allItems = _clothItems.value ?: emptyList()
+            
+            val selectedItems = allItems.filter { item ->
+                currentSelection.selectedItemIds.contains(item.id)
+            }
+            
+            Log.d(TAG, "Retrieved ${selectedItems.size} selected items")
+            selectedItems
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting selected items", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 選択モードかどうかを確認
+     * 
+     * @return 選択モードの場合true、そうでなければfalse
+     */
+    fun isInSelectionMode(): Boolean {
+        return try {
+            _selectionState.value?.isSelectionMode ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking selection mode", e)
+            false
+        }
+    }
+
+    /**
+     * 指定されたアイテムが選択されているかどうかを確認
+     * 
+     * @param itemId 確認するアイテムのID
+     * @return 選択されている場合true、そうでなければfalse
+     */
+    fun isItemSelected(itemId: Long): Boolean {
+        return try {
+            val currentSelection = _selectionState.value ?: SelectionState()
+            currentSelection.selectedItemIds.contains(itemId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking if item $itemId is selected", e)
+            false
+        }
+    }
+
+    /**
+     * 現在の選択数を取得
+     * 
+     * @return 選択されているアイテムの数
+     */
+    fun getSelectedCount(): Int {
+        return try {
+            _selectionState.value?.totalSelectedCount ?: 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting selected count", e)
+            0
+        }
+    }
+
+    // ===== 一括削除機能（Task4: TDD GREEN段階） =====
+
+    /**
+     * 選択されたアイテムを一括削除
+     * 
+     * Repository層と連携し、削除進捗をLiveDataで通知する
+     * REFACTOR段階: エラーハンドリング、進捗報告、リトライ機能を強化
+     */
+    fun deleteSelectedItems() {
+        viewModelScope.launch {
+            try {
+                Log.d(TAG, "Starting batch deletion of selected items")
+                
+                val currentSelection = _selectionState.value ?: SelectionState()
+                if (!currentSelection.hasSelection()) {
+                    handleEmptySelection()
+                    return@launch
+                }
+                
+                // 削除進行中の状態に設定
+                _isDeletionInProgress.value = true
+                _deletionResult.value = null
+                
+                val selectedItemIds = currentSelection.selectedItemIds.toList()
+                Log.d(TAG, "Deleting ${selectedItemIds.size} items: $selectedItemIds")
+                
+                // 実際の削除処理を実行
+                val deletionResult = executeBatchDeletion(selectedItemIds)
+                _deletionResult.value = deletionResult
+                
+                // 削除後の処理
+                handleDeletionCompletion(deletionResult)
+                
+            } catch (e: Exception) {
+                handleDeletionError(e)
+            } finally {
+                _isDeletionInProgress.value = false
+                Log.d(TAG, "Batch deletion process completed")
+            }
+        }
+    }
+    
+    /**
+     * 空の選択状態の処理
+     */
+    private fun handleEmptySelection() {
+        Log.d(TAG, "No items selected for deletion")
+        _deletionResult.value = DeletionResult(
+            totalRequested = 0,
+            successfulDeletions = 0,
+            failedDeletions = 0,
+            failedItems = emptyList()
+        )
+    }
+    
+    /**
+     * 一括削除の実行処理
+     */
+    private suspend fun executeBatchDeletion(selectedItemIds: List<Long>): DeletionResult {
+        var successCount = 0
+        var failureCount = 0
+        val failures = mutableListOf<DeletionFailure>()
+        
+        // 進捗報告機能: 各アイテムを順次削除
+        for ((index, itemId) in selectedItemIds.withIndex()) {
+            try {
+                Log.d(TAG, "Processing deletion ${index + 1}/${selectedItemIds.size}: item $itemId")
+                
+                val success = deleteItemWithRetry(itemId)
+                if (success) {
+                    successCount++
+                } else {
+                    failureCount++
+                    failures.add(DeletionFailure(itemId, "削除エラー（リトライ失敗）", null))
+                }
+                
+            } catch (e: IllegalStateException) {
+                failureCount++
+                failures.add(DeletionFailure(itemId, e.message ?: "削除エラー", e))
+                Log.e(TAG, "Unexpected error deleting item $itemId", e)
+            }
+            
+            // 長時間処理の場合はキャンセル可能性をチェック
+            coroutineContext.ensureActive()
+        }
+        
+        return DeletionResult(
+            totalRequested = selectedItemIds.size,
+            successfulDeletions = successCount,
+            failedDeletions = failureCount,
+            failedItems = failures
+        )
+    }
+    
+    /**
+     * リトライ機能付きで単一アイテムを削除
+     */
+    private suspend fun deleteItemWithRetry(itemId: Long): Boolean {
+        val retryResult = RetryMechanism.executeForDatabase {
+            val deleted = clothRepository.deleteItemById(itemId)
+            if (!deleted) {
+                error("アイテム $itemId の削除に失敗しました")
+            }
+            deleted
+        }
+        
+        return when (retryResult) {
+            is RetryMechanism.RetryResult.Success -> {
+                Log.d(TAG, "Successfully deleted item $itemId with ${retryResult.attemptCount} attempts")
+                true
+            }
+            is RetryMechanism.RetryResult.Failure -> {
+                Log.e(TAG, "Failed to delete item $itemId after ${retryResult.attemptCount} attempts", 
+                     retryResult.lastException)
+                false
+            }
+        }
+    }
+    
+    /**
+     * 削除完了後の処理
+     */
+    private fun handleDeletionCompletion(deletionResult: DeletionResult) {
+        if (deletionResult.successfulDeletions > 0) {
+            clearSelection()
+            loadClothItems() // 成功したアイテムを画面から削除
+            
+            val resultMessage = if (deletionResult.failedDeletions == 0) {
+                "全 ${deletionResult.successfulDeletions} アイテムの削除が完了しました"
+            } else {
+                "${deletionResult.successfulDeletions} アイテムの削除が完了しました" +
+                "（${deletionResult.failedDeletions} アイテムの削除に失敗）"
+            }
+            Log.i(TAG, "Batch deletion completed: $resultMessage")
+        } else {
+            Log.w(TAG, "No items were successfully deleted. Total failures: ${deletionResult.failedDeletions}")
+        }
+    }
+    
+    /**
+     * 削除エラーハンドリング
+     */
+    private fun handleDeletionError(e: Exception) {
+        Log.e(TAG, "Unexpected error during batch deletion", e)
+        
+        // 予期しないエラーの場合も適切な結果を設定
+        val currentSelection = _selectionState.value ?: SelectionState()
+        val requestedCount = currentSelection.selectedItemIds.size
+        
+        _deletionResult.value = DeletionResult(
+            totalRequested = requestedCount,
+            successfulDeletions = 0,
+            failedDeletions = requestedCount,
+            failedItems = listOf(DeletionFailure(
+                itemId = 0, // 特定アイテムではなく全体のエラー
+                reason = e.message ?: "予期しないエラーが発生しました",
+                exception = e
+            ))
+        )
+    }
 }
