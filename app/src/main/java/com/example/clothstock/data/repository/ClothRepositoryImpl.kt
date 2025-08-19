@@ -158,8 +158,8 @@ class ClothRepositoryImpl(
                         exception = validationException
                     )
                 )
-            } catch (databaseException: Exception) {
-                // データベースエラーやその他の例外の場合
+            } catch (databaseException: RuntimeException) {
+                // データベースエラーやその他のランタイムエラーの場合
                 failures.add(
                     com.example.clothstock.data.model.DeletionFailure(
                         itemId = item.id,
@@ -179,54 +179,22 @@ class ClothRepositoryImpl(
     }
 
     override suspend fun deleteItemWithFileCleanup(item: ClothItem): Boolean {
-        // 🔄 TDD REFACTOR Phase: 堅牢なデータベース+ファイルシステム協調削除
         // 削除処理では空画像パスを許可するため、カスタムバリデーションを実行
         validateClothItemForDeletion(item)
         
         // Step 1: データベースから削除を試行
         val deletedRows = clothDao.delete(item)
         if (deletedRows <= 0) {
-            // データベース削除失敗 - ファイル削除は実行しない
             return false
         }
         
-        // Step 2: 画像パスが存在する場合はファイル削除を実行（ロールバック対応）
-        if (item.imagePath.isNotBlank()) {
-            return try {
-                // FileUtilsを使用してファイル削除
-                val fileDeleted = com.example.clothstock.util.FileUtils.deleteImageFile(item.imagePath)
-                
-                if (!fileDeleted) {
-                    // ファイル削除失敗 - データベースロールバックを試行
-                    try {
-                        clothDao.insert(item)
-                        // ロールバック成功の場合も全体的には失敗扱い
-                        false
-                    } catch (rollbackException: Exception) {
-                        // ロールバック失敗 - より深刻な問題として記録
-                        // 実環境では適切なロギング・アラート機能が必要
-                        false
-                    }
-                } else {
-                    // ファイル削除成功
-                    true
-                }
-            } catch (e: Exception) {
-                // ファイル削除で例外が発生 - データベースロールバックを試行
-                try {
-                    clothDao.insert(item)
-                    // ロールバック成功の場合も全体的には失敗扱い
-                    false
-                } catch (rollbackException: Exception) {
-                    // ロールバック失敗 - より深刻な問題として記録
-                    // 実環境では適切なロギング・アラート機能が必要
-                    false
-                }
-            }
+        // Step 2: 空の画像パスの場合はデータベース削除のみで成功
+        if (item.imagePath.isBlank()) {
+            return true
         }
         
-        // 空の画像パスの場合はデータベース削除のみで成功
-        return true
+        // Step 3: ファイル削除とロールバック処理
+        return deleteFileWithRollback(item)
     }
 
     // ===== 統計・集計操作 =====
@@ -350,6 +318,44 @@ class ClothRepositoryImpl(
     }
     
     /**
+     * ファイル削除とロールバック処理を実行
+     * 
+     * @param item 削除対象のアイテム（データベースからは既に削除済み）
+     * @return ファイル削除が成功した場合true、失敗の場合false
+     */
+    private suspend fun deleteFileWithRollback(item: ClothItem): Boolean {
+        return try {
+            val fileDeleted = com.example.clothstock.util.FileUtils.deleteImageFile(item.imagePath)
+            
+            if (!fileDeleted) {
+                // ファイル削除失敗 - データベースロールバックを試行
+                rollbackDatabaseDeletion(item)
+                false
+            } else {
+                // ファイル削除成功
+                true
+            }
+        } catch (e: java.io.IOException) {
+            // ファイル削除で例外が発生 - データベースロールバックを試行
+            rollbackDatabaseDeletion(item)
+            false
+        }
+    }
+    
+    /**
+     * データベース削除のロールバックを試行
+     * 
+     * @param item ロールバック対象のアイテム
+     */
+    private suspend fun rollbackDatabaseDeletion(item: ClothItem) {
+        try {
+            clothDao.insert(item)
+        } catch (rollbackException: RuntimeException) {
+            // ロールバック失敗 - 実環境では適切なロギング・アラート機能が必要
+        }
+    }
+    
+    /**
      * 削除処理用のClothItemバリデーションを実行
      * 
      * 通常のvalidateClothItem()と異なり、空の画像パスを許可する
@@ -361,13 +367,13 @@ class ClothRepositoryImpl(
     private fun validateClothItemForDeletion(clothItem: ClothItem) {
         // TagDataのバリデーションのみ実行（画像パスのチェックはスキップ）
         val tagValidation = clothItem.tagData.validate()
-        if (!tagValidation.isSuccess()) {
-            throw IllegalArgumentException("バリデーションエラー: ${tagValidation.getErrorMessage()}")
+        require(tagValidation.isSuccess()) { 
+            "バリデーションエラー: ${tagValidation.getErrorMessage()}" 
         }
         
         // メモの文字数制限チェック
-        if (clothItem.memo.length > ClothItem.MAX_MEMO_LENGTH) {
-            throw IllegalArgumentException("バリデーションエラー: メモが${ClothItem.MAX_MEMO_LENGTH}文字を超えています（現在: ${clothItem.memo.length}文字）")
+        require(clothItem.memo.length <= ClothItem.MAX_MEMO_LENGTH) {
+            "バリデーションエラー: メモが${ClothItem.MAX_MEMO_LENGTH}文字を超えています（現在: ${clothItem.memo.length}文字）"
         }
     }
 
