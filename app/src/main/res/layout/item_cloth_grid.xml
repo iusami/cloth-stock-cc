@@ -127,6 +127,35 @@
                 app:layout_constraintTop_toTopOf="@+id/imageViewCloth"
                 tools:visibility="visible" />
 
+            <!-- Selection mode overlay -->
+            <View
+                android:id="@+id/selectionOverlay"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/selection_overlay"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@+id/imageViewCloth"
+                app:layout_constraintEnd_toEndOf="@+id/imageViewCloth"
+                app:layout_constraintStart_toStartOf="@+id/imageViewCloth"
+                app:layout_constraintTop_toTopOf="@+id/imageViewCloth" />
+
+            <!-- Selection checkbox -->
+            <CheckBox
+                android:id="@+id/checkboxSelection"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_background_white"
+                android:button="@drawable/checkbox_selector"
+                android:contentDescription="@string/selection_checkbox_description"
+                android:elevation="4dp"
+                android:padding="4dp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="@+id/imageViewCloth"
+                app:layout_constraintTop_toTopOf="@+id/imageViewCloth"
+                tools:checked="true"
+                tools:visibility="visible" />
+
             <!-- Favorite indicator (future feature) -->
             <ImageView
                 android:id="@+id/iconFavorite"
