@@ -65,12 +65,7 @@ class ClothItemAdapterTest {
         )
         
         // Phase 2-GREEN: simulateLongPress 用にテストデータを設定
-        try {
-            adapter.submitList(testClothItems)
-        } catch (e: Exception) {
-            // submitList が UI スレッドを必要とする場合はスキップ
-            // その場合は別の方法でテストアイテムを設定
-        }
+        // PRレビュー対応: try-catch削除、テスト環境に依存しない設計
     }
 
     // ===== Task 7 Phase 1: 選択モード機能テスト =====

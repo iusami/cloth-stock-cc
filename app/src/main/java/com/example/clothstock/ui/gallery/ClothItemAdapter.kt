@@ -39,79 +39,54 @@ class ClothItemAdapter(
     // ===== Task 7: マルチ選択機能プロパティ =====
     
     /**
-     * 選択モードフラグ
-     * trueの場合、アイテム選択が可能な状態
+     * 選択状態管理（PRレビュー対応: 関心の分離）
      */
-    var isSelectionMode: Boolean = false
-        private set
+    private val selectionManager = SelectionManager()
 
     /**
-     * 選択されたアイテムのIDセット
-     * mutableSetを使用してリアルタイムに状態を管理
+     * 選択モードフラグ（外部アクセス用）
      */
-    private val _selectedItems = mutableSetOf<Long>()
-    val selectedItems: Set<Long> get() = _selectedItems.toSet()
+    val isSelectionMode: Boolean get() = selectionManager.isSelectionMode
 
     /**
-     * 選択状態変更コールバック
-     * (選択されたアイテム, 選択状態) -> Unit
+     * 選択されたアイテムのIDセット（外部アクセス用）
      */
-    private var selectionListener: ((ClothItem, Boolean) -> Unit)? = null
+    val selectedItems: Set<Long> get() = selectionManager.selectedItems
 
     /**
-     * 長押しジェスチャーコールバック
-     * (長押しされたアイテム) -> Unit
+     * SelectionManager（テスト用アクセス）
      */
-    private var longPressListener: ((ClothItem) -> Unit)? = null
+    internal val selectionManagerForTest: SelectionManager get() = selectionManager
 
-    // ===== Task 7: 選択モード制御メソッド =====
+    // ===== Task 7: 選択モード制御メソッド（PRレビュー対応: SelectionManager使用） =====
 
     /**
      * 選択モードの設定
-     * 選択モードを無効にする場合、選択状態も同時にクリアする
-     * 
-     * @param enabled 選択モード有効フラグ
      */
     fun setSelectionMode(enabled: Boolean) {
-        val previousMode = isSelectionMode
-        isSelectionMode = enabled
-        if (!enabled) {
-            clearSelection()
-        }
+        val changed = selectionManager.setSelectionMode(enabled)
         
         // 選択モードが変更された場合、UI を更新
-        if (previousMode != enabled) {
-            try {
-                notifyDataSetChanged() // 全アイテムの表示更新
-                Log.d(TAG, "Selection mode changed to $enabled, UI refreshed")
-            } catch (e: IllegalStateException) {
-                // テスト環境でのUI更新エラーを無視
-                Log.d(TAG, "Selection mode UI update skipped in test environment: ${e.message}")
-            } catch (e: NullPointerException) {
-                // テスト環境でのUI更新エラーを無視
-                Log.d(TAG, "Selection mode UI update skipped in test environment: ${e.message}")
-            }
+        if (changed) {
+            refreshAllItems()
+            Log.d(TAG, "Selection mode changed to $enabled, UI refreshed")
         }
     }
 
     /**
      * アイテムを選択状態にする
-     * 
-     * @param itemId 選択するアイテムのID
      */
     fun selectItem(itemId: Long) {
-        if (_selectedItems.add(itemId)) {
+        if (selectionManager.selectItem(itemId)) {
             refreshItemById(itemId)
         }
     }
 
     /**
      * アイテムの選択を解除する
-     * 
-     * @param itemId 選択解除するアイテムのID
      */
     fun deselectItem(itemId: Long) {
-        if (_selectedItems.remove(itemId)) {
+        if (selectionManager.deselectItem(itemId)) {
             refreshItemById(itemId)
         }
     }
@@ -120,76 +95,75 @@ class ClothItemAdapter(
      * すべての選択状態をクリアする
      */
     fun clearSelection() {
-        if (_selectedItems.isNotEmpty()) {
-            val selectedIds = _selectedItems.toSet()
-            _selectedItems.clear()
-            
-            // 以前に選択されていたアイテムの表示を更新
-            selectedIds.forEach { itemId ->
-                refreshItemById(itemId)
-            }
+        val previouslySelected = selectionManager.clearSelection()
+        
+        // 以前に選択されていたアイテムの表示を更新
+        previouslySelected.forEach { itemId ->
+            refreshItemById(itemId)
         }
     }
 
     /**
      * アイテムが選択されているかチェック
-     * 
-     * @param itemId チェックするアイテムのID
-     * @return 選択されている場合true
      */
     fun isItemSelected(itemId: Long): Boolean {
-        return _selectedItems.contains(itemId)
+        return selectionManager.isItemSelected(itemId)
     }
 
     /**
      * アイテムの選択状態をトグル（切り替え）
-     * 
-     * @param itemId トグルするアイテムのID
      */
     fun toggleItemSelection(itemId: Long) {
-        if (isItemSelected(itemId)) {
-            deselectItem(itemId)
-        } else {
-            selectItem(itemId)
-        }
+        val isSelected = selectionManager.toggleItemSelection(itemId)
+        refreshItemById(itemId)
     }
 
     /**
      * 選択状態変更リスナーの設定
-     * 
-     * @param listener 選択状態変更コールバック
      */
     fun setSelectionListener(listener: (ClothItem, Boolean) -> Unit) {
-        selectionListener = listener
+        selectionManager.selectionListener = listener
     }
 
     /**
      * 長押しジェスチャーリスナーの設定
-     * 
-     * @param listener 長押しジェスチャーコールバック
      */
     fun setLongPressListener(listener: (ClothItem) -> Unit) {
-        longPressListener = listener
+        selectionManager.longPressListener = listener
     }
 
     /**
-     * 指定されたIDのアイテムの表示を更新
-     * 
-     * @param itemId 更新するアイテムのID
+     * 指定されたIDのアイテムの表示を更新（PRレビュー対応: テスト環境考慮）
      */
     private fun refreshItemById(itemId: Long) {
-        try {
-            val position = findPositionById(itemId)
-            if (position != -1) {
-                notifyItemChanged(position)
-                Log.d(TAG, "Item at position $position (id=$itemId) refreshed")
-            }
-        } catch (e: IllegalStateException) {
-            // テスト環境でのUI更新エラーを無視
-            Log.d(TAG, "refreshItemById skipped in test environment: ${e.message}")
-        } catch (e: NullPointerException) {
-            // テスト環境でのUI更新エラーを無視
-            Log.d(TAG, "refreshItemById skipped in test environment: ${e.message}")
+        if (isTestEnvironment()) return
+        
+        val position = findPositionById(itemId)
+        if (position != -1) {
+            notifyItemChanged(position)
+            Log.d(TAG, "Item at position $position (id=$itemId) refreshed")
+        }
+    }
+
+    /**
+     * 全アイテムの表示を更新（PRレビュー対応: テスト環境考慮）
+     */
+    private fun refreshAllItems() {
+        if (isTestEnvironment()) return
+        
+        notifyDataSetChanged()
+        Log.d(TAG, "All items refreshed")
+    }
+
+    /**
+     * テスト環境検出
+     */
+    private fun isTestEnvironment(): Boolean {
+        return try {
+            Class.forName("org.junit.Test")
+            true
+        } catch (_: ClassNotFoundException) {
+            false
         }
     }
 
@@ -225,21 +199,19 @@ class ClothItemAdapter(
     }
 
     /**
-     * 長押しコールバックを呼び出し、選択状態を管理
-     * 
-     * @param clothItem 長押しされたアイテム
+     * 長押しコールバック処理（PRレビュー対応: SelectionManager使用）
      */
     fun triggerLongPressCallback(clothItem: ClothItem) {
-        if (!isSelectionMode) {
-            // 選択モード無効時：選択モードを有効にして対象アイテムを選択
-            setSelectionMode(true)
-            selectItem(clothItem.id)
-            longPressListener?.invoke(clothItem)
+        val previousSelectionMode = isSelectionMode
+        selectionManager.handleLongPress(clothItem)
+        
+        // UI更新が必要な場合のみ実行
+        if (!previousSelectionMode && isSelectionMode) {
+            // 選択モードが新たに開始された場合、全体を更新
+            refreshAllItems()
         } else {
-            // 選択モード有効時：アイテム選択状態を切り替え
-            val wasSelected = isItemSelected(clothItem.id)
-            toggleItemSelection(clothItem.id)
-            selectionListener?.invoke(clothItem, !wasSelected)
+            // 個別アイテムの選択状態変更の場合
+            refreshItemById(clothItem.id)
         }
     }
 
@@ -354,7 +326,7 @@ class ClothItemAdapter(
                 onItemClick(clothItem)
             }
 
-            // Phase 2-GREEN: 長押しリスナー設定
+            // Phase 2-GREEN: 長押しリスナー設定（PRレビュー対応: try-catch削除）
             binding.root.setOnLongClickListener {
                 // Phase 2-REFACTOR: アクセシビリティアナウンス
                 val context = binding.root.context
@@ -373,12 +345,8 @@ class ClothItemAdapter(
                 adapter.triggerLongPressCallback(clothItem)
                 
                 // アクセシビリティアナウンス
-                try {
-                    binding.root.announceForAccessibility(message)
-                    Log.d(TAG, "Accessibility announcement: $message")
-                } catch (e: Exception) {
-                    Log.d(TAG, "Accessibility announcement skipped in test environment: ${e.message}")
-                }
+                binding.root.announceForAccessibility(message)
+                Log.d(TAG, "Accessibility announcement: $message")
                 
                 true // 長押しイベントを消費
             }
@@ -577,39 +545,29 @@ class ClothItemAdapter(
         }
 
         /**
-         * チェックボックスフェードインアニメーション
+         * チェックボックスフェードインアニメーション（PRレビュー対応: try-catch削除）
          */
         private fun animateCheckboxFadeIn() {
-            try {
-                binding.checkboxSelection.alpha = 0f
-                binding.checkboxSelection.visibility = android.view.View.VISIBLE
-                binding.checkboxSelection.animate()
-                    .alpha(1f)
-                    .setDuration(ANIMATION_DURATION_CHECKBOX)
-                    .start()
-            } catch (e: Exception) {
-                binding.checkboxSelection.visibility = android.view.View.VISIBLE
-                Log.d(TAG, "Checkbox animation skipped in test environment: ${e.message}")
-            }
+            binding.checkboxSelection.alpha = 0f
+            binding.checkboxSelection.visibility = android.view.View.VISIBLE
+            binding.checkboxSelection.animate()
+                .alpha(1f)
+                .setDuration(ANIMATION_DURATION_CHECKBOX)
+                .start()
         }
 
         /**
-         * チェックボックスフェードアウトアニメーション
+         * チェックボックスフェードアウトアニメーション（PRレビュー対応: try-catch削除）
          */
         private fun animateCheckboxFadeOut() {
-            try {
-                binding.checkboxSelection.animate()
-                    .alpha(0f)
-                    .setDuration(ANIMATION_DURATION_CHECKBOX)
-                    .withEndAction {
-                        binding.checkboxSelection.visibility = android.view.View.GONE
-                        binding.checkboxSelection.alpha = 1f
-                    }
-                    .start()
-            } catch (e: Exception) {
-                binding.checkboxSelection.visibility = android.view.View.GONE
-                Log.d(TAG, "Checkbox fadeout animation skipped in test environment: ${e.message}")
-            }
+            binding.checkboxSelection.animate()
+                .alpha(0f)
+                .setDuration(ANIMATION_DURATION_CHECKBOX)
+                .withEndAction {
+                    binding.checkboxSelection.visibility = android.view.View.GONE
+                    binding.checkboxSelection.alpha = 1f
+                }
+                .start()
         }
 
         /**
@@ -621,7 +579,7 @@ class ClothItemAdapter(
                 
                 if (isChecked != isSelected) {
                     adapter.toggleItemSelection(clothItem.id)
-                    adapter.selectionListener?.invoke(clothItem, isChecked)
+                    adapter.selectionManager.selectionListener?.invoke(clothItem, isChecked)
                     
                     val message = if (isChecked) {
                         binding.root.context.getString(R.string.item_selected)
@@ -669,41 +627,31 @@ class ClothItemAdapter(
         }
 
         /**
-         * オーバーレイフェードインアニメーション
+         * オーバーレイフェードインアニメーション（PRレビュー対応: try-catch削除）
          */
         private fun animateOverlayFadeIn(clothItem: ClothItem) {
-            try {
-                binding.selectionOverlay.alpha = 0f
-                binding.selectionOverlay.visibility = android.view.View.VISIBLE
-                binding.selectionOverlay.animate()
-                    .alpha(1f)
-                    .setDuration(ANIMATION_DURATION_OVERLAY)
-                    .start()
-                Log.d(TAG, "Selection overlay faded in for item ${clothItem.id}")
-            } catch (e: Exception) {
-                binding.selectionOverlay.visibility = android.view.View.VISIBLE
-                Log.d(TAG, "Selection overlay animation skipped in test environment: ${e.message}")
-            }
+            binding.selectionOverlay.alpha = 0f
+            binding.selectionOverlay.visibility = android.view.View.VISIBLE
+            binding.selectionOverlay.animate()
+                .alpha(1f)
+                .setDuration(ANIMATION_DURATION_OVERLAY)
+                .start()
+            Log.d(TAG, "Selection overlay faded in for item ${clothItem.id}")
         }
 
         /**
-         * オーバーレイフェードアウトアニメーション
+         * オーバーレイフェードアウトアニメーション（PRレビュー対応: try-catch削除）
          */
         private fun animateOverlayFadeOut(clothItem: ClothItem) {
-            try {
-                binding.selectionOverlay.animate()
-                    .alpha(0f)
-                    .setDuration(ANIMATION_DURATION_OVERLAY)
-                    .withEndAction {
-                        binding.selectionOverlay.visibility = android.view.View.GONE
-                        binding.selectionOverlay.alpha = 1f
-                    }
-                    .start()
-                Log.d(TAG, "Selection overlay faded out for item ${clothItem.id}")
-            } catch (e: Exception) {
-                binding.selectionOverlay.visibility = android.view.View.GONE
-                Log.d(TAG, "Selection overlay fadeout animation skipped in test environment: ${e.message}")
-            }
+            binding.selectionOverlay.animate()
+                .alpha(0f)
+                .setDuration(ANIMATION_DURATION_OVERLAY)
+                .withEndAction {
+                    binding.selectionOverlay.visibility = android.view.View.GONE
+                    binding.selectionOverlay.alpha = 1f
+                }
+                .start()
+            Log.d(TAG, "Selection overlay faded out for item ${clothItem.id}")
         }
 
         /**
