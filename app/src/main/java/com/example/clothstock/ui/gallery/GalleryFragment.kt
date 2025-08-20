@@ -32,6 +32,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
 import com.example.clothstock.accessibility.AccessibilityHelper
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 
 /**
  * ギャラリー画面Fragment
@@ -877,6 +881,35 @@ class GalleryFragment : Fragment() {
                 Log.d(TAG, "errorMessage observer: Filter/search error cleared")
             }
         }
+
+        // Task 8 Phase 2-REFACTOR: 選択状態の監視（強化版）
+        viewModel.selectionState.observe(viewLifecycleOwner) { selectionState ->
+            Log.d(
+                TAG, 
+                "selectionState observer: Selection mode = ${selectionState?.isSelectionMode}, " +
+                        "selected count = ${selectionState?.totalSelectedCount}"
+            )
+            updateSelectionModeUI(selectionState ?: com.example.clothstock.data.model.SelectionState())
+        }
+
+        // Task 8 Phase 2-REFACTOR: 削除進捗状態の監視
+        viewModel.isDeletionInProgress.observe(viewLifecycleOwner) { isInProgress ->
+            Log.d(TAG, "isDeletionInProgress observer: isInProgress = $isInProgress")
+            updateDeletionProgressUI(isInProgress)
+        }
+
+        // Task 8 Phase 2-REFACTOR: 削除結果の監視
+        viewModel.deletionResult.observe(viewLifecycleOwner) { result ->
+            result?.let {
+                Log.d(
+                    TAG, 
+                    "deletionResult observer: success = ${it.isCompleteSuccess}, " +
+                            "deleted count = ${it.successfulDeletions}"
+                )
+                handleDeletionResult(it)
+                // ViewModelで自動でクリアされるので手動クリア不要
+            }
+        }
     }
 
     /**
@@ -1708,7 +1741,211 @@ class GalleryFragment : Fragment() {
     
     // Task 14: アクセシビリティ通知メソッドは将来の機能拡張時に使用予定
 
+    // ===== Task 8 Phase 2-GREEN: 削除メニュー処理（基本実装） =====
+    
+    /**
+     * Task 8: メニュー作成（Phase 2-GREEN実装）
+     */
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        
+        // 削除ボタンをプログラムで追加（Phase 2-GREEN: シンプルな実装）
+        deleteMenuItem = menu.add(0, DELETE_MENU_ID, 0, "削除").apply {
+            setIcon(android.R.drawable.ic_menu_delete)
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+            isVisible = isDeleteButtonVisible
+        }
+        
+        Log.d(TAG, "Delete menu item created, visible=$isDeleteButtonVisible")
+    }
+    
+    /**
+     * Task 8: メニューアイテム選択処理（Phase 2-GREEN実装）
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            DELETE_MENU_ID -> {
+                Log.d(TAG, "Delete menu item selected")
+                handleDeleteButtonClick()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    /**
+     * Task 8: 削除ボタンクリック処理（Phase 2-GREEN実装）
+     */
+    private fun handleDeleteButtonClick() {
+        val selectionState = viewModel.selectionState.value
+        if (selectionState?.hasSelection() == true) {
+            Log.d(TAG, "Delete button clicked - ${selectionState.totalSelectedCount} items selected")
+            showDeletionConfirmationDialog(selectionState.totalSelectedCount)
+        } else {
+            Log.w(TAG, "Delete button clicked but no items selected")
+        }
+    }
+    
+    /**
+     * Task 8 Phase 2-GREEN: 削除確認ダイアログ表示（基本実装）
+     * Requirements 2.1-2.4対応
+     */
+    private fun showDeletionConfirmationDialog(itemCount: Int) {
+        Log.d(TAG, "Showing deletion confirmation dialog for $itemCount items")
+        
+        // 削除中の場合は重複防止（Requirements 2.4: エラーハンドリング）
+        if (viewModel.isDeletionInProgress.value == true) {
+            Log.w(TAG, "Deletion already in progress, ignoring request")
+            return
+        }
+        
+        // アイテム数に応じたメッセージ作成（Requirements 2.2: アイテム数表示）
+        val message = if (itemCount == 1) {
+            "1個のアイテムを削除しますか？"
+        } else {
+            "${itemCount}個のアイテムを削除しますか？"
+        }
+        
+        val confirmMessage = "$message\n\nこの操作は元に戻せません。"
+        
+        AlertDialog.Builder(requireContext())
+            .setTitle("削除の確認")
+            .setMessage(confirmMessage)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("削除") { dialog, _ ->
+                Log.d(TAG, "Deletion confirmed for $itemCount items")
+                // Requirements 2.3: 確認時に削除実行
+                viewModel.deleteSelectedItems()
+                dialog.dismiss()
+            }
+            .setNegativeButton("キャンセル") { dialog, _ ->
+                Log.d(TAG, "Deletion cancelled")
+                // Requirements 2.4: キャンセル時は選択状態維持
+                dialog.dismiss()
+            }
+            .setCancelable(true) // 外側タップでキャンセル可能
+            .show()
+            
+        Log.d(TAG, "Deletion confirmation dialog displayed")
+    }
+    
+    // Task 8: 削除ボタン状態管理（Phase 2-GREEN実装）
+    private var deleteMenuItem: MenuItem? = null
+    private var isDeleteButtonVisible = false
+    
+    /**
+     * Task 8: 削除ボタン表示（Phase 2-GREEN実装）
+     */
+    private fun showDeleteButton(enabled: Boolean) {
+        isDeleteButtonVisible = true
+        deleteMenuItem?.let { menuItem ->
+            menuItem.isVisible = true
+            menuItem.isEnabled = enabled
+            Log.d(TAG, "Delete button visibility: visible=true, enabled=$enabled")
+        } ?: run {
+            Log.d(TAG, "Delete button not yet created, will show when menu is created")
+        }
+    }
+    
+    /**
+     * Task 8: 削除ボタン非表示（Phase 2-GREEN実装）
+     */
+    private fun hideDeleteButton() {
+        isDeleteButtonVisible = false
+        deleteMenuItem?.let { menuItem ->
+            menuItem.isVisible = false
+            Log.d(TAG, "Delete button hidden")
+        } ?: run {
+            Log.d(TAG, "Delete button not yet created, will hide when menu is created")
+        }
+    }
+
+    /**
+     * Task 8 Phase 2-REFACTOR: 選択モードUI更新（包括的実装）
+     */
+    private fun updateSelectionModeUI(selectionState: com.example.clothstock.data.model.SelectionState) {
+        Log.d(
+            TAG, 
+            "Updating selection mode UI: isSelectionMode=${selectionState.isSelectionMode}, " +
+                    "count=${selectionState.totalSelectedCount}"
+        )
+        
+        if (selectionState.isSelectionMode) {
+            // 選択モード時の削除ボタン表示
+            showDeleteButton(selectionState.totalSelectedCount > 0)
+        } else {
+            // 通常モード時は削除ボタン非表示
+            hideDeleteButton()
+        }
+    }
+
+    /**
+     * Task 8 Phase 2-REFACTOR: 削除進捗UI更新
+     */
+    private fun updateDeletionProgressUI(isInProgress: Boolean) {
+        Log.d(TAG, "Updating deletion progress UI: isInProgress = $isInProgress")
+        
+        // 削除中は削除ボタンを無効化
+        deleteMenuItem?.isEnabled = !isInProgress
+        
+        // 将来の実装: 削除進捗インジケーターの表示
+        if (isInProgress) {
+            Log.d(TAG, "Deletion in progress - UI feedback active")
+        } else {
+            Log.d(TAG, "Deletion completed - UI feedback cleared")
+        }
+    }
+
+    /**
+     * Task 8 Phase 2-REFACTOR: 削除結果ハンドリング
+     */
+    private fun handleDeletionResult(result: com.example.clothstock.data.model.DeletionResult) {
+        Log.d(
+            TAG, 
+            "Handling deletion result: success=${result.isCompleteSuccess}, " +
+                    "deletedCount=${result.successfulDeletions}"
+        )
+        
+        if (result.isCompleteSuccess) {
+            // 削除成功時のフィードバック
+            val message = if (result.successfulDeletions == 1) {
+                "1個のアイテムを削除しました"
+            } else {
+                "${result.successfulDeletions}個のアイテムを削除しました"
+            }
+            
+            com.google.android.material.snackbar.Snackbar.make(
+                binding.root,
+                message,
+                com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+            ).show()
+            
+            Log.d(TAG, "Deletion success feedback displayed: $message")
+        } else if (result.isPartialSuccess) {
+            // 部分成功時のフィードバック
+            val message = "${result.successfulDeletions}個のアイテムを削除しました。${result.failedDeletions}個は削除できませんでした。"
+            
+            com.google.android.material.snackbar.Snackbar.make(
+                binding.root,
+                message,
+                com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+            ).show()
+            
+            Log.w(TAG, "Partial deletion result: $message")
+        } else {
+            // 削除完全失敗時のエラーフィードバック
+            com.google.android.material.snackbar.Snackbar.make(
+                binding.root,
+                "削除中にエラーが発生しました",
+                com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+            ).show()
+            
+            Log.e(TAG, "Complete deletion failure - error feedback displayed")
+        }
+    }
+
     companion object {
+        private const val DELETE_MENU_ID = 1001 // 削除メニューアイテムのID
         private const val TAG = "GalleryFragment"
         
         // Task7: フィルターUI用定数
