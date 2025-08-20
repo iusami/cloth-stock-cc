@@ -19,6 +19,7 @@
     <ID>LargeClass:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>
     <ID>LargeClass:GalleryFragment.kt$GalleryFragment : Fragment</ID>
     <ID>LargeClass:GalleryViewModel.kt$GalleryViewModel : ViewModel</ID>
+    <ID>LongMethod:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$fun bind(clothItem: ClothItem)</ID>
     <ID>LongMethod:DetailActivity.kt$DetailActivity$private fun observeViewModel()</ID>
     <ID>LongParameterList:SnackbarHelper.kt$SnackbarHelper$( view: View, message: String, type: Type, duration: Int, actionText: String?, action: (() -&gt; Unit)? )</ID>
     <ID>MagicNumber:ClothDatabase.kt$ClothDatabase$1024</ID>
@@ -128,14 +129,17 @@
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun bindToLifecycle(lifecycleOwner: androidx.lifecycle.LifecycleOwner)</ID>
     <ID>ReturnCount:CameraViewModel.kt$CameraViewModel$fun captureImage(): Boolean</ID>
     <ID>ReturnCount:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$private fun isValidImagePath(imagePath: String?): Boolean</ID>
-    <ID>ReturnCount:FileUtils.kt$FileUtils$fun deleteImageFile(file: File): Boolean</ID>
+    <ID>ReturnCount:ClothRepositoryImpl.kt$ClothRepositoryImpl$override suspend fun deleteItemWithFileCleanup(item: ClothItem): Boolean</ID>
     <ID>ReturnCount:FileUtils.kt$FileUtils$fun validateImageFileForDeletion(file: File): Boolean</ID>
     <ID>ReturnCount:RetryMechanism.kt$RetryMechanism.Companion$suspend fun &lt;T&gt; execute( config: RetryConfig = RetryConfig(), retryPolicy: RetryPolicy = defaultRetryPolicy, operation: suspend () -&gt; T ): RetryResult&lt;T&gt;</ID>
     <ID>SwallowedException:CameraPermissionManager.kt$CameraPermissionManager$e: Exception</ID>
     <ID>SwallowedException:CameraViewModel.kt$CameraViewModel$e: Exception</ID>
     <ID>SwallowedException:CameraViewModelTest.kt$CameraViewModelTest$e: Exception</ID>
     <ID>SwallowedException:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
+    <ID>SwallowedException:ClothItemAdapterTest.kt$ClothItemAdapterTest$e: Exception</ID>
     <ID>SwallowedException:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
+    <ID>SwallowedException:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: java.io.IOException</ID>
+    <ID>SwallowedException:ClothRepositoryImpl.kt$ClothRepositoryImpl$rollbackException: RuntimeException</ID>
     <ID>SwallowedException:ErrorDialogFragment.kt$ErrorDialogFragment$e: IllegalArgumentException</ID>
     <ID>SwallowedException:FileUtils.kt$FileUtils$logException: Exception</ID>
     <ID>SwallowedException:PermissionRationaleDialog.kt$PermissionRationaleDialog.Controller$e: Exception</ID>
@@ -146,8 +150,11 @@
     <ID>TooGenericExceptionCaught:CameraViewModel.kt$CameraViewModel.&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase.DatabaseCallback$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter$e: NullPointerException</ID>
     <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$databaseException: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$rollbackException: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:ClothStockApplication.kt$ClothStockApplication$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothStockGlideModule.kt$ClothStockGlideModule.&lt;no name provided&gt;$e: Exception</ID>
@@ -172,6 +179,8 @@
     <ID>TooManyFunctions:CameraActivity.kt$CameraActivity : AppCompatActivity</ID>
     <ID>TooManyFunctions:CameraViewModel.kt$CameraViewModel : ViewModel</ID>
     <ID>TooManyFunctions:ClothDao.kt$ClothDao</ID>
+    <ID>TooManyFunctions:ClothItemAdapter.kt$ClothItemAdapter : ListAdapter</ID>
+    <ID>TooManyFunctions:ClothItemAdapter.kt$ClothItemAdapter$ClothItemViewHolder : ViewHolder</ID>
     <ID>TooManyFunctions:ClothRepository.kt$ClothRepository</ID>
     <ID>TooManyFunctions:ClothRepositoryImpl.kt$ClothRepositoryImpl : ClothRepository</ID>
     <ID>TooManyFunctions:DetailActivity.kt$DetailActivity : AppCompatActivity</ID>

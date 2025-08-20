@@ -90,4 +90,8 @@
     
     <!-- Phase 3: Detail panel background colors -->
     <color name="detail_tag_info_background">#FFFFFF</color>
+    
+    <!-- Task 7: Selection mode colors -->
+    <color name="selection_overlay">#4D6750A4</color>
+    <color name="selection_background">@color/md_theme_light_primaryContainer</color>
 </resources>

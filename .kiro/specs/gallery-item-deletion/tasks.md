@@ -58,7 +58,7 @@ Each task follows the Red-Green-Refactor cycle:
   - **REFACTOR**: Add robust error handling and logging for file operations
   - _Requirements: 3.1, 3.2, 3.5_
 
-- [ ] 6. TDD: Enhance Repository layer with batch deletion and file cleanup
+- [x] 6. TDD: Enhance Repository layer with batch deletion and file cleanup
 
   - **RED**: Write failing unit tests for Repository.deleteItems() batch deletion method
   - **GREEN**: Implement minimal batch deletion using existing DAO methods
