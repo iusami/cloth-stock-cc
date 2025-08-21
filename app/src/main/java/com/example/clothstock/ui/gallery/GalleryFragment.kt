@@ -35,7 +35,7 @@ import com.example.clothstock.accessibility.AccessibilityHelper
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
  * ギャラリー画面Fragment
@@ -1800,25 +1800,23 @@ class GalleryFragment : Fragment() {
         }
         
         // アイテム数に応じたメッセージ作成（Requirements 2.2: アイテム数表示）
-        val message = if (itemCount == 1) {
-            "1個のアイテムを削除しますか？"
-        } else {
-            "${itemCount}個のアイテムを削除しますか？"
-        }
+        val message = resources.getQuantityString(
+            R.plurals.delete_confirmation_message,
+            itemCount,
+            itemCount
+        )
         
-        val confirmMessage = "$message\n\nこの操作は元に戻せません。"
-        
-        AlertDialog.Builder(requireContext())
-            .setTitle("削除の確認")
-            .setMessage(confirmMessage)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.delete_confirmation_title)
+            .setMessage(message)
             .setIcon(android.R.drawable.ic_dialog_alert)
-            .setPositiveButton("削除") { dialog, _ ->
+            .setPositiveButton(R.string.delete_confirmation_positive) { dialog, _ ->
                 Log.d(TAG, "Deletion confirmed for $itemCount items")
                 // Requirements 2.3: 確認時に削除実行
                 viewModel.deleteSelectedItems()
                 dialog.dismiss()
             }
-            .setNegativeButton("キャンセル") { dialog, _ ->
+            .setNegativeButton(R.string.delete_confirmation_negative) { dialog, _ ->
                 Log.d(TAG, "Deletion cancelled")
                 // Requirements 2.4: キャンセル時は選択状態維持
                 dialog.dismiss()
@@ -1914,10 +1912,10 @@ class GalleryFragment : Fragment() {
                 "${result.successfulDeletions}個のアイテムを削除しました"
             }
             
-            com.google.android.material.snackbar.Snackbar.make(
+            Snackbar.make(
                 binding.root,
                 message,
-                com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                Snackbar.LENGTH_SHORT
             ).show()
             
             Log.d(TAG, "Deletion success feedback displayed: $message")
@@ -1925,19 +1923,19 @@ class GalleryFragment : Fragment() {
             // 部分成功時のフィードバック
             val message = "${result.successfulDeletions}個のアイテムを削除しました。${result.failedDeletions}個は削除できませんでした。"
             
-            com.google.android.material.snackbar.Snackbar.make(
+            Snackbar.make(
                 binding.root,
                 message,
-                com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+                Snackbar.LENGTH_LONG
             ).show()
             
             Log.w(TAG, "Partial deletion result: $message")
         } else {
             // 削除完全失敗時のエラーフィードバック
-            com.google.android.material.snackbar.Snackbar.make(
+            Snackbar.make(
                 binding.root,
                 "削除中にエラーが発生しました",
-                com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+                Snackbar.LENGTH_LONG
             ).show()
             
             Log.e(TAG, "Complete deletion failure - error feedback displayed")
