@@ -216,4 +216,13 @@
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
     <string name="delete">削除</string>
+
+    <!-- Task 8: 削除確認ダイアログ -->
+    <string name="delete_confirmation_title">削除の確認</string>
+    <plurals name="delete_confirmation_message">
+        <item quantity="one">%d個のアイテムを削除しますか？</item>
+        <item quantity="other">%d個のアイテムを削除しますか？</item>
+    </plurals>
+    <string name="delete_confirmation_positive">削除</string>
+    <string name="delete_confirmation_negative">キャンセル</string>
 </resources>

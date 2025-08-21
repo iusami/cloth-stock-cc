@@ -68,7 +68,7 @@ Each task follows the Red-Green-Refactor cycle:
   - **REFACTOR**: Add comprehensive error handling, rollback logic, and DeletionResult reporting
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 7. TDD: Update ClothItemAdapter for multi-selection UI support
+- [x] 7. TDD: Update ClothItemAdapter for multi-selection UI support
 
   - **RED**: Write failing unit tests for selection mode flag and visual state updates
   - **GREEN**: Add minimal selection mode properties and basic visual indicators to adapter
