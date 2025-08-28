@@ -225,4 +225,45 @@
     </plurals>
     <string name="delete_confirmation_positive">削除</string>
     <string name="delete_confirmation_negative">キャンセル</string>
+
+    <!-- Task 9: 削除エラーメッセージ -->
+    <plurals name="deletion_error_message">
+        <item quantity="one">%d個のアイテムの削除に失敗しました</item>
+        <item quantity="other">%d個のアイテムの削除に失敗しました</item>
+    </plurals>
+    
+    <!-- ファイル権限エラー -->
+    <string name="file_permission_error_title">ファイルアクセスエラー</string>
+    <string name="file_permission_error_message">ファイルの削除権限がありません。アプリの権限設定を確認してください。</string>
+    <string name="file_permission_error_with_path">ファイル %s の削除権限がありません。アプリの権限設定を確認してください。</string>
+    <string name="file_permission_error_guidance">設定 > アプリ > Cloth Stock > 権限 からストレージ権限を有効にしてください。</string>
+    
+    <!-- データベースエラー -->
+    <string name="database_transaction_error_title">データベースエラー</string>
+    <string name="database_transaction_error_message">データベースの削除処理に失敗しました。しばらくしてから再試行してください。</string>
+    <string name="database_transaction_error_guidance">アプリを再起動してから再度お試しください。問題が続く場合はサポートにお問い合わせください。</string>
+    
+    <!-- ネットワーク・ストレージエラー -->
+    <string name="network_storage_error_title">ストレージアクセスエラー</string>
+    <string name="network_storage_error_message">ストレージへのアクセスに問題があります。ネットワーク接続を確認してください。</string>
+    <string name="network_storage_error_guidance">ネットワーク接続やストレージの空き容量を確認してください。</string>
+    
+    <!-- 部分削除結果 -->
+    <string name="partial_deletion_success_title">部分削除完了</string>
+    <plurals name="partial_deletion_success_message">
+        <item quantity="one">%1$d個のアイテムを削除しましたが、%2$d個の削除に失敗しました。</item>
+        <item quantity="other">%1$d個のアイテムを削除しましたが、%2$d個の削除に失敗しました。</item>
+    </plurals>
+    <string name="partial_deletion_failed_items">失敗したアイテム: %s</string>
+    <string name="partial_deletion_guidance">失敗したアイテムは手動で削除するか、再試行してください。</string>
+    
+    <!-- アクセシビリティ対応メッセージ -->
+    <string name="accessibility_deletion_error_announcement">アイテムの削除に失敗しました。エラー内容を確認し、必要に応じて再試行してください。</string>
+    <string name="accessibility_partial_deletion_announcement">一部のアイテムのみ削除されました。詳細を確認し、必要に応じて失敗したアイテムを再試行してください。</string>
+    
+    <!-- 共通ボタン -->
+    <string name="retry">再試行</string>
+    <string name="settings">設定</string>
+    <string name="contact_support">サポートに連絡</string>
+    <string name="view_details">詳細を表示</string>
 </resources>
