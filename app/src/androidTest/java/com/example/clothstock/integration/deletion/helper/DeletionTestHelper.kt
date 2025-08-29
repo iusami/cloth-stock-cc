@@ -18,6 +18,16 @@ import kotlinx.coroutines.runBlocking
  */
 object DeletionTestHelper {
 
+    companion object {
+        private const val DELETION_TEST_DIR_NAME = "deletion_test_images"
+        private const val LARGE_TEST_PREFIX = "large_test_item_"
+        private const val DIVERSE_TEST_PREFIX = "diverse_test_item_"
+        private const val TEST_ITEM_PREFIX = "test_item_"
+        private const val TEST_IMAGE_EXTENSION = ".jpg"
+        private const val TEST_IMAGE_DATA_PREFIX = "test_image_data_"
+        private const val SIMULATED_IMAGE_DATA = "simulated_image_data"
+    }
+
     private lateinit var testDatabase: ClothDatabase
     private val testItems = mutableListOf<ClothItem>()
     private val testFiles = mutableListOf<File>()
@@ -83,7 +93,7 @@ object DeletionTestHelper {
         
         repeat(count) { index ->
             val itemId = (1000 + index).toLong()
-            val imagePath = createTempImageFile("test_item_${itemId}").absolutePath
+            val imagePath = createTempImageFile("${TEST_ITEM_PREFIX}${itemId}").absolutePath
             
             val item = ClothItem(
                 id = itemId,
@@ -112,7 +122,7 @@ object DeletionTestHelper {
         val items = mutableListOf<ClothItem>()
         
         ids.forEachIndexed { index, id ->
-            val imagePath = createTempImageFile("test_item_${id}").absolutePath
+            val imagePath = createTempImageFile("${TEST_ITEM_PREFIX}${id}").absolutePath
             
             val item = ClothItem(
                 id = id,
@@ -142,7 +152,7 @@ object DeletionTestHelper {
         
         repeat(count) { index ->
             val itemId = (10000 + index).toLong()
-            val imagePath = createTempImageFile("large_test_item_${itemId}").absolutePath
+            val imagePath = createTempImageFile("${LARGE_TEST_PREFIX}${itemId}").absolutePath
             
             val item = ClothItem(
                 id = itemId,
@@ -174,7 +184,7 @@ object DeletionTestHelper {
         
         repeat(count) { index ->
             val itemId = (20000 + index).toLong()
-            val imagePath = createTempImageFile("diverse_test_item_${itemId}").absolutePath
+            val imagePath = createTempImageFile("${DIVERSE_TEST_PREFIX}${itemId}").absolutePath
             
             val item = ClothItem(
                 id = itemId,
@@ -326,29 +336,29 @@ object DeletionTestHelper {
 
     private fun createTempImageFile(prefix: String): File {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val tempDir = File(context.cacheDir, "deletion_test_images")
+        val tempDir = File(context.cacheDir, DELETION_TEST_DIR_NAME)
         if (!tempDir.exists()) {
             tempDir.mkdirs()
         }
         
-        val tempFile = File(tempDir, "${prefix}_${System.currentTimeMillis()}.jpg")
+        val tempFile = File(tempDir, "${prefix}_${System.currentTimeMillis()}${TEST_IMAGE_EXTENSION}")
         
         // 空のテスト画像ファイルを作成
-        tempFile.writeText("test_image_data_${prefix}")
+        tempFile.writeText("${TEST_IMAGE_DATA_PREFIX}${prefix}")
         
         testFiles.add(tempFile)
         return tempFile
     }
 
     private fun generateTestImagePath(itemId: Long): String {
-        return createTempImageFile("item_$itemId").absolutePath
+        return createTempImageFile("${TEST_ITEM_PREFIX}$itemId").absolutePath
     }
 
     private fun simulateImageFileCreation(imagePath: String) {
         val file = File(imagePath)
         if (!file.exists()) {
             file.parentFile?.mkdirs()
-            file.writeText("simulated_image_data")
+            file.writeText(SIMULATED_IMAGE_DATA)
             testFiles.add(file)
         }
     }

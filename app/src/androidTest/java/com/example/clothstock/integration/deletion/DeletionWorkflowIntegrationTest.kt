@@ -13,6 +13,7 @@ import androidx.test.rule.GrantPermissionRule
 import com.example.clothstock.MainActivity
 import com.example.clothstock.R
 import com.example.clothstock.integration.deletion.helper.DeletionTestHelper
+import com.example.clothstock.util.IdlingResourceHelper
 import org.hamcrest.Matchers.*
 import org.junit.After
 import org.junit.Before
@@ -33,6 +34,23 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class DeletionWorkflowIntegrationTest {
 
+    companion object {
+        private const val INITIAL_UI_WAIT_MS = 1500L
+        private const val DELETION_WAIT_MS = 2000L
+        private const val BATCH_DELETION_WAIT_MS = 3000L
+        private const val UI_TRANSITION_WAIT_MS = 500L
+        private const val MIN_GALLERY_ITEMS = 3
+        private const val BATCH_TEST_ITEMS = 5
+        private const val LARGE_TEST_ITEMS = 10
+        private const val DIVERSE_TEST_ITEMS = 8
+        private const val EXPECTED_ITEMS_AFTER_SINGLE_DELETE = 2
+        private const val EXPECTED_ITEMS_AFTER_BATCH_DELETE = 2
+        private const val EXPECTED_ITEMS_AFTER_LARGE_DELETE = 4
+        private const val EXPECTED_ITEMS_AFTER_DIVERSE_DELETE = 5
+        private const val SELECTION_COUNT_THREE = 3
+        private const val SELECTION_COUNT_SIX = 6
+    }
+
     @get:Rule
     val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(
         android.Manifest.permission.CAMERA,
@@ -51,6 +69,7 @@ class DeletionWorkflowIntegrationTest {
     @After
     fun tearDown() {
         // RED Phase: クリーンアップヘルパーも存在しない
+        IdlingResourceHelper.unregisterAllIdlingResources()
         DeletionTestHelper.cleanupDeletionTestEnvironment()
     }
 
@@ -66,10 +85,14 @@ class DeletionWorkflowIntegrationTest {
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
             // Step 1: ギャラリー表示確認（Requirements 1.1）
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = MIN_GALLERY_ITEMS,
+                timeout = INITIAL_UI_WAIT_MS
+            )
             onView(withId(R.id.recyclerViewGallery))
                 .check(matches(isDisplayed()))
-                .check(matches(hasMinimumChildCount(3)))
+                .check(matches(hasMinimumChildCount(MIN_GALLERY_ITEMS)))
 
             // Step 2: 長押しで選択モード起動（Requirements 1.2）
             // RED: 長押しによる選択モード機能が統合されていないため失敗
@@ -108,10 +131,14 @@ class DeletionWorkflowIntegrationTest {
                 .check(matches(isDisplayed()))
 
             // Step 8: 削除完了後のギャラリー更新確認（Requirements 3.3）
-            Thread.sleep(2000) // 削除処理待機
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = EXPECTED_ITEMS_AFTER_SINGLE_DELETE,
+                timeout = DELETION_WAIT_MS
+            )
             // RED: ギャラリーの自動更新統合が未実装のため失敗
             onView(withId(R.id.recyclerViewGallery))
-                .check(matches(hasChildCount(2))) // 3-1=2
+                .check(matches(hasChildCount(EXPECTED_ITEMS_AFTER_SINGLE_DELETE))) // 3-1=2
 
             // Step 9: 削除成功フィードバック（Requirements 4.3）
             // RED: 成功メッセージ表示統合が未実装のため失敗
@@ -128,13 +155,17 @@ class DeletionWorkflowIntegrationTest {
     @Test
     fun `完全削除ワークフロー_複数アイテム選択バッチ削除処理`() {
         // Given: 複数テストデータ
-        val testItems = DeletionTestHelper.createTestItemsWithFiles(5)
+        val testItems = DeletionTestHelper.createTestItemsWithFiles(BATCH_TEST_ITEMS)
         DeletionTestHelper.injectTestItems(testItems)
 
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // Step 1: 第一アイテム長押し選択
             // RED: マルチ選択統合が未実装のため失敗
@@ -152,7 +183,7 @@ class DeletionWorkflowIntegrationTest {
             // Step 3: 選択カウント表示確認
             // RED: 選択カウント表示統合が未実装のため失敗
             onView(withId(R.id.textSelectionCount))
-                .check(matches(withText("3個のアイテムが選択されています")))
+                .check(matches(withText("${SELECTION_COUNT_THREE}個のアイテムが選択されています")))
 
             // Step 4: バッチ削除実行
             onView(withId(R.id.actionDelete))
@@ -160,7 +191,7 @@ class DeletionWorkflowIntegrationTest {
 
             // Step 5: バッチ削除確認ダイアログ（Requirements 2.2）
             // RED: バッチ削除ダイアログ統合が未実装のため失敗
-            onView(withText(containsString("3個のアイテム")))
+            onView(withText(containsString("${SELECTION_COUNT_THREE}個のアイテム")))
                 .check(matches(isDisplayed()))
 
             onView(withId(R.id.buttonConfirmDelete))
@@ -171,12 +202,16 @@ class DeletionWorkflowIntegrationTest {
             onView(withId(R.id.textDeletionProgress))
                 .check(matches(withText(containsString("削除中"))))
 
-            Thread.sleep(3000) // バッチ削除処理待機
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = EXPECTED_ITEMS_AFTER_BATCH_DELETE,
+                timeout = BATCH_DELETION_WAIT_MS
+            )
 
             // Step 7: バッチ削除完了確認
             // RED: バッチ削除後のギャラリー更新統合が未実装のため失敗
             onView(withId(R.id.recyclerViewGallery))
-                .check(matches(hasChildCount(2))) // 5-3=2
+                .check(matches(hasChildCount(EXPECTED_ITEMS_AFTER_BATCH_DELETE))) // 5-3=2
         }
     }
 
@@ -189,7 +224,11 @@ class DeletionWorkflowIntegrationTest {
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // Step 1: アイテム選択
             // RED: 選択機能の統合が未実装のため失敗
@@ -216,7 +255,7 @@ class DeletionWorkflowIntegrationTest {
 
             // Step 6: データ変更なし確認
             onView(withId(R.id.recyclerViewGallery))
-                .check(matches(hasChildCount(2))) // 変更なし
+                .check(matches(hasChildCount(EXPECTED_ITEMS_AFTER_SINGLE_DELETE))) // 変更なし
         }
     }
 
@@ -229,7 +268,11 @@ class DeletionWorkflowIntegrationTest {
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // Step 1: 特定アイテム選択・削除
             // RED: ID指定削除統合が未実装のため失敗
@@ -242,7 +285,11 @@ class DeletionWorkflowIntegrationTest {
             onView(withId(R.id.buttonConfirmDelete))
                 .perform(click())
 
-            Thread.sleep(2000)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = EXPECTED_ITEMS_AFTER_SINGLE_DELETE,
+                timeout = DELETION_WAIT_MS
+            )
 
             // Step 2: データベース同期確認
             // RED: データベース同期検証統合が未実装のため失敗
@@ -270,7 +317,11 @@ class DeletionWorkflowIntegrationTest {
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // Step 1: 選択モード開始
             // RED: 選択モード統合が未実装のため失敗
@@ -300,20 +351,24 @@ class DeletionWorkflowIntegrationTest {
     @Test
     fun `削除処理中の状態管理統合テスト_UIブロッキング`() {
         // Given: 削除処理に時間がかかるテストデータ
-        val testItems = DeletionTestHelper.createLargeTestItemsWithFiles(10)
+        val testItems = DeletionTestHelper.createLargeTestItemsWithFiles(LARGE_TEST_ITEMS)
         DeletionTestHelper.injectTestItems(testItems)
 
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // Step 1: 複数アイテム選択
             // RED: 大量アイテム選択統合が未実装のため失敗
             onView(withId(R.id.recyclerViewGallery))
                 .perform(RecyclerViewActions.actionOnItemAtPosition<androidx.recyclerview.widget.RecyclerView.ViewHolder>(0, longClick()))
 
-            repeat(5) { index ->
+            repeat(SELECTION_COUNT_SIX - 1) { index ->
                 onView(withId(R.id.recyclerViewGallery))
                     .perform(RecyclerViewActions.actionOnItemAtPosition<androidx.recyclerview.widget.RecyclerView.ViewHolder>(index + 1, click()))
             }
@@ -327,7 +382,7 @@ class DeletionWorkflowIntegrationTest {
 
             // Step 3: 削除処理中のUIブロッキング確認（Requirements 4.5）
             // RED: 削除中のUIブロッキング統合が未実装のため失敗
-            Thread.sleep(500) // 削除処理開始直後
+            IdlingResourceHelper.waitForUiUpdate(UI_TRANSITION_WAIT_MS) // 削除処理開始直後
 
             onView(withId(R.id.recyclerViewGallery))
                 .check(matches(not(isClickable())))
@@ -338,7 +393,7 @@ class DeletionWorkflowIntegrationTest {
                 .check(matches(isDisplayed()))
                 .check(matches(withText(matchesRegex("削除中.*[0-9]+.*個"))))
 
-            Thread.sleep(3000) // 削除処理完了待機
+            IdlingResourceHelper.waitFor(3000) // 削除処理完了待機
 
             // Step 5: 処理完了後のUIアクティブ化確認
             onView(withId(R.id.recyclerViewGallery))
@@ -346,20 +401,24 @@ class DeletionWorkflowIntegrationTest {
 
             // Step 6: 削除結果確認
             onView(withId(R.id.recyclerViewGallery))
-                .check(matches(hasChildCount(4))) // 10-6=4
+                .check(matches(hasChildCount(EXPECTED_ITEMS_AFTER_LARGE_DELETE))) // 10-6=4
         }
     }
 
     @Test
     fun `削除ワークフロー統合テスト_Requirements全要件検証`() {
         // Given: 包括的テストシナリオのためのテストデータ
-        val testItems = DeletionTestHelper.createDiverseTestItemsWithMetadata(8)
+        val testItems = DeletionTestHelper.createDiverseTestItemsWithMetadata(DIVERSE_TEST_ITEMS)
         DeletionTestHelper.injectTestItems(testItems)
 
         val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
         ActivityScenario.launch<MainActivity>(intent).use { scenario ->
 
-            Thread.sleep(1500)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = 5,
+                timeout = INITIAL_UI_WAIT_MS
+            )
 
             // === Requirements 1.1-1.5: 選択機能統合検証 ===
             // RED: すべての選択機能統合が未実装のため失敗
@@ -394,14 +453,18 @@ class DeletionWorkflowIntegrationTest {
                 .check(matches(isDisplayed()))
 
             // Requirements 2.2: アイテム数表示
-            onView(withText(containsString("3個のアイテム")))
+            onView(withText(containsString("${SELECTION_COUNT_THREE}個のアイテム")))
                 .check(matches(isDisplayed()))
 
             // Requirements 2.3: 削除実行
             onView(withId(R.id.buttonConfirmDelete))
                 .perform(click())
 
-            Thread.sleep(2000)
+            IdlingResourceHelper.waitForRecyclerView(
+                R.id.recyclerViewGallery,
+                minItemCount = EXPECTED_ITEMS_AFTER_DIVERSE_DELETE,
+                timeout = DELETION_WAIT_MS
+            )
 
             // === Requirements 3.1-3.5 & 4.1-4.5: 削除実行とフィードバック統合検証 ===
             // RED: 削除実行統合が未実装のため失敗
@@ -414,10 +477,10 @@ class DeletionWorkflowIntegrationTest {
 
             // Requirements 3.3: ギャラリー更新
             onView(withId(R.id.recyclerViewGallery))
-                .check(matches(hasChildCount(5))) // 8-3=5
+                .check(matches(hasChildCount(EXPECTED_ITEMS_AFTER_DIVERSE_DELETE))) // 8-3=5
 
             // Requirements 4.3: 成功フィードバック
-            onView(withText(containsString("3個のアイテムの削除が完了しました")))
+            onView(withText(containsString("${SELECTION_COUNT_THREE}個のアイテムの削除が完了しました")))
                 .check(matches(isDisplayed()))
 
             // Requirements 4.4: 選択モード終了
