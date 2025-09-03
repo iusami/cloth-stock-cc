@@ -70,6 +70,9 @@ class GalleryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // 削除ボタン表示のためメニューを有効化
+        setHasOptionsMenu(true)
+
         setupViewModel()
         setupRecyclerView()
         setupSwipeRefresh()
@@ -78,6 +81,7 @@ class GalleryFragment : Fragment() {
         setupFilterUI() // Task7: フィルターUI初期化
         setupSearchBar() // Task8: 検索バー初期化
         setupAccessibility() // Task14: アクセシビリティ設定
+        setupSelectionMode() // 選択モード設定
         observeViewModel()
     }
 
@@ -1545,6 +1549,24 @@ class GalleryFragment : Fragment() {
     }
     
     /**
+     * 選択モードの設定
+     */
+    private fun setupSelectionMode() {
+        Log.d(TAG, "Setting up selection mode")
+        
+        // AdapterとViewModelを連携
+        adapter.setLongPressListener { clothItem ->
+            Log.d(TAG, "Long press detected on item ${clothItem.id}")
+            viewModel.enterSelectionMode(clothItem.id)
+        }
+        
+        adapter.setSelectionListener { clothItem, isSelected ->
+            Log.d(TAG, "Selection changed for item ${clothItem.id}: $isSelected")
+            viewModel.toggleItemSelection(clothItem.id)
+        }
+    }
+    
+    /**
      * フィルターボタンのアクセシビリティ情報を更新
      */
     private fun updateFilterButtonAccessibility() {
@@ -1868,6 +1890,9 @@ class GalleryFragment : Fragment() {
                     "count=${selectionState.totalSelectedCount}"
         )
         
+        // Adapterの選択モードを同期
+        adapter.setSelectionMode(selectionState.isSelectionMode)
+        
         if (selectionState.isSelectionMode) {
             // 選択モード時の削除ボタン表示
             showDeleteButton(selectionState.totalSelectedCount > 0)
@@ -1875,6 +1900,10 @@ class GalleryFragment : Fragment() {
             // 通常モード時は削除ボタン非表示
             hideDeleteButton()
         }
+        
+        // メニューを再作成して削除ボタン表示を更新
+        requireActivity().invalidateOptionsMenu()
+        Log.d(TAG, "Options menu invalidated to update delete button visibility")
     }
 
     /**
