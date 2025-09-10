@@ -159,7 +159,8 @@
     <ID>TooGenericExceptionCaught:CameraViewModel.kt$CameraViewModel.&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothDatabase.kt$ClothDatabase.DatabaseCallback$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:ClothItemAdapter.kt$ClothItemAdapter.ClothItemViewHolder$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$databaseException: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ClothRepositoryImpl.kt$ClothRepositoryImpl$rollbackException: RuntimeException</ID>
@@ -174,7 +175,7 @@
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FileUtils.kt$FileUtils$logException: Exception</ID>
     <ID>TooGenericExceptionCaught:GalleryErrorHandler.kt$GalleryErrorHandler$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:GalleryFragment.kt$GalleryFragment$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:GalleryFragment.kt$GalleryFragment$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:GalleryViewModel.kt$GalleryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ImageCompressionManager.kt$ImageCompressionManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MainActivity.kt$MainActivity$e: Exception</ID>

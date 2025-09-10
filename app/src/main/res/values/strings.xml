@@ -216,6 +216,12 @@
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
     <string name="delete">削除</string>
+    <string name="delete_selected_items">選択したアイテムを削除</string>
+    <string name="selection_count_none">アイテムを選択してください</string>
+    <plurals name="selection_count_format">
+        <item quantity="one">%d個選択中</item>
+        <item quantity="other">%d個選択中</item>
+    </plurals>
 
     <!-- Task 8: 削除確認ダイアログ -->
     <string name="delete_confirmation_title">削除の確認</string>
