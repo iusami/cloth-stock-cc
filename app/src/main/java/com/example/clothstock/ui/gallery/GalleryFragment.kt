@@ -79,7 +79,8 @@ class GalleryFragment : Fragment() {
         setupEmptyStateActions()
         setupFab()
         setupFilterUI() // Task7: フィルターUI初期化
-        setupSearchBar() // Task8: 検索バー初期化
+        setupFilterToolbar() // PRレビュー対応: toolbarFilterの初期化
+        setupSearchBar() // Task8: 検索バー初期化（レガシー）
         setupAccessibility() // Task14: アクセシビリティ設定
         setupSelectionMode() // 選択モード設定
         observeViewModel()
@@ -1787,6 +1788,216 @@ class GalleryFragment : Fragment() {
         Log.d(TAG, "Selection mode setup completed")
     }
     
+    // ===== デュアルツールバー制御メソッド群 (PRレビュー対応) =====
+    
+    /**
+     * フィルターツールバーの初期化（PRレビュー対応: 検索・フィルター機能復旧）
+     */
+    private fun setupFilterToolbar() {
+        Log.d(TAG, "Setting up filter toolbar")
+        
+        // toolbarFilterの初期化
+        val toolbarFilter = binding.toolbarFilter
+        toolbarFilter?.let { toolbar ->
+            Log.d(TAG, "Filter toolbar found, setting up components")
+            
+            // SearchViewの設定
+            setupSearchViewInFilterToolbar()
+            
+            // フィルターボタンの設定
+            setupFilterButtonInToolbar()
+            
+            Log.d(TAG, "Filter toolbar setup completed")
+        } ?: Log.w(TAG, "Filter toolbar not found in layout")
+    }
+    
+    /**
+     * toolbarFilter内のSearchViewの設定
+     */
+    private fun setupSearchViewInFilterToolbar() {
+        val searchView = binding.searchView
+        searchView?.let { view ->
+            Log.d(TAG, "Setting up SearchView in filter toolbar")
+            
+            // 検索リスナーの設定
+            view.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    Log.d(TAG, "Search submitted: $query")
+                    view.clearFocus()
+                    searchJob?.cancel()
+                    performImmediateSearch(query ?: "")
+                    return true
+                }
+                
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    Log.d(TAG, "Search text changed: $newText")
+                    performDebouncedSearch(newText ?: "")
+                    return true
+                }
+            })
+            
+            // クリアボタン処理
+            view.setOnCloseListener {
+                Log.d(TAG, "Search cleared via close button")
+                searchJob?.cancel()
+                viewModel.clearSearch()
+                false
+            }
+            
+        } ?: Log.w(TAG, "SearchView not found in filter toolbar")
+    }
+    
+    /**
+     * toolbarFilter内のフィルターボタンの設定
+     */
+    private fun setupFilterButtonInToolbar() {
+        binding.buttonFilter?.setOnClickListener {
+            Log.d(TAG, "Filter button clicked in toolbar")
+            showFilterBottomSheet()
+        } ?: Log.w(TAG, "Filter button not found in toolbar")
+    }
+    
+    /**
+     * フィルターモードに切り替え（通常モード）
+     */
+    private fun switchToFilterMode() {
+        Log.d(TAG, "Switching to filter mode")
+        
+        // toolbarFilter表示、toolbarDelete非表示
+        binding.toolbarFilter?.visibility = View.VISIBLE
+        binding.toolbarDelete?.visibility = View.GONE
+        
+        Log.d(TAG, "Filter mode activated - toolbarFilter visible, toolbarDelete hidden")
+    }
+    
+    /**
+     * 選択モードに切り替え
+     */
+    private fun switchToSelectionMode() {
+        Log.d(TAG, "Switching to selection mode")
+        
+        // toolbarDelete表示、toolbarFilter非表示
+        binding.toolbarDelete?.visibility = View.VISIBLE
+        binding.toolbarFilter?.visibility = View.GONE
+        
+        Log.d(TAG, "Selection mode activated - toolbarDelete visible, toolbarFilter hidden")
+    }
+    
+    /**
+     * ツールバーモードの更新（デュアルツールバー対応 + 動的制約更新）
+     */
+    private fun updateToolbarMode(isSelectionMode: Boolean) {
+        Log.d(TAG, "Updating toolbar mode: isSelectionMode=$isSelectionMode")
+        
+        if (isSelectionMode) {
+            switchToSelectionMode()
+        } else {
+            switchToFilterMode()
+        }
+        
+        // RecyclerViewの制約を動的更新（最上段画像の重なり問題解決）
+        updateRecyclerViewConstraints(isSelectionMode)
+    }
+    
+    /**
+     * RecyclerViewの制約を動的更新（選択モード対応）
+     * 最上段画像がツールバーに隠れる問題を解決
+     */
+    private fun updateRecyclerViewConstraints(isSelectionMode: Boolean) {
+        Log.d(TAG, "Updating RecyclerView constraints: isSelectionMode=$isSelectionMode")
+        
+        try {
+            // SwipeRefreshLayout内のConstraintLayoutを取得
+            val constraintLayout = binding.swipeRefreshLayout.getChildAt(0) 
+                as? androidx.constraintlayout.widget.ConstraintLayout
+                
+            val targetToolbarId = if (isSelectionMode) {
+                binding.toolbarDelete?.id
+            } else {
+                binding.toolbarFilter?.id
+            }
+            
+            if (constraintLayout == null || targetToolbarId == null) {
+                Log.e(TAG, "Required views not found for constraint update")
+                return
+            }
+            
+            val constraintSet = androidx.constraintlayout.widget.ConstraintSet()
+            constraintSet.clone(constraintLayout)
+            
+            // RecyclerView制約の更新
+            updateViewConstraint(constraintSet, binding.recyclerViewGallery?.id, targetToolbarId)
+            
+            // Empty State制約の更新
+            updateViewConstraint(constraintSet, binding.layoutEmptyState?.id, targetToolbarId)
+            
+            // Loading Overlay制約の更新
+            updateViewConstraint(constraintSet, binding.layoutLoading?.id, targetToolbarId)
+            
+            // アニメーション付きで制約適用
+            applyConstraintsWithAnimation(constraintSet, constraintLayout)
+            
+            Log.d(TAG, "RecyclerView constraints updated successfully")
+            
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException updating RecyclerView constraints", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException updating RecyclerView constraints", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException updating RecyclerView constraints", e)
+        }
+    }
+    
+    /**
+     * 個別ビューの制約更新
+     */
+    private fun updateViewConstraint(
+        constraintSet: androidx.constraintlayout.widget.ConstraintSet,
+        viewId: Int?,
+        targetToolbarId: Int
+    ) {
+        viewId?.let { id ->
+            constraintSet.connect(
+                id, 
+                androidx.constraintlayout.widget.ConstraintSet.TOP,
+                targetToolbarId, 
+                androidx.constraintlayout.widget.ConstraintSet.BOTTOM
+            )
+            Log.d(TAG, "Updated constraint for view $id to target toolbar $targetToolbarId")
+        }
+    }
+    
+    /**
+     * アニメーション付き制約適用
+     */
+    private fun applyConstraintsWithAnimation(
+        constraintSet: androidx.constraintlayout.widget.ConstraintSet,
+        constraintLayout: androidx.constraintlayout.widget.ConstraintLayout
+    ) {
+        try {
+            val transition = androidx.transition.AutoTransition().apply {
+                duration = CONSTRAINT_ANIMATION_DURATION
+                interpolator = android.view.animation.DecelerateInterpolator()
+            }
+            
+            androidx.transition.TransitionManager.beginDelayedTransition(constraintLayout, transition)
+            constraintSet.applyTo(constraintLayout)
+            
+            Log.d(TAG, "Constraints applied with animation")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException applying constraints with animation", e)
+            // フォールバック: アニメーションなしで直接適用
+            constraintSet.applyTo(constraintLayout)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException applying constraints with animation", e)
+            constraintSet.applyTo(constraintLayout)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "RuntimeException applying constraints with animation", e)
+            constraintSet.applyTo(constraintLayout)
+        }
+    }
+    
     /**
      * フィルターボタンのアクセシビリティ情報を更新
      */
@@ -2032,25 +2243,9 @@ class GalleryFragment : Fragment() {
         adapter.setSelectionMode(false)
         adapter.clearSelection()
         viewModel.clearSelection()
-        updateDeleteToolbarVisibility(false)
+        updateToolbarMode(false)
     }
     
-    /**
-     * 削除ツールバーの表示・非表示切り替え
-     */
-    private fun updateDeleteToolbarVisibility(show: Boolean) {
-        Log.d(TAG, "Updating delete toolbar visibility: $show")
-        
-        val toolbarDelete = binding.toolbarDelete
-        val targetVisibility = if (show) View.VISIBLE else View.GONE
-        
-        toolbarDelete?.let { toolbar ->
-            if (toolbar.visibility != targetVisibility) {
-                toolbar.visibility = targetVisibility
-                Log.d(TAG, "Delete toolbar visibility changed to: ${if (show) "VISIBLE" else "GONE"}")
-            }
-        }
-    }
     
     /**
      * 選択数テキストの更新
@@ -2082,7 +2277,7 @@ class GalleryFragment : Fragment() {
         val selectedCount = selectionState.totalSelectedCount
         
         // 選択モードの時のみツールバーを表示
-        updateDeleteToolbarVisibility(isInSelectionMode)
+        updateToolbarMode(isInSelectionMode)
         
         if (isInSelectionMode) {
             // 選択数テキストと削除ボタンの状態を更新
@@ -2488,6 +2683,9 @@ class GalleryFragment : Fragment() {
         // ViewModel初期化確認用定数
         private const val VIEWMODEL_INIT_MAX_ATTEMPTS = 5 // 最大試行回数
         private const val VIEWMODEL_INIT_RETRY_INTERVAL_MS = 50L // リトライ間隔
+        
+        // 動的制約更新用定数（ツールバー重なり問題対応）
+        private const val CONSTRAINT_ANIMATION_DURATION = 300L // 制約変更アニメーション時間
         
         // Task 14: アクセシビリティ用定数
         private const val SIZE_100 = 100

@@ -366,15 +366,15 @@ class ClothItemAdapter(
                 Log.d(TAG, "Long press detected on item ${clothItem.id}")
                 
                 try {
-                    // Phase 3改善: より安全なアクセシビリティメッセージ
+                    // Phase 3改善: より安全なアクセシビリティメッセージ（PRレビュー対応: リソース化）
                     val message = if (!adapter.isSelectionMode) {
-                        "選択モードが開始されました"
+                        binding.root.context.getString(R.string.selection_mode_started)
                     } else {
                         val isSelected = adapter.isItemSelected(clothItem.id)
                         if (isSelected) {
-                            "アイテムの選択を解除しました"
+                            binding.root.context.getString(R.string.item_selection_removed)
                         } else {
-                            "アイテムを選択しました"
+                            binding.root.context.getString(R.string.item_selection_added)
                         }
                     }
                     
