@@ -81,12 +81,14 @@
     
     <!-- フィルター機能 -->
     <string name="filter_title">フィルター</string>
+    <string name="filter_button">フィルター</string>
     <string name="filter_clear_all">すべてクリア</string>
     <string name="filter_apply">適用</string>
     <string name="filter_size_title">サイズ</string>
     <string name="filter_color_title">色</string>
     <string name="filter_category_title">カテゴリ</string>
     <string name="search_hint">アイテムを検索</string>
+    <string name="search_clothes_hint">衣服を検索...</string>
     <string name="search_no_results">検索結果が見つかりません</string>
     <string name="filter_active_indicator">フィルター適用中</string>
     
@@ -211,11 +213,22 @@
     <string name="item_selected">アイテムが選択されました</string>
     <string name="item_deselected">アイテムの選択が解除されました</string>
     <string name="selection_cleared">選択がクリアされました</string>
+    
+    <!-- PRレビュー対応: ClothItemAdapter.ktのハードコード文字列をリソース化 -->
+    <string name="selection_mode_started">選択モードが開始されました</string>
+    <string name="item_selection_removed">アイテムの選択を解除しました</string>
+    <string name="item_selection_added">アイテムを選択しました</string>
 
     <!-- 共通 -->
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
     <string name="delete">削除</string>
+    <string name="delete_selected_items">選択したアイテムを削除</string>
+    <string name="selection_count_none">アイテムを選択してください</string>
+    <plurals name="selection_count_format">
+        <item quantity="one">%d個選択中</item>
+        <item quantity="other">%d個選択中</item>
+    </plurals>
 
     <!-- Task 8: 削除確認ダイアログ -->
     <string name="delete_confirmation_title">削除の確認</string>

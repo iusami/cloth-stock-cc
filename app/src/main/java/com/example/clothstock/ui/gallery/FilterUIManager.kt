@@ -77,10 +77,10 @@ class FilterUIManager(
      * フィルターボタンの設定
      */
     private fun setupFilterButton() {
-        binding.buttonFilter.setOnClickListener {
+        binding.buttonFilter?.setOnClickListener {
             Log.d(TAG, "Filter button clicked")
             showFilterBottomSheet()
-        }
+        } ?: Log.w(TAG, "Filter button not found in current layout")
     }
     
     /**
@@ -280,16 +280,20 @@ class FilterUIManager(
      * フィルターUI無効化
      */
     fun disableFilterUI() {
-        binding.buttonFilter.isEnabled = false
-        binding.buttonFilter.alpha = DISABLED_ALPHA
+        binding.buttonFilter?.let {
+            it.isEnabled = false
+            it.alpha = DISABLED_ALPHA
+        }
     }
     
     /**
      * フィルターUI有効化
      */
     fun enableFilterUI() {
-        binding.buttonFilter.isEnabled = true
-        binding.buttonFilter.alpha = ENABLED_ALPHA
+        binding.buttonFilter?.let {
+            it.isEnabled = true
+            it.alpha = ENABLED_ALPHA
+        }
     }
     
     /**

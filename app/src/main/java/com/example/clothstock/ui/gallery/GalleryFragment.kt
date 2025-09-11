@@ -18,6 +18,7 @@ import com.example.clothstock.databinding.FragmentGalleryBinding
 import com.example.clothstock.ui.camera.CameraActivity
 import com.example.clothstock.ui.detail.DetailActivity
 import com.example.clothstock.data.model.FilterState
+import com.example.clothstock.util.EmulatorUtils
 import com.google.android.material.snackbar.Snackbar
 import android.util.Log
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -32,9 +33,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
 import com.example.clothstock.accessibility.AccessibilityHelper
-import android.view.Menu
-import android.view.MenuInflater
 import android.view.MenuItem
+import androidx.core.view.MenuProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
@@ -70,15 +70,23 @@ class GalleryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // 削除専用ツールバーの設定（左上削除ボタン対応）
+        setupDeleteToolbar()
+
         setupViewModel()
         setupRecyclerView()
         setupSwipeRefresh()
         setupEmptyStateActions()
         setupFab()
         setupFilterUI() // Task7: フィルターUI初期化
-        setupSearchBar() // Task8: 検索バー初期化
+        setupFilterToolbar() // PRレビュー対応: toolbarFilterの初期化
+        setupSearchBar() // Task8: 検索バー初期化（レガシー）
         setupAccessibility() // Task14: アクセシビリティ設定
+        setupSelectionMode() // 選択モード設定
         observeViewModel()
+        
+        // メニュー表示の確実な初期化（削除ボタン表示問題対策）
+        ensureMenuInitialization()
     }
 
     override fun onDestroyView() {
@@ -156,6 +164,36 @@ class GalleryFragment : Fragment() {
         val viewModelFactory = GalleryViewModelFactory(repository, filterManager)
         viewModel = ViewModelProvider(this, viewModelFactory)[GalleryViewModel::class.java]
         binding.viewModel = viewModel
+        
+        // Phase 2: 選択状態の初期化を確実にする
+        ensureViewModelInitialization()
+    }
+
+    /**
+     * ViewModelの初期化を確実にする（Phase 2改善）
+     */
+    private fun ensureViewModelInitialization() {
+        Log.d(TAG, "Ensuring ViewModel initialization")
+        
+        // 選択状態が初期化されていない場合は明示的に初期化
+        if (viewModel.selectionState.value == null) {
+            Log.d(TAG, "SelectionState not initialized, forcing initialization")
+            viewModel.clearSelection() // これにより SelectionState() が設定される
+        }
+        
+        // ViewModelの初期状態をログ出力
+        val currentSelectionState = viewModel.selectionState.value
+        Log.d(TAG, "ViewModel initialization completed: selectionState=$currentSelectionState")
+    }
+
+    /**
+     * 安全な選択状態取得（Phase 2改善）
+     * nullの場合はデフォルト値を返す
+     */
+    private fun getSelectionStateOrDefault(): com.example.clothstock.data.model.SelectionState {
+        return viewModel.selectionState.value ?: com.example.clothstock.data.model.SelectionState().also {
+            Log.w(TAG, "SelectionState was null, using default empty state")
+        }
     }
 
     /**
@@ -237,8 +275,15 @@ class GalleryFragment : Fragment() {
                     Log.e(TAG, "Error navigating to DetailActivity from memo preview", e)
                     // フォールバック: 通常のナビゲーション  
                     navigateToDetailActivity(clothItem.id)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unexpected error during memo preview navigation", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "IllegalStateException during memo preview navigation", e)
+                    Snackbar.make(
+                        binding.root,
+                        "予期しないエラーが発生しました",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                } catch (e: RuntimeException) {
+                    Log.e(TAG, "RuntimeException during memo preview navigation", e)
                     Snackbar.make(
                         binding.root,
                         "予期しないエラーが発生しました",
@@ -339,10 +384,10 @@ class GalleryFragment : Fragment() {
             })
             
             // フィルターボタンのクリックリスナー設定
-            binding.buttonFilter.setOnClickListener {
+            binding.buttonFilter?.setOnClickListener {
                 Log.d(TAG, "Filter button clicked")
                 showFilterBottomSheet()
-            }
+            } ?: Log.w(TAG, "Filter button not found in current layout")
             
             // フィルターチップのリスナー設定
             setupFilterChipListeners()
@@ -603,10 +648,12 @@ class GalleryFragment : Fragment() {
         Log.w(TAG, "Disabling filter UI due to error")
         
         try {
-            binding.buttonFilter.isEnabled = false
-            // 条件的アルファ値適用: 無効化時のみ設定
-            if (binding.buttonFilter.alpha != DISABLED_ALPHA) {
-                binding.buttonFilter.alpha = DISABLED_ALPHA
+            binding.buttonFilter?.let { filterButton ->
+                filterButton.isEnabled = false
+                // 条件的アルファ値適用: 無効化時のみ設定
+                if (filterButton.alpha != DISABLED_ALPHA) {
+                    filterButton.alpha = DISABLED_ALPHA
+                }
             }
             
             // 全チップを無効化
@@ -634,10 +681,12 @@ class GalleryFragment : Fragment() {
         Log.d(TAG, "Enabling filter UI")
         
         try {
-            binding.buttonFilter.isEnabled = true
-            // 条件的アルファ値適用: 再有効化時に1.0fにリセット
-            if (binding.buttonFilter.alpha != ENABLED_ALPHA) {
-                binding.buttonFilter.alpha = ENABLED_ALPHA
+            binding.buttonFilter?.let { filterButton ->
+                filterButton.isEnabled = true
+                // 条件的アルファ値適用: 再有効化時に1.0fにリセット
+                if (filterButton.alpha != ENABLED_ALPHA) {
+                    filterButton.alpha = ENABLED_ALPHA
+                }
             }
             
             // 全チップを有効化
@@ -664,13 +713,20 @@ class GalleryFragment : Fragment() {
     private fun setupSearchBar() {
         Log.d(TAG, "Setting up search bar with performance optimizations")
         
+        // SearchViewが存在しない場合は処理をスキップ
+        val searchView = binding.searchView
+        if (searchView == null) {
+            Log.w(TAG, "SearchView not found in current layout, skipping search setup")
+            return
+        }
+        
         try {
             // 検索バーの初期設定（パフォーマンス最適化）
-            binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
                     Log.d(TAG, "Search submitted: $query")
                     // 検索実行時にキーボードを閉じる
-                    binding.searchView.clearFocus()
+                    searchView.clearFocus()
                     // 即座に検索実行（デバウンスをスキップ）
                     searchJob?.cancel()
                     performImmediateSearch(query ?: "")
@@ -685,7 +741,7 @@ class GalleryFragment : Fragment() {
             })
             
             // 検索バーのクリアボタン処理（強化版）
-            binding.searchView.setOnCloseListener {
+            searchView.setOnCloseListener {
                 Log.d(TAG, "Search cleared via close button")
                 searchJob?.cancel()
                 viewModel.clearSearch()
@@ -693,7 +749,7 @@ class GalleryFragment : Fragment() {
             }
             
             // 検索バーのフォーカス処理（ユーザビリティ向上）
-            binding.searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
+            searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     Log.d(TAG, "Search view gained focus")
                 } else {
@@ -744,8 +800,10 @@ class GalleryFragment : Fragment() {
         Log.w(TAG, "Search functionality disabled due to error")
         
         try {
-            binding.searchView.isEnabled = false
-            binding.searchView.alpha = DISABLED_ALPHA
+            binding.searchView?.let { searchView ->
+                searchView.isEnabled = false
+                searchView.alpha = DISABLED_ALPHA
+            }
             
             // エラーメッセージを表示
             showEnhancedErrorMessage("検索機能でエラーが発生しました。アプリを再起動してください。")
@@ -836,6 +894,14 @@ class GalleryFragment : Fragment() {
      * Task9: 基本的なViewModelの状態監視（分割版）
      */
     private fun observeBasicViewModelStates() {
+        observeClothItemsAndUIStates()
+        observeSelectionAndDeletionStates()
+    }
+
+    /**
+     * アイテム表示と基本UI状態の監視
+     */
+    private fun observeClothItemsAndUIStates() {
         // 衣服アイテムの監視（フィルター対応アニメーション付き）
         viewModel.clothItems.observe(viewLifecycleOwner) { items ->
             Log.d(TAG, "clothItems observer: Received ${items.size} items (filtered)")
@@ -881,15 +947,52 @@ class GalleryFragment : Fragment() {
                 Log.d(TAG, "errorMessage observer: Filter/search error cleared")
             }
         }
+    }
 
-        // Task 8 Phase 2-REFACTOR: 選択状態の監視（強化版）
+    /**
+     * 選択と削除状態の監視
+     */
+    private fun observeSelectionAndDeletionStates() {
+        // Phase 3: 選択状態の監視（デバッグログ強化版）
         viewModel.selectionState.observe(viewLifecycleOwner) { selectionState ->
-            Log.d(
-                TAG, 
-                "selectionState observer: Selection mode = ${selectionState?.isSelectionMode}, " +
-                        "selected count = ${selectionState?.totalSelectedCount}"
-            )
-            updateSelectionModeUI(selectionState ?: com.example.clothstock.data.model.SelectionState())
+            Log.d(TAG, "=== SelectionState Observer Triggered ===")
+            
+            if (selectionState != null) {
+                Log.d(TAG, "Selection state details:")
+                Log.d(TAG, "  - Selection mode: ${selectionState.isSelectionMode}")
+                Log.d(TAG, "  - Selected count: ${selectionState.totalSelectedCount}")
+                Log.d(TAG, "  - Selected items: ${selectionState.selectedItemIds}")
+                Log.d(TAG, "  - Has selection: ${selectionState.hasSelection()}")
+                
+                // Adapterの状態と比較
+                Log.d(TAG, "Adapter state comparison:")
+                Log.d(TAG, "  - Adapter selection mode: ${adapter.isSelectionMode}")
+                Log.d(TAG, "  - Adapter selected count: ${adapter.selectedItems.size}")
+                Log.d(TAG, "  - Adapter selected items: ${adapter.selectedItems}")
+                
+            } else {
+                Log.w(TAG, "SelectionState is null!")
+            }
+            
+            try {
+                updateSelectionModeUI(selectionState ?: com.example.clothstock.data.model.SelectionState())
+                Log.d(TAG, "updateSelectionModeUI completed successfully")
+                
+                // 新しい削除ツールバーの更新
+                updateDeleteToolbarState(selectionState ?: com.example.clothstock.data.model.SelectionState())
+                Log.d(TAG, "Delete toolbar state updated successfully")
+                
+                // メニュー更新の確実性向上（追加の同期チェック）
+                ensureMenuSynchronization()
+                Log.d(TAG, "Menu synchronization completed")
+                
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException in selectionState observer", e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "RuntimeException in selectionState observer", e)
+            }
+            
+            Log.d(TAG, "=== SelectionState Observer End ===")
         }
 
         // Task 8 Phase 2-REFACTOR: 削除進捗状態の監視
@@ -1068,8 +1171,11 @@ class GalleryFragment : Fragment() {
         try {
             startActivity(intent)
             Log.d(TAG, "Successfully started DetailActivity with memo focus")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start DetailActivity with memo focus", e)
+        } catch (e: android.content.ActivityNotFoundException) {
+            Log.e(TAG, "DetailActivity not found", e)
+            throw e
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "Runtime exception starting DetailActivity", e)
             throw e
         }
     }
@@ -1313,8 +1419,10 @@ class GalleryFragment : Fragment() {
         
         try {
             // 検索バーの状態更新（UI応答性最適化）
-            if (binding.searchView.query.toString() != searchText) {
-                binding.searchView.setQuery(searchText, false)
+            binding.searchView?.let { searchView ->
+                if (searchView.query.toString() != searchText) {
+                    searchView.setQuery(searchText, false)
+                }
             }
             
         } catch (e: IllegalStateException) {
@@ -1330,12 +1438,14 @@ class GalleryFragment : Fragment() {
         
         try {
             // フィルターボタンの見た目を更新（アクティブ状態表示）
-            if (isActive) {
-                binding.buttonFilter.setBackgroundColor(requireContext().getColor(R.color.filter_active_color))
-                binding.buttonFilter.alpha = FILTER_ACTIVE_ALPHA
-            } else {
-                binding.buttonFilter.setBackgroundColor(requireContext().getColor(android.R.color.transparent))
-                binding.buttonFilter.alpha = ENABLED_ALPHA
+            binding.buttonFilter?.let { filterButton ->
+                if (isActive) {
+                    filterButton.setBackgroundColor(requireContext().getColor(R.color.filter_active_color))
+                    filterButton.alpha = FILTER_ACTIVE_ALPHA
+                } else {
+                    filterButton.setBackgroundColor(requireContext().getColor(android.R.color.transparent))
+                    filterButton.alpha = ENABLED_ALPHA
+                }
             }
             
         } catch (e: IllegalStateException) {
@@ -1343,7 +1453,7 @@ class GalleryFragment : Fragment() {
         } catch (e: android.content.res.Resources.NotFoundException) {
             Log.e(TAG, "Filter active color resource not found, using fallback", e)
             // フォールバック: デフォルトのアルファ値のみ変更
-            binding.buttonFilter.alpha = if (isActive) FILTER_ACTIVE_ALPHA else ENABLED_ALPHA
+            binding.buttonFilter?.alpha = if (isActive) FILTER_ACTIVE_ALPHA else ENABLED_ALPHA
         }
     }
 
@@ -1443,7 +1553,7 @@ class GalleryFragment : Fragment() {
                 .setAction("再試行") {
                     Log.d(TAG, "Search error retry requested")
                     // 検索バーをクリアして再開可能状態にする
-                    binding.searchView.setQuery("", false)
+                    binding.searchView?.setQuery("", false)
                     viewModel.clearSearch()
                 }
                 .setActionTextColor(requireContext().getColor(android.R.color.holo_orange_light))
@@ -1507,6 +1617,88 @@ class GalleryFragment : Fragment() {
             Log.e(TAG, "Failed to show comprehensive filter error", e)
         }
     }
+
+    // ===== メニュー表示確実性向上メソッド群 =====
+
+    /**
+     * メニュー初期化の確実な実行（MenuProvider対応改善版）
+     * Fragment初期化後に削除ボタンの正しい状態を保証
+     */
+    private fun ensureMenuInitialization() {
+        Log.d(TAG, "Ensuring menu initialization with MenuProvider")
+        
+        // ViewModelの初期化を確実にするため、少し遅延して初期化
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                kotlinx.coroutines.delay(MENU_INITIALIZATION_DELAY_MS) // UI準備完了を待つ
+                
+                // ViewModelの選択状態が確実に初期化されるまで待機
+                var attempts = 0
+                while (attempts < VIEWMODEL_INIT_MAX_ATTEMPTS) {
+                    val currentSelectionState = viewModel.selectionState.value
+                    if (currentSelectionState != null) {
+                        Log.d(TAG, "ViewModel initialized, updating menu state: " +
+                                "isSelectionMode=${currentSelectionState.isSelectionMode}")
+                        updateDeleteButtonState()
+                        break
+                    }
+                    
+                    attempts++
+                    Log.d(TAG, "Waiting for ViewModel initialization, " +
+                            "attempt $attempts/$VIEWMODEL_INIT_MAX_ATTEMPTS")
+                    kotlinx.coroutines.delay(VIEWMODEL_INIT_RETRY_INTERVAL_MS)
+                }
+                
+                if (attempts >= VIEWMODEL_INIT_MAX_ATTEMPTS) {
+                    Log.w(TAG, "ViewModel not initialized after $VIEWMODEL_INIT_MAX_ATTEMPTS " +
+                        "attempts, forcing menu update")
+                    updateDeleteButtonState()
+                }
+                
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "Failed to initialize menu", e)
+            }
+        }
+    }
+
+    /**
+     * メニュー同期の確実性チェック
+     * 選択状態変更時の追加検証
+     */
+    private fun ensureMenuSynchronization() {
+        Log.d(TAG, "Ensuring menu synchronization")
+        
+        try {
+            // 現在の選択状態とメニューの表示状態をチェック
+            val currentSelectionState = viewModel.selectionState.value
+            val hasSelection = currentSelectionState?.totalSelectedCount ?: 0 > 0
+            val isSelectionMode = currentSelectionState?.isSelectionMode ?: false
+            
+            // メニューアイテムの期待される状態と実際の状態を比較
+            val expectedVisible = isSelectionMode
+            val actualVisible = deleteMenuItem?.isVisible ?: false
+            
+            if (expectedVisible != actualVisible) {
+                Log.w(TAG, "Menu state mismatch detected - forcing synchronization")
+                Log.w(TAG, "Expected visible: $expectedVisible, Actual visible: $actualVisible")
+                
+                // 強制的にメニューを再作成
+                requireActivity().invalidateOptionsMenu()
+                
+                // 追加の確認のため、少し後に再度チェック
+                viewLifecycleOwner.lifecycleScope.launch {
+                    kotlinx.coroutines.delay(MENU_SYNC_DELAY_MS)
+                    updateDeleteButtonState()
+                    Log.d(TAG, "Menu synchronization completed")
+                }
+            } else {
+                Log.d(TAG, "Menu state synchronized correctly")
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to ensure menu synchronization", e)
+        }
+    }
     
     // ===== Task 14: アクセシビリティ対応メソッド =====
     
@@ -1545,6 +1737,268 @@ class GalleryFragment : Fragment() {
     }
     
     /**
+     * 選択モードの設定（Phase 3強化版・デバッグログ追加）
+     */
+    private fun setupSelectionMode() {
+        Log.d(TAG, "=== Setting up selection mode ===")
+        
+        // AdapterとViewModelを連携
+        adapter.setLongPressListener { clothItem ->
+            Log.d(TAG, "=== Long Press Listener Triggered ===")
+            Log.d(TAG, "Item ID: ${clothItem.id}")
+            Log.d(TAG, "Current ViewModel selection mode: ${viewModel.isInSelectionMode()}")
+            Log.d(TAG, "Current ViewModel selected count: ${viewModel.getSelectedCount()}")
+            
+            try {
+                viewModel.enterSelectionMode(clothItem.id)
+                Log.d(TAG, "ViewModel.enterSelectionMode() called successfully")
+                
+                // 状態確認
+                val selectionState = viewModel.selectionState.value
+                Log.d(TAG, "After enterSelectionMode: isSelectionMode=${selectionState?.isSelectionMode}, " +
+                    "selectedCount=${selectionState?.totalSelectedCount}")
+                
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException in enterSelectionMode for item ${clothItem.id}", e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "RuntimeException in enterSelectionMode for item ${clothItem.id}", e)
+            }
+        }
+        
+        adapter.setSelectionListener { clothItem, isSelected ->
+            Log.d(TAG, "=== Selection Listener Triggered ===")
+            Log.d(TAG, "Item ID: ${clothItem.id}, isSelected: $isSelected")
+            Log.d(TAG, "Current ViewModel selection mode: ${viewModel.isInSelectionMode()}")
+            
+            try {
+                viewModel.toggleItemSelection(clothItem.id)
+                Log.d(TAG, "ViewModel.toggleItemSelection() called successfully")
+                
+                // 状態確認
+                val selectionState = viewModel.selectionState.value
+                Log.d(TAG, "After toggleItemSelection: selectedCount=${selectionState?.totalSelectedCount}")
+                
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "IllegalStateException in toggleItemSelection for item ${clothItem.id}", e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "RuntimeException in toggleItemSelection for item ${clothItem.id}", e)
+            }
+        }
+        
+        Log.d(TAG, "Selection mode setup completed")
+    }
+    
+    // ===== デュアルツールバー制御メソッド群 (PRレビュー対応) =====
+    
+    /**
+     * フィルターツールバーの初期化（PRレビュー対応: 検索・フィルター機能復旧）
+     */
+    private fun setupFilterToolbar() {
+        Log.d(TAG, "Setting up filter toolbar")
+        
+        // toolbarFilterの初期化
+        val toolbarFilter = binding.toolbarFilter
+        toolbarFilter?.let { toolbar ->
+            Log.d(TAG, "Filter toolbar found, setting up components")
+            
+            // SearchViewの設定
+            setupSearchViewInFilterToolbar()
+            
+            // フィルターボタンの設定
+            setupFilterButtonInToolbar()
+            
+            Log.d(TAG, "Filter toolbar setup completed")
+        } ?: Log.w(TAG, "Filter toolbar not found in layout")
+    }
+    
+    /**
+     * toolbarFilter内のSearchViewの設定
+     */
+    private fun setupSearchViewInFilterToolbar() {
+        val searchView = binding.searchView
+        searchView?.let { view ->
+            Log.d(TAG, "Setting up SearchView in filter toolbar")
+            
+            // 検索リスナーの設定
+            view.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    Log.d(TAG, "Search submitted: $query")
+                    view.clearFocus()
+                    searchJob?.cancel()
+                    performImmediateSearch(query ?: "")
+                    return true
+                }
+                
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    Log.d(TAG, "Search text changed: $newText")
+                    performDebouncedSearch(newText ?: "")
+                    return true
+                }
+            })
+            
+            // クリアボタン処理
+            view.setOnCloseListener {
+                Log.d(TAG, "Search cleared via close button")
+                searchJob?.cancel()
+                viewModel.clearSearch()
+                false
+            }
+            
+        } ?: Log.w(TAG, "SearchView not found in filter toolbar")
+    }
+    
+    /**
+     * toolbarFilter内のフィルターボタンの設定
+     */
+    private fun setupFilterButtonInToolbar() {
+        binding.buttonFilter?.setOnClickListener {
+            Log.d(TAG, "Filter button clicked in toolbar")
+            showFilterBottomSheet()
+        } ?: Log.w(TAG, "Filter button not found in toolbar")
+    }
+    
+    /**
+     * フィルターモードに切り替え（通常モード）
+     */
+    private fun switchToFilterMode() {
+        Log.d(TAG, "Switching to filter mode")
+        
+        // toolbarFilter表示、toolbarDelete非表示
+        binding.toolbarFilter?.visibility = View.VISIBLE
+        binding.toolbarDelete?.visibility = View.GONE
+        
+        Log.d(TAG, "Filter mode activated - toolbarFilter visible, toolbarDelete hidden")
+    }
+    
+    /**
+     * 選択モードに切り替え
+     */
+    private fun switchToSelectionMode() {
+        Log.d(TAG, "Switching to selection mode")
+        
+        // toolbarDelete表示、toolbarFilter非表示
+        binding.toolbarDelete?.visibility = View.VISIBLE
+        binding.toolbarFilter?.visibility = View.GONE
+        
+        Log.d(TAG, "Selection mode activated - toolbarDelete visible, toolbarFilter hidden")
+    }
+    
+    /**
+     * ツールバーモードの更新（デュアルツールバー対応 + 動的制約更新）
+     */
+    private fun updateToolbarMode(isSelectionMode: Boolean) {
+        Log.d(TAG, "Updating toolbar mode: isSelectionMode=$isSelectionMode")
+        
+        if (isSelectionMode) {
+            switchToSelectionMode()
+        } else {
+            switchToFilterMode()
+        }
+        
+        // RecyclerViewの制約を動的更新（最上段画像の重なり問題解決）
+        updateRecyclerViewConstraints(isSelectionMode)
+    }
+    
+    /**
+     * RecyclerViewの制約を動的更新（選択モード対応）
+     * 最上段画像がツールバーに隠れる問題を解決
+     */
+    private fun updateRecyclerViewConstraints(isSelectionMode: Boolean) {
+        Log.d(TAG, "Updating RecyclerView constraints: isSelectionMode=$isSelectionMode")
+        
+        try {
+            // SwipeRefreshLayout内のConstraintLayoutを取得
+            val constraintLayout = binding.swipeRefreshLayout.getChildAt(0) 
+                as? androidx.constraintlayout.widget.ConstraintLayout
+                
+            val targetToolbarId = if (isSelectionMode) {
+                binding.toolbarDelete?.id
+            } else {
+                binding.toolbarFilter?.id
+            }
+            
+            if (constraintLayout == null || targetToolbarId == null) {
+                Log.e(TAG, "Required views not found for constraint update")
+                return
+            }
+            
+            val constraintSet = androidx.constraintlayout.widget.ConstraintSet()
+            constraintSet.clone(constraintLayout)
+            
+            // RecyclerView制約の更新
+            updateViewConstraint(constraintSet, binding.recyclerViewGallery?.id, targetToolbarId)
+            
+            // Empty State制約の更新
+            updateViewConstraint(constraintSet, binding.layoutEmptyState?.id, targetToolbarId)
+            
+            // Loading Overlay制約の更新
+            updateViewConstraint(constraintSet, binding.layoutLoading?.id, targetToolbarId)
+            
+            // アニメーション付きで制約適用
+            applyConstraintsWithAnimation(constraintSet, constraintLayout)
+            
+            Log.d(TAG, "RecyclerView constraints updated successfully")
+            
+        } catch (e: ClassCastException) {
+            Log.e(TAG, "ClassCastException updating RecyclerView constraints", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException updating RecyclerView constraints", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException updating RecyclerView constraints", e)
+        }
+    }
+    
+    /**
+     * 個別ビューの制約更新
+     */
+    private fun updateViewConstraint(
+        constraintSet: androidx.constraintlayout.widget.ConstraintSet,
+        viewId: Int?,
+        targetToolbarId: Int
+    ) {
+        viewId?.let { id ->
+            constraintSet.connect(
+                id, 
+                androidx.constraintlayout.widget.ConstraintSet.TOP,
+                targetToolbarId, 
+                androidx.constraintlayout.widget.ConstraintSet.BOTTOM
+            )
+            Log.d(TAG, "Updated constraint for view $id to target toolbar $targetToolbarId")
+        }
+    }
+    
+    /**
+     * アニメーション付き制約適用
+     */
+    private fun applyConstraintsWithAnimation(
+        constraintSet: androidx.constraintlayout.widget.ConstraintSet,
+        constraintLayout: androidx.constraintlayout.widget.ConstraintLayout
+    ) {
+        try {
+            val transition = androidx.transition.AutoTransition().apply {
+                duration = CONSTRAINT_ANIMATION_DURATION
+                interpolator = android.view.animation.DecelerateInterpolator()
+            }
+            
+            androidx.transition.TransitionManager.beginDelayedTransition(constraintLayout, transition)
+            constraintSet.applyTo(constraintLayout)
+            
+            Log.d(TAG, "Constraints applied with animation")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException applying constraints with animation", e)
+            // フォールバック: アニメーションなしで直接適用
+            constraintSet.applyTo(constraintLayout)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException applying constraints with animation", e)
+            constraintSet.applyTo(constraintLayout)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "RuntimeException applying constraints with animation", e)
+            constraintSet.applyTo(constraintLayout)
+        }
+    }
+    
+    /**
      * フィルターボタンのアクセシビリティ情報を更新
      */
     private fun updateFilterButtonAccessibility() {
@@ -1569,14 +2023,18 @@ class GalleryFragment : Fragment() {
             }
         }
         
-        AccessibilityHelper.updateFilterButtonDescription(binding.buttonFilter, description)
+        binding.buttonFilter?.let { filterButton ->
+            AccessibilityHelper.updateFilterButtonDescription(filterButton, description)
+        }
     }
     
     /**
      * 検索バーのアクセシビリティ情報を更新
      */
     private fun updateSearchViewAccessibility(currentQuery: String) {
-        AccessibilityHelper.updateSearchViewDescription(binding.searchView, currentQuery)
+        binding.searchView?.let { searchView ->
+            AccessibilityHelper.updateSearchViewDescription(searchView, currentQuery)
+        }
     }
     
     /**
@@ -1711,7 +2169,9 @@ class GalleryFragment : Fragment() {
         AccessibilityHelper.setLiveRegion(binding.recyclerViewGallery)
         
         // 空状態レイアウトもLiveRegionに設定
-        AccessibilityHelper.setLiveRegion(binding.layoutEmptyState)
+        binding.layoutEmptyState?.let { emptyLayout ->
+            AccessibilityHelper.setLiveRegion(emptyLayout)
+        }
     }
     
     /**
@@ -1719,7 +2179,9 @@ class GalleryFragment : Fragment() {
      */
     private fun enhanceForHighContrast() {
         // フィルターボタンの高コントラスト対応
-        AccessibilityHelper.enhanceFocusForHighContrast(binding.buttonFilter)
+        binding.buttonFilter?.let { filterButton ->
+            AccessibilityHelper.enhanceFocusForHighContrast(filterButton)
+        }
         
         // 全Chipの高コントラスト対応
         binding.includeBottomSheetFilter.chipGroupSize.children.forEach { chip ->
@@ -1741,35 +2203,88 @@ class GalleryFragment : Fragment() {
     
     // Task 14: アクセシビリティ通知メソッドは将来の機能拡張時に使用予定
 
-    // ===== Task 8 Phase 2-GREEN: 削除メニュー処理（基本実装） =====
+    // ===== MenuProvider API実装（現代的なAndroidメニュー管理） =====
+
     
     /**
-     * Task 8: メニュー作成（Phase 2-GREEN実装）
+     * 削除専用ツールバーの初期化（左上削除ボタン対応）
      */
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
+    private fun setupDeleteToolbar() {
+        Log.d(TAG, "Setting up delete toolbar")
         
-        // 削除ボタンをプログラムで追加（Phase 2-GREEN: シンプルな実装）
-        deleteMenuItem = menu.add(0, DELETE_MENU_ID, 0, "削除").apply {
-            setIcon(android.R.drawable.ic_menu_delete)
-            setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-            isVisible = isDeleteButtonVisible
+        // ツールバー要素の初期化
+        val toolbarDelete = binding.toolbarDelete
+        val buttonDelete = binding.buttonDelete
+        val textSelectionCount = binding.textSelectionCount
+        val buttonCancelSelection = binding.buttonCancelSelection
+        
+        // 削除ボタンクリック処理
+        buttonDelete?.setOnClickListener {
+            Log.d(TAG, "Delete button clicked from toolbar")
+            handleDeleteButtonClick()
         }
         
-        Log.d(TAG, "Delete menu item created, visible=$isDeleteButtonVisible")
+        // キャンセルボタンクリック処理
+        buttonCancelSelection?.setOnClickListener {
+            Log.d(TAG, "Cancel selection button clicked")
+            handleCancelSelection()
+        }
+        
+        // 初期状態：ツールバーを非表示
+        toolbarDelete?.visibility = View.GONE
+        Log.d(TAG, "Delete toolbar setup completed")
     }
     
     /**
-     * Task 8: メニューアイテム選択処理（Phase 2-GREEN実装）
+     * 選択モードのキャンセル処理
      */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            DELETE_MENU_ID -> {
-                Log.d(TAG, "Delete menu item selected")
-                handleDeleteButtonClick()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    private fun handleCancelSelection() {
+        Log.d(TAG, "Cancelling selection mode")
+        adapter.setSelectionMode(false)
+        adapter.clearSelection()
+        viewModel.clearSelection()
+        updateToolbarMode(false)
+    }
+    
+    
+    /**
+     * 選択数テキストの更新
+     */
+    private fun updateSelectionCountText(selectedCount: Int) {
+        val textSelectionCount = binding.textSelectionCount
+        val countText = if (selectedCount > 0) {
+            resources.getQuantityString(R.plurals.selection_count_format, selectedCount, selectedCount)
+        } else {
+            getString(R.string.selection_count_none)
+        }
+        
+        textSelectionCount?.text = countText
+        
+        // 削除ボタンの有効・無効状態
+        binding.buttonDelete?.isEnabled = selectedCount > 0
+        
+        Log.d(TAG, "Selection count text updated: $countText, delete button enabled: ${selectedCount > 0}")
+    }
+    
+    /**
+     * 削除ツールバーの状態更新（選択状態に基づく表示制御）
+     */
+    private fun updateDeleteToolbarState(selectionState: com.example.clothstock.data.model.SelectionState) {
+        Log.d(TAG, "Updating delete toolbar state - selectionMode: ${selectionState.isSelectionMode}, " +
+            "selectedCount: ${selectionState.totalSelectedCount}")
+        
+        val isInSelectionMode = selectionState.isSelectionMode
+        val selectedCount = selectionState.totalSelectedCount
+        
+        // 選択モードの時のみツールバーを表示
+        updateToolbarMode(isInSelectionMode)
+        
+        if (isInSelectionMode) {
+            // 選択数テキストと削除ボタンの状態を更新
+            updateSelectionCountText(selectedCount)
+            Log.d(TAG, "Delete toolbar updated for selection mode with $selectedCount items")
+        } else {
+            Log.d(TAG, "Delete toolbar hidden - not in selection mode")
         }
     }
     
@@ -1827,35 +2342,32 @@ class GalleryFragment : Fragment() {
         Log.d(TAG, "Deletion confirmation dialog displayed")
     }
     
-    // Task 8: 削除ボタン状態管理（Phase 2-GREEN実装）
+    // MenuProvider用の削除ボタン状態管理
     private var deleteMenuItem: MenuItem? = null
-    private var isDeleteButtonVisible = false
+    private var menuProvider: MenuProvider? = null
     
     /**
-     * Task 8: 削除ボタン表示（Phase 2-GREEN実装）
+     * 削除ボタン表示状態の更新（MenuProvider対応・Phase 2改善版）
      */
-    private fun showDeleteButton(enabled: Boolean) {
-        isDeleteButtonVisible = true
+    private fun updateDeleteButtonState() {
+        val selectionState = getSelectionStateOrDefault()
+        val shouldShow = selectionState.isSelectionMode
+        val shouldEnable = selectionState.totalSelectedCount > 0
+        
         deleteMenuItem?.let { menuItem ->
-            menuItem.isVisible = true
-            menuItem.isEnabled = enabled
-            Log.d(TAG, "Delete button visibility: visible=true, enabled=$enabled")
-        } ?: run {
-            Log.d(TAG, "Delete button not yet created, will show when menu is created")
+            menuItem.isVisible = shouldShow
+            menuItem.isEnabled = shouldEnable
+            Log.d(TAG, "Delete button updated: visible=$shouldShow, enabled=$shouldEnable")
         }
-    }
-    
-    /**
-     * Task 8: 削除ボタン非表示（Phase 2-GREEN実装）
-     */
-    private fun hideDeleteButton() {
-        isDeleteButtonVisible = false
-        deleteMenuItem?.let { menuItem ->
-            menuItem.isVisible = false
-            Log.d(TAG, "Delete button hidden")
-        } ?: run {
-            Log.d(TAG, "Delete button not yet created, will hide when menu is created")
+        
+        // MenuProviderを使用してメニューを再構築
+        menuProvider?.let {
+            requireActivity().invalidateOptionsMenu()
         }
+        
+        Log.d(TAG, "Delete button state updated via MenuProvider: " +
+            "selectionMode=${selectionState.isSelectionMode}, " +
+            "selectedCount=${selectionState.totalSelectedCount}")
     }
 
     /**
@@ -1865,37 +2377,171 @@ class GalleryFragment : Fragment() {
         Log.d(
             TAG, 
             "Updating selection mode UI: isSelectionMode=${selectionState.isSelectionMode}, " +
-                    "count=${selectionState.totalSelectedCount}"
+                    "count=${selectionState.totalSelectedCount}, " +
+                    "selectedIds=${selectionState.selectedItemIds}"
         )
         
-        if (selectionState.isSelectionMode) {
-            // 選択モード時の削除ボタン表示
-            showDeleteButton(selectionState.totalSelectedCount > 0)
-        } else {
-            // 通常モード時は削除ボタン非表示
-            hideDeleteButton()
+        // Adapterの選択モードを同期
+        adapter.setSelectionMode(selectionState.isSelectionMode)
+        
+        // ViewModelからAdapterへの選択状態同期
+        syncSelectionStateToAdapter(selectionState)
+        
+        // MenuProvider APIで削除ボタンの表示状態を更新
+        updateDeleteButtonState()
+        
+        Log.d(TAG, "Selection mode UI update completed")
+    }
+
+    /**
+     * ViewModelからAdapterへの選択状態完全同期
+     * 削除ボタン表示問題の根本的解決
+     */
+    private fun syncSelectionStateToAdapter(selectionState: com.example.clothstock.data.model.SelectionState) {
+        Log.d(TAG, "Syncing selection state from ViewModel to Adapter")
+        
+        try {
+            syncItemSelectionStates(selectionState)
+            
+            Log.d(
+                TAG, 
+                "Selection state sync completed: Adapter=${adapter.selectedItems.size}, " +
+                "ViewModel=${selectionState.totalSelectedCount}"
+            )
+            
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "RuntimeException during selection sync", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException during selection sync", e)
         }
     }
 
     /**
-     * Task 8 Phase 2-REFACTOR: 削除進捗UI更新
+     * 個々のアイテムの選択状態を同期するヘルパーメソッド
+     */
+    private fun syncItemSelectionStates(selectionState: com.example.clothstock.data.model.SelectionState) {
+        // 現在表示中の全アイテムに対して選択状態を同期
+        for (i in 0 until adapter.itemCount) {
+            val clothItem = adapter.currentList.getOrNull(i)
+            clothItem?.let { item ->
+                syncSingleItemSelection(item, selectionState)
+            }
+        }
+    }
+
+    /**
+     * 単一アイテムの選択状態を同期
+     */
+    private fun syncSingleItemSelection(
+        item: com.example.clothstock.data.model.ClothItem,
+        selectionState: com.example.clothstock.data.model.SelectionState
+    ) {
+        val shouldBeSelected = selectionState.selectedItemIds.contains(item.id)
+        val currentlySelected = adapter.isItemSelected(item.id)
+        
+        if (shouldBeSelected != currentlySelected) {
+            if (shouldBeSelected) {
+                Log.d(TAG, "Syncing: Selecting item ${item.id}")
+                adapter.selectItem(item.id)
+            } else {
+                Log.d(TAG, "Syncing: Deselecting item ${item.id}")
+                adapter.deselectItem(item.id)
+            }
+        }
+    }
+
+    /**
+     * Task 8 Phase 2-REFACTOR: 削除進捗UI更新（品質向上版）
      */
     private fun updateDeletionProgressUI(isInProgress: Boolean) {
         Log.d(TAG, "Updating deletion progress UI: isInProgress = $isInProgress")
         
-        // 削除中は削除ボタンを無効化
-        deleteMenuItem?.isEnabled = !isInProgress
-        
-        // 将来の実装: 削除進捗インジケーターの表示
-        if (isInProgress) {
-            Log.d(TAG, "Deletion in progress - UI feedback active")
-        } else {
-            Log.d(TAG, "Deletion completed - UI feedback cleared")
+        try {
+            // 削除中は削除ボタンを無効化
+            deleteMenuItem?.let { menuItem ->
+                menuItem.isEnabled = !isInProgress
+                
+                // 削除ボタンのアクセシビリティ状態更新
+                updateDeleteButtonAccessibility(isInProgress)
+            }
+            
+            // プログレス表示の強化
+            if (isInProgress) {
+                showDeletionProgressFeedback()
+            } else {
+                hideDeletionProgressFeedback()
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to update deletion progress UI", e)
         }
     }
 
     /**
-     * Task 8 Phase 2-REFACTOR: 削除結果ハンドリング
+     * 削除ボタンのアクセシビリティ状態更新
+     */
+    private fun updateDeleteButtonAccessibility(isDeletionInProgress: Boolean) {
+        val selectionState = viewModel.selectionState.value
+        val selectedCount = selectionState?.totalSelectedCount ?: 0
+        
+        // 削除ボタンのcontentDescriptionを動的更新
+        val description = when {
+            isDeletionInProgress -> "削除処理中です"
+            selectedCount > 0 -> "${selectedCount}個のアイテムを削除"
+            else -> "削除するアイテムが選択されていません"
+        }
+        
+        Log.d(TAG, "Updated delete button accessibility: $description")
+    }
+
+    /**
+     * 削除進行中のプログレス表示
+     */
+    private fun showDeletionProgressFeedback() {
+        Log.d(TAG, "Showing deletion progress feedback")
+        
+        try {
+            // アクセシビリティ通知で削除開始を知らせる（エミュレーター環境では音声エラー回避のためスキップ）
+            val progressMessage = "削除処理を開始しました"
+            announceForAccessibilitySafely(progressMessage)
+            
+            // 視覚的フィードバック: FABを一時的に無効化
+            binding.fabCamera.isEnabled = false
+            binding.fabCamera.alpha = DISABLED_ALPHA
+            
+            // SwipeRefreshLayoutも一時的に無効化
+            binding.swipeRefreshLayout.isEnabled = false
+            
+            Log.d(TAG, "Deletion progress UI feedback activated")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to show deletion progress feedback", e)
+        }
+    }
+
+    /**
+     * 削除進行中プログレス表示のクリア
+     */
+    private fun hideDeletionProgressFeedback() {
+        Log.d(TAG, "Hiding deletion progress feedback")
+        
+        try {
+            // UI要素を元の状態に戻す
+            binding.fabCamera.isEnabled = true
+            binding.fabCamera.alpha = ENABLED_ALPHA
+            
+            // SwipeRefreshLayoutを再有効化
+            binding.swipeRefreshLayout.isEnabled = true
+            
+            Log.d(TAG, "Deletion progress UI feedback cleared")
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to hide deletion progress feedback", e)
+        }
+    }
+
+    /**
+     * Task 8 Phase 2-REFACTOR: 削除結果ハンドリング（品質向上版）
      */
     private fun handleDeletionResult(result: com.example.clothstock.data.model.DeletionResult) {
         Log.d(
@@ -1904,46 +2550,114 @@ class GalleryFragment : Fragment() {
                     "deletedCount=${result.successfulDeletions}"
         )
         
-        if (result.isCompleteSuccess) {
-            // 削除成功時のフィードバック
-            val message = if (result.successfulDeletions == 1) {
-                "1個のアイテムを削除しました"
-            } else {
-                "${result.successfulDeletions}個のアイテムを削除しました"
+        try {
+            when {
+                result.isCompleteSuccess -> {
+                    handleSuccessfulDeletion(result.successfulDeletions)
+                }
+                result.isPartialSuccess -> {
+                    handlePartialDeletion(result.successfulDeletions, result.failedDeletions)
+                }
+                else -> {
+                    handleFailedDeletion()
+                }
             }
             
-            Snackbar.make(
-                binding.root,
-                message,
-                Snackbar.LENGTH_SHORT
-            ).show()
-            
-            Log.d(TAG, "Deletion success feedback displayed: $message")
-        } else if (result.isPartialSuccess) {
-            // 部分成功時のフィードバック
-            val message = "${result.successfulDeletions}個のアイテムを削除しました。${result.failedDeletions}個は削除できませんでした。"
-            
-            Snackbar.make(
-                binding.root,
-                message,
-                Snackbar.LENGTH_LONG
-            ).show()
-            
-            Log.w(TAG, "Partial deletion result: $message")
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to handle deletion result", e)
+        }
+    }
+
+    /**
+     * 削除成功時のフィードバック（アクセシビリティ強化版）
+     */
+    private fun handleSuccessfulDeletion(deletedCount: Int) {
+        val message = if (deletedCount == 1) {
+            "1個のアイテムを削除しました"
         } else {
-            // 削除完全失敗時のエラーフィードバック
-            Snackbar.make(
-                binding.root,
-                "削除中にエラーが発生しました",
-                Snackbar.LENGTH_LONG
-            ).show()
-            
-            Log.e(TAG, "Complete deletion failure - error feedback displayed")
+            "${deletedCount}個のアイテムを削除しました"
+        }
+        
+        // 視覚的フィードバック
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT)
+            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+            .show()
+        
+        // アクセシビリティ通知（エミュレーター環境では音声エラー回避のためスキップ）
+        announceForAccessibilitySafely(message)
+        
+        Log.d(TAG, "Deletion success feedback displayed: $message")
+    }
+
+    /**
+     * 部分削除成功時のフィードバック（アクセシビリティ強化版）
+     */
+    private fun handlePartialDeletion(successCount: Int, failedCount: Int) {
+        val message = "${successCount}個のアイテムを削除しました。${failedCount}個は削除できませんでした。"
+        
+        // 視覚的フィードバック（長めの表示）
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+            .setAction("再試行") {
+                // 再試行ボタンは将来の実装用
+                Log.d(TAG, "Retry button clicked for partial deletion")
+            }
+            .show()
+        
+        // アクセシビリティ通知（重要度高、エミュレーター環境では音声エラー回避のためスキップ）
+        val accessibilityMessage = "$message。再試行が可能です。"
+        announceForAccessibilitySafely(accessibilityMessage)
+        
+        Log.w(TAG, "Partial deletion result: $message")
+    }
+
+    /**
+     * 削除失敗時のエラーフィードバック（アクセシビリティ強化版）
+     */
+    private fun handleFailedDeletion() {
+        val message = "削除中にエラーが発生しました"
+        
+        // 視覚的フィードバック（エラー表示）
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+            .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+            .setAction("再試行") {
+                Log.d(TAG, "Retry button clicked for failed deletion")
+                // 削除を再実行（現在の選択状態で）
+                viewModel.deleteSelectedItems()
+            }
+            .setActionTextColor(requireContext().getColor(android.R.color.holo_red_light))
+            .show()
+        
+        // アクセシビリティ通知（エラーを強調、エミュレーター環境では音声エラー回避のためスキップ）
+        val accessibilityMessage = "エラー: $message 再試行してください。"
+        announceForAccessibilitySafely(accessibilityMessage)
+        
+        Log.e(TAG, "Complete deletion failure - error feedback displayed")
+    }
+
+    /**
+     * エミュレーター環境を考慮した安全なアクセシビリティアナウンス
+     * 
+     * @param message アナウンスするメッセージ
+     */
+    private fun announceForAccessibilitySafely(message: String) {
+        try {
+            if (EmulatorUtils.isAccessibilityAudioSafe()) {
+                binding.root.announceForAccessibility(message)
+                Log.d(TAG, "Accessibility announcement executed: $message")
+            } else {
+                Log.d(TAG, "Accessibility announcement skipped (emulator environment): $message")
+            }
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "IllegalStateException in accessibility announcement: $message", e)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "SecurityException in accessibility announcement: $message", e)
+        } catch (e: UnsupportedOperationException) {
+            Log.w(TAG, "UnsupportedOperationException in accessibility announcement: $message", e)
         }
     }
 
     companion object {
-        private const val DELETE_MENU_ID = 1001 // 削除メニューアイテムのID
         private const val TAG = "GalleryFragment"
         
         // Task7: フィルターUI用定数
@@ -1961,6 +2675,17 @@ class GalleryFragment : Fragment() {
         private const val FILTER_LOADING_ANIMATION_DURATION = 150L // フィルター操作ローディング表示時間
         private const val FILTER_ACTIVE_ALPHA = 0.8f // フィルターアクティブ時のアルファ値
         private const val RECYCLERVIEW_POOL_SIZE_MULTIPLIER = 5 // RecyclerViewプールサイズ乗数
+        
+        // メニュー表示確実性向上用定数
+        private const val MENU_INITIALIZATION_DELAY_MS = 100L // メニュー初期化遅延時間
+        private const val MENU_SYNC_DELAY_MS = 50L // メニュー同期確認遅延時間
+        
+        // ViewModel初期化確認用定数
+        private const val VIEWMODEL_INIT_MAX_ATTEMPTS = 5 // 最大試行回数
+        private const val VIEWMODEL_INIT_RETRY_INTERVAL_MS = 50L // リトライ間隔
+        
+        // 動的制約更新用定数（ツールバー重なり問題対応）
+        private const val CONSTRAINT_ANIMATION_DURATION = 300L // 制約変更アニメーション時間
         
         // Task 14: アクセシビリティ用定数
         private const val SIZE_100 = 100

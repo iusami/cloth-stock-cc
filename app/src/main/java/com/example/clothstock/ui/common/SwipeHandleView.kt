@@ -13,6 +13,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.example.clothstock.R
+import com.example.clothstock.util.EmulatorUtils
+import android.util.Log
 
 /**
  * スワイプハンドルビュー
@@ -47,6 +49,7 @@ class SwipeHandleView @JvmOverloads constructor(
     private val density = context.resources.displayMetrics.density
 
     companion object {
+        private const val TAG = "SwipeHandleView"
         private const val BUTTON_WIDTH_DP = 120f  // ボタン幅（dp）
         private const val BUTTON_HEIGHT_DP = 32f  // ボタン高さ（dp）
         private const val CORNER_RADIUS_DP = 16f  // 角丸半径（dp）
@@ -167,7 +170,7 @@ class SwipeHandleView @JvmOverloads constructor(
     }
 
     /**
-     * 表示状態変更のアクセシビリティアナウンス
+     * 表示状態変更のアクセシビリティアナウンス（エミュレーター環境安全対応）
      */
     private fun announceVisibilityChange(visible: Boolean) {
         val message = if (visible) {
@@ -175,7 +178,30 @@ class SwipeHandleView @JvmOverloads constructor(
         } else {
             context.getString(R.string.detail_panel_hidden)
         }
-        announceForAccessibility(message)
+        
+        // エミュレーター環境を考慮した安全なアクセシビリティアナウンス
+        announceForAccessibilitySafely(message)
+    }
+    
+    /**
+     * エミュレーター環境を考慮した安全なアクセシビリティアナウンス
+     * オーディオI/Oエラーを防止
+     */
+    private fun announceForAccessibilitySafely(message: String) {
+        try {
+            if (EmulatorUtils.isAccessibilityAudioSafe()) {
+                announceForAccessibility(message)
+                Log.d(TAG, "Accessibility announcement executed: $message")
+            } else {
+                Log.d(TAG, "Accessibility announcement skipped (emulator environment): $message")
+            }
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "IllegalStateException in accessibility announcement: $message", e)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "SecurityException in accessibility announcement: $message", e)
+        } catch (e: UnsupportedOperationException) {
+            Log.w(TAG, "UnsupportedOperationException in accessibility announcement: $message", e)
+        }
     }
 
     /**
