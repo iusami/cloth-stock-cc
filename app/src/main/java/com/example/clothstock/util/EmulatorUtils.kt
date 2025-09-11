@@ -126,9 +126,17 @@ object EmulatorUtils {
     
     /**
      * システムプロパティを安全に取得
+     * 
+     * 注意: android.os.SystemPropertiesは@hide（隠しAPI）であり、
+     * 公式のpublic APIでは提供されていない。そのため、リフレクションを
+     * 使用してアクセスする必要がある。
+     * 
+     * このAPIはエミュレーター検出など特殊な用途でのみ使用され、
+     * 通常のアプリケーション機能には依存していない。
      */
     private fun getSystemProperty(key: String, defaultValue: String): String {
         return try {
+            // @hide APIをリフレクションでアクセス（公式APIが存在しないため）
             val clazz = Class.forName("android.os.SystemProperties")
             val method = clazz.getMethod("get", String::class.java, String::class.java)
             method.invoke(null, key, defaultValue) as String

@@ -11,6 +11,7 @@ import com.example.clothstock.data.model.ClothItem
 import com.example.clothstock.databinding.ItemClothGridBinding
 import com.example.clothstock.util.GlideUtils
 import com.example.clothstock.util.EmulatorUtils
+import com.example.clothstock.BuildConfig
 import android.util.Log
 import java.io.File
 
@@ -35,6 +36,7 @@ class ClothItemAdapter(
         // Phase 2-REFACTOR: アニメーション時間定数
         private const val ANIMATION_DURATION_CHECKBOX = 200L // チェックボックスアニメーション時間
         private const val ANIMATION_DURATION_OVERLAY = 300L // オーバーレイアニメーション時間
+        private const val VISIBLE_ITEMS_UPDATE_LIMIT = 20 // 選択モード開始時の表示アイテム更新上限
     }
 
     // ===== Task 7: マルチ選択機能プロパティ =====
@@ -62,15 +64,17 @@ class ClothItemAdapter(
     // ===== Task 7: 選択モード制御メソッド（PRレビュー対応: SelectionManager使用） =====
 
     /**
-     * 選択モードの設定
+     * 選択モードの設定（差分更新最適化版）
      */
     fun setSelectionMode(enabled: Boolean) {
         val changed = selectionManager.setSelectionMode(enabled)
         
-        // 選択モードが変更された場合、UI を更新
+        // 選択モードが変更された場合、差分UIを更新
         if (changed) {
-            refreshAllItems()
-            Log.d(TAG, "Selection mode changed to $enabled, UI refreshed")
+            refreshSelectionModeChange(enabled)
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Selection mode changed to $enabled, UI refreshed with optimization")
+            }
         }
     }
 
@@ -147,13 +151,38 @@ class ClothItemAdapter(
     }
 
     /**
-     * 全アイテムの表示を更新（PRレビュー対応: テスト環境考慮）
+     * 選択モード変更時の差分更新（パフォーマンス最適化版）
+     * 
+     * 全アイテムを更新する代わりに、実際に表示状態が変わるアイテムのみ更新する
+     * - 選択モード開始時: 現在表示されている範囲のみ更新
+     * - 選択モード終了時: 以前選択されていたアイテムのみ更新
      */
-    private fun refreshAllItems() {
+    private fun refreshSelectionModeChange(isSelectionModeEnabled: Boolean) {
         if (isTestEnvironment()) return
         
-        notifyDataSetChanged()
-        Log.d(TAG, "All items refreshed")
+        if (isSelectionModeEnabled) {
+            // 選択モード開始: 表示範囲のアイテムのみ更新（チェックボックス表示のため）
+            val itemCount = itemCount
+            if (itemCount > 0) {
+                // 表示されているアイテムの範囲を推定（通常は最初の数アイテム）
+                val visibleRange = minOf(itemCount, VISIBLE_ITEMS_UPDATE_LIMIT)
+                for (i in 0 until visibleRange) {
+                    notifyItemChanged(i)
+                }
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Selection mode enabled: refreshed first $visibleRange items")
+                }
+            }
+        } else {
+            // 選択モード終了: 以前選択されていたアイテムのみ更新
+            val previouslySelected = selectedItems.toSet() // コピーを作成
+            previouslySelected.forEach { itemId ->
+                refreshItemById(itemId)
+            }
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Selection mode disabled: refreshed ${previouslySelected.size} previously selected items")
+            }
+        }
     }
 
     /**
@@ -200,54 +229,109 @@ class ClothItemAdapter(
     }
 
     /**
-     * 長押しコールバック処理（Phase 3強化版・デバッグログ追加）
+     * 長押しコールバック処理（Phase 3強化版・本番ビルド最適化対応・複雑度軽減）
      */
     fun triggerLongPressCallback(clothItem: ClothItem) {
-        Log.d(TAG, "=== Long Press Callback Start ===")
-        Log.d(TAG, "Item ID: ${clothItem.id}")
-        Log.d(TAG, "Previous selection mode: $isSelectionMode")
-        Log.d(TAG, "Previous selected items: ${selectedItems.size}")
+        logLongPressStart(clothItem)
         
         val previousSelectionMode = isSelectionMode
         
         try {
-            // SelectionManagerによる長押し処理
-            selectionManager.handleLongPress(clothItem)
-            
-            Log.d(TAG, "After SelectionManager.handleLongPress:")
-            Log.d(TAG, "  - Current selection mode: $isSelectionMode")
-            Log.d(TAG, "  - Current selected items: ${selectedItems.size}")
-            Log.d(TAG, "  - Item ${clothItem.id} selected: ${isItemSelected(clothItem.id)}")
-            
-            // UI更新が必要な場合のみ実行
-            if (!previousSelectionMode && isSelectionMode) {
-                // 選択モードが新たに開始された場合、全体を更新
-                Log.d(TAG, "Selection mode started, refreshing all items")
-                refreshAllItems()
-            } else if (isSelectionMode) {
-                // 個別アイテムの選択状態変更の場合
-                Log.d(TAG, "Selection state changed for item ${clothItem.id}, refreshing item")
-                refreshItemById(clothItem.id)
-            }
-            
-            // リスナーへの通知
-            val isCurrentlySelected = isItemSelected(clothItem.id)
-            if (isSelectionMode) {
-                selectionManager.selectionListener?.invoke(clothItem, isCurrentlySelected)
-                Log.d(TAG, "Notified selection listener: item ${clothItem.id}, selected=$isCurrentlySelected")
-            } else if (previousSelectionMode && !isSelectionMode) {
-                // 選択モードが終了した場合
-                selectionManager.longPressListener?.invoke(clothItem)
-                Log.d(TAG, "Notified long press listener: selection mode ended")
-            }
-            
+            handleLongPressLogic(clothItem, previousSelectionMode)
         } catch (e: IllegalStateException) {
             Log.e(TAG, "IllegalStateException in triggerLongPressCallback for item ${clothItem.id}", e)
         } catch (e: RuntimeException) {
             Log.e(TAG, "RuntimeException in triggerLongPressCallback for item ${clothItem.id}", e)
         }
         
-        Log.d(TAG, "=== Long Press Callback End ===")
+        logLongPressEnd()
+    }
+    
+    /**
+     * 長押し処理のメインロジック（複雑度軽減のため分離）
+     */
+    private fun handleLongPressLogic(clothItem: ClothItem, previousSelectionMode: Boolean) {
+        // SelectionManagerによる長押し処理
+        selectionManager.handleLongPress(clothItem)
+        
+        logAfterLongPressHandling(clothItem)
+        
+        // UI更新処理
+        updateUIAfterLongPress(clothItem, previousSelectionMode)
+        
+        // リスナー通知処理
+        notifyListeners(clothItem, previousSelectionMode)
+    }
+    
+    /**
+     * 長押し後のUI更新処理
+     */
+    private fun updateUIAfterLongPress(clothItem: ClothItem, previousSelectionMode: Boolean) {
+        if (!previousSelectionMode && isSelectionMode) {
+            // 選択モードが新たに開始された場合、差分更新
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Selection mode started, refreshing with optimized differential update")
+            }
+            refreshSelectionModeChange(true)
+        } else if (isSelectionMode) {
+            // 個別アイテムの選択状態変更の場合
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Selection state changed for item ${clothItem.id}, refreshing item")
+            }
+            refreshItemById(clothItem.id)
+        }
+    }
+    
+    /**
+     * 長押し後のリスナー通知処理
+     */
+    private fun notifyListeners(clothItem: ClothItem, previousSelectionMode: Boolean) {
+        val isCurrentlySelected = isItemSelected(clothItem.id)
+        if (isSelectionMode) {
+            selectionManager.selectionListener?.invoke(clothItem, isCurrentlySelected)
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Notified selection listener: item ${clothItem.id}, selected=$isCurrentlySelected")
+            }
+        } else if (previousSelectionMode && !isSelectionMode) {
+            // 選択モードが終了した場合
+            selectionManager.longPressListener?.invoke(clothItem)
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Notified long press listener: selection mode ended")
+            }
+        }
+    }
+    
+    /**
+     * 長押し開始ログ出力
+     */
+    private fun logLongPressStart(clothItem: ClothItem) {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "=== Long Press Callback Start ===")
+            Log.d(TAG, "Item ID: ${clothItem.id}")
+            Log.d(TAG, "Previous selection mode: $isSelectionMode")
+            Log.d(TAG, "Previous selected items: ${selectedItems.size}")
+        }
+    }
+    
+    /**
+     * 長押し処理後ログ出力
+     */
+    private fun logAfterLongPressHandling(clothItem: ClothItem) {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "After SelectionManager.handleLongPress:")
+            Log.d(TAG, "  - Current selection mode: $isSelectionMode")
+            Log.d(TAG, "  - Current selected items: ${selectedItems.size}")
+            Log.d(TAG, "  - Item ${clothItem.id} selected: ${isItemSelected(clothItem.id)}")
+        }
+    }
+    
+    /**
+     * 長押し終了ログ出力
+     */
+    private fun logLongPressEnd() {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "=== Long Press Callback End ===")
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ClothItemViewHolder {
