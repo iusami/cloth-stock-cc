@@ -214,6 +214,66 @@
 
                 </LinearLayout>
 
+                <!-- Search No Results Empty state layout -->
+                <LinearLayout
+                    android:id="@+id/layoutSearchEmptyState"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="32dp"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/toolbarFilter"
+                    tools:visibility="gone">
+
+                    <!-- Search empty state icon -->
+                    <ImageView
+                        android:id="@+id/imageSearchEmptyIcon"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:layout_marginBottom="24dp"
+                        android:alpha="0.6"
+                        android:contentDescription="@string/search_empty_icon"
+                        android:src="@drawable/ic_search_24"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Search empty state message -->
+                    <TextView
+                        android:id="@+id/textSearchEmptyMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:gravity="center"
+                        android:text="@string/search_no_results"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Search empty state description -->
+                    <TextView
+                        android:id="@+id/textSearchEmptyDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center"
+                        android:text="@string/search_empty_description"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Clear search button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonClearSearch"
+                        style="@style/Widget.Material3.Button.Icon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/button_clear_search"
+                        app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                        app:iconGravity="start" />
+
+                </LinearLayout>
+
                 <!-- Loading state overlay -->
                 <FrameLayout
                     android:id="@+id/layoutLoading"

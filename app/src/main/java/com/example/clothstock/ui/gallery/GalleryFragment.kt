@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -19,6 +20,7 @@ import com.example.clothstock.ui.camera.CameraActivity
 import com.example.clothstock.ui.detail.DetailActivity
 import com.example.clothstock.data.model.FilterState
 import com.example.clothstock.util.EmulatorUtils
+import com.example.clothstock.BuildConfig
 import com.google.android.material.snackbar.Snackbar
 import android.util.Log
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -335,11 +337,52 @@ class GalleryFragment : Fragment() {
     }
 
     /**
-     * 空状態アクションの設定
+     * 空状態アクションの設定（初期Empty State + 検索Empty State対応）
      */
     private fun setupEmptyStateActions() {
+        // 初期Empty State: 「写真を撮る」ボタン
         binding.buttonTakePhoto.setOnClickListener {
             launchCameraActivity()
+        }
+        
+        // 検索Empty State: 「検索をクリア」ボタン
+        binding.buttonClearSearch?.setOnClickListener {
+            clearSearchAndReturnToInitial()
+        }
+    }
+
+    /**
+     * 検索をクリアして初期状態に戻る
+     */
+    private fun clearSearchAndReturnToInitial() {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "clearSearchAndReturnToInitial: Clearing search and returning to initial state")
+        }
+        
+        try {
+            // ViewModelの検索をクリア
+            viewModel.clearSearch()
+            
+            // SearchViewをクリア（UI状態の同期）
+            binding.searchView?.let { searchView ->
+                if (!searchView.query.isNullOrBlank()) {
+                    searchView.setQuery("", false)
+                    searchView.clearFocus()
+                    Log.d(TAG, "SearchView cleared and focus removed")
+                }
+            }
+            
+            // 適切なEmpty Stateを表示（初期状態になるはず）
+            showAppropriateEmptyState(true, true)
+            
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Search cleared successfully, showing initial empty state")
+            }
+            
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "IllegalStateException while clearing search", e)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "RuntimeException while clearing search", e)
         }
     }
 
@@ -1225,9 +1268,152 @@ class GalleryFragment : Fragment() {
         }
     }
 
+    // ===== Empty State制御ロジック（検索結果対応版） =====
 
     /**
-     * 状態変更アニメーション（空状態⇔データ表示）
+     * Empty State種別を判定
+     * 
+     * @return EmptyStateType.INITIAL: 初期状態（写真が全くない）
+     *         EmptyStateType.SEARCH_NO_RESULTS: 検索結果0件
+     */
+    private fun determineEmptyStateType(): EmptyStateType {
+        val currentSearchText = viewModel.currentSearchText.value?.trim() ?: ""
+        
+        return if (currentSearchText.isNotBlank()) {
+            EmptyStateType.SEARCH_NO_RESULTS
+        } else {
+            EmptyStateType.INITIAL
+        }
+    }
+
+    /**
+     * Empty State種別の定義
+     */
+    private enum class EmptyStateType {
+        INITIAL,           // 初期状態（写真が全くない）
+        SEARCH_NO_RESULTS  // 検索結果0件
+    }
+
+    /**
+     * 適切なEmpty Stateを表示（種別判定対応版）
+     * 
+     * @param show Empty Stateを表示するかどうか
+     * @param animated アニメーション付きかどうか
+     */
+    private fun showAppropriateEmptyState(show: Boolean, animated: Boolean = true) {
+        if (!show) {
+            hideAllEmptyStates(animated)
+            return
+        }
+        
+        val emptyStateType = determineEmptyStateType()
+        
+        when (emptyStateType) {
+            EmptyStateType.INITIAL -> {
+                showInitialEmptyState(animated)
+                hideSearchEmptyState(animated)
+            }
+            EmptyStateType.SEARCH_NO_RESULTS -> {
+                showSearchEmptyState(animated)
+                hideInitialEmptyState(animated)
+            }
+        }
+        
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Showing appropriate empty state: $emptyStateType, animated: $animated")
+        }
+    }
+
+    /**
+     * 初期Empty Stateを表示
+     */
+    private fun showInitialEmptyState(animated: Boolean) {
+        binding.layoutEmptyState?.let { layout ->
+            if (animated) {
+                val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+                fadeIn.duration = 150
+                layout.visibility = View.VISIBLE
+                layout.startAnimation(fadeIn)
+            } else {
+                layout.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    /**
+     * 初期Empty Stateを非表示
+     */
+    private fun hideInitialEmptyState(animated: Boolean) {
+        binding.layoutEmptyState?.let { layout ->
+            if (layout.visibility == View.VISIBLE) {
+                if (animated) {
+                    val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+                    fadeOut.duration = 150
+                    fadeOut.setAnimationListener(object : Animation.AnimationListener {
+                        override fun onAnimationStart(animation: Animation?) {}
+                        override fun onAnimationRepeat(animation: Animation?) {}
+                        override fun onAnimationEnd(animation: Animation?) {
+                            layout.visibility = View.GONE
+                        }
+                    })
+                    layout.startAnimation(fadeOut)
+                } else {
+                    layout.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    /**
+     * 検索Empty Stateを表示
+     */
+    private fun showSearchEmptyState(animated: Boolean) {
+        binding.layoutSearchEmptyState?.let { layout ->
+            if (animated) {
+                val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+                fadeIn.duration = 150
+                layout.visibility = View.VISIBLE
+                layout.startAnimation(fadeIn)
+            } else {
+                layout.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    /**
+     * 検索Empty Stateを非表示
+     */
+    private fun hideSearchEmptyState(animated: Boolean) {
+        binding.layoutSearchEmptyState?.let { layout ->
+            if (layout.visibility == View.VISIBLE) {
+                if (animated) {
+                    val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+                    fadeOut.duration = 150
+                    fadeOut.setAnimationListener(object : Animation.AnimationListener {
+                        override fun onAnimationStart(animation: Animation?) {}
+                        override fun onAnimationRepeat(animation: Animation?) {}
+                        override fun onAnimationEnd(animation: Animation?) {
+                            layout.visibility = View.GONE
+                        }
+                    })
+                    layout.startAnimation(fadeOut)
+                } else {
+                    layout.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    /**
+     * 全てのEmpty Stateを非表示
+     */
+    private fun hideAllEmptyStates(animated: Boolean) {
+        hideInitialEmptyState(animated)
+        hideSearchEmptyState(animated)
+    }
+
+    /**
+     * 状態変更アニメーション（空状態⇔データ表示）（検索結果対応版）
      */
     private fun animateStateChange(isEmpty: Boolean) {
         val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
@@ -1237,16 +1423,14 @@ class GalleryFragment : Fragment() {
         fadeIn.duration = 150
         
         if (isEmpty) {
-            // データ→空状態
+            // データ→空状態（適切なEmpty Stateを表示）
             binding.recyclerViewGallery.startAnimation(fadeOut)
             binding.recyclerViewGallery.visibility = View.GONE
             
-            binding.layoutEmptyState.visibility = View.VISIBLE
-            binding.layoutEmptyState.startAnimation(fadeIn)
+            showAppropriateEmptyState(true, true)
         } else {
-            // 空状態→データ
-            binding.layoutEmptyState.startAnimation(fadeOut)
-            binding.layoutEmptyState.visibility = View.GONE
+            // 空状態→データ（全てのEmpty Stateを非表示）
+            hideAllEmptyStates(true)
             
             binding.recyclerViewGallery.visibility = View.VISIBLE
             binding.recyclerViewGallery.startAnimation(fadeIn)
@@ -1326,17 +1510,15 @@ class GalleryFragment : Fragment() {
             fadeIn.duration = FILTER_TRANSITION_DURATION
             
             if (isEmpty) {
-                // フィルター結果→空状態（スムーズなトランジション）
+                // フィルター結果→空状態（適切なEmpty Stateを表示）
                 binding.recyclerViewGallery.startAnimation(fadeOut)
                 binding.recyclerViewGallery.visibility = View.GONE
                 
-                binding.layoutEmptyState.visibility = View.VISIBLE
-                binding.layoutEmptyState.startAnimation(fadeIn)
-                Log.d(TAG, "animateFilteredStateChange: Filtered data to empty state transition")
+                showAppropriateEmptyState(true, true)
+                Log.d(TAG, "animateFilteredStateChange: Filtered data to appropriate empty state transition")
             } else {
-                // 空状態→フィルター結果（スムーズなトランジション）
-                binding.layoutEmptyState.startAnimation(fadeOut)
-                binding.layoutEmptyState.visibility = View.GONE
+                // 空状態→フィルター結果（全てのEmpty Stateを非表示）
+                hideAllEmptyStates(true)
                 
                 binding.recyclerViewGallery.visibility = View.VISIBLE
                 binding.recyclerViewGallery.startAnimation(fadeIn)

@@ -90,6 +90,9 @@
     <string name="search_hint">アイテムを検索</string>
     <string name="search_clothes_hint">衣服を検索...</string>
     <string name="search_no_results">検索結果が見つかりません</string>
+    <string name="search_empty_description">検索条件を変更してみてください</string>
+    <string name="search_empty_icon">検索結果なしアイコン</string>
+    <string name="button_clear_search">検索をクリア</string>
     <string name="filter_active_indicator">フィルター適用中</string>
     
     <!-- アクセシビリティ文字列 -->
