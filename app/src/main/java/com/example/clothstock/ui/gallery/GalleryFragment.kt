@@ -980,6 +980,21 @@ class GalleryFragment : Fragment() {
             animateFilterLoadingState(shouldShowFullLoading)
         }
 
+        // RecyclerView表示制御の監視（ギャラリー一瞬表示問題の解決）
+        viewModel.shouldHideRecyclerView.observe(viewLifecycleOwner) { shouldHide ->
+            Log.d(TAG, "shouldHideRecyclerView observer: shouldHide = $shouldHide")
+            
+            if (shouldHide) {
+                // 検索中や結果なし時はRecyclerViewを非表示
+                binding.recyclerViewGallery.visibility = View.GONE
+                Log.d(TAG, "RecyclerView hidden to prevent gallery flicker")
+            } else {
+                // 検索結果がある場合はRecyclerViewを表示
+                binding.recyclerViewGallery.visibility = View.VISIBLE
+                Log.d(TAG, "RecyclerView shown for search results")
+            }
+        }
+
         // エラーメッセージの監視（包括的エラーフィードバック強化版）
         viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
             if (errorMessage != null) {
@@ -1498,31 +1513,41 @@ class GalleryFragment : Fragment() {
 
     /**
      * Task9: フィルター結果の状態変更アニメーション（空状態⇔フィルター結果表示）
+     * 検索時のギャラリー一瞬表示問題を修正: 検索結果なし時はアニメーションをスキップ
      */
     private fun animateFilteredStateChange(isEmpty: Boolean) {
         Log.d(TAG, "animateFilteredStateChange: isEmpty = $isEmpty (filtered state)")
         
         try {
-            val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
-            val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
-            
-            fadeOut.duration = FILTER_TRANSITION_DURATION
-            fadeIn.duration = FILTER_TRANSITION_DURATION
-            
             if (isEmpty) {
-                // フィルター結果→空状態（適切なEmpty Stateを表示）
-                binding.recyclerViewGallery.startAnimation(fadeOut)
-                binding.recyclerViewGallery.visibility = View.GONE
+                // 検索コンテキストを判定してアニメーション制御
+                val emptyStateType = determineEmptyStateType()
+                val isSearchContext = emptyStateType == EmptyStateType.SEARCH_NO_RESULTS
                 
-                showAppropriateEmptyState(true, true)
-                Log.d(TAG, "animateFilteredStateChange: Filtered data to appropriate empty state transition")
+                if (isSearchContext) {
+                    // 検索結果なし: アニメーションなしで即座に非表示（ちらつき防止）
+                    binding.recyclerViewGallery.visibility = View.GONE
+                    showAppropriateEmptyState(true, true)
+                    Log.d(TAG, "animateFilteredStateChange: Search no-results - immediate hide (no flicker)")
+                } else {
+                    // フィルター結果→空状態: アニメーション付きで表示
+                    val fadeOut = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_out)
+                    fadeOut.duration = FILTER_TRANSITION_DURATION
+                    
+                    binding.recyclerViewGallery.startAnimation(fadeOut)
+                    binding.recyclerViewGallery.visibility = View.GONE
+                    showAppropriateEmptyState(true, true)
+                    Log.d(TAG, "animateFilteredStateChange: Filter to empty state with animation")
+                }
             } else {
-                // 空状態→フィルター結果（全てのEmpty Stateを非表示）
-                hideAllEmptyStates(true)
+                // 空状態→結果表示: アニメーション付きで表示
+                val fadeIn = AnimationUtils.loadAnimation(requireContext(), android.R.anim.fade_in)
+                fadeIn.duration = FILTER_TRANSITION_DURATION
                 
+                hideAllEmptyStates(true)
                 binding.recyclerViewGallery.visibility = View.VISIBLE
                 binding.recyclerViewGallery.startAnimation(fadeIn)
-                Log.d(TAG, "animateFilteredStateChange: Empty state to filtered data transition")
+                Log.d(TAG, "animateFilteredStateChange: Empty state to results with animation")
             }
             
         } catch (e: IllegalStateException) {
