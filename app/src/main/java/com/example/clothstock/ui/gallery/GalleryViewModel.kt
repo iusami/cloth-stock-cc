@@ -83,6 +83,10 @@ class GalleryViewModel(
     private val _currentSearchText = MutableLiveData<String>()
     val currentSearchText: LiveData<String> = _currentSearchText
 
+    // 検索中のRecyclerView表示制御用（ギャラリー一瞬表示問題の解決）
+    private val _shouldHideRecyclerView = MutableLiveData<Boolean>()
+    val shouldHideRecyclerView: LiveData<Boolean> = _shouldHideRecyclerView
+
     // 検索デバウンシング用
     private var searchJob: Job? = null
     private val searchDelayMs = SEARCH_DEBOUNCE_DELAY_MS
@@ -158,6 +162,9 @@ class GalleryViewModel(
         _selectionState.value = SelectionState()
         _isDeletionInProgress.value = false
         _deletionResult.value = null
+
+        // RecyclerView表示制御の初期化（通常時は表示）
+        _shouldHideRecyclerView.value = false
 
         // 初期データ読み込み
         Log.d(TAG, "Starting initial data load")
@@ -486,7 +493,12 @@ class GalleryViewModel(
      * 検索を実行（デバウンシング付き）
      */
     fun performSearch(searchText: String) {
+        // ちらつき防止: 検索開始時に即座にローディング状態を設定
+        _isLoading.value = true
         _currentSearchText.value = searchText
+        
+        // ギャラリー一瞬表示問題の解決: 検索中はRecyclerViewを非表示
+        _shouldHideRecyclerView.value = true
         
         // 既存の検索ジョブをキャンセル
         searchJob?.cancel()
@@ -506,6 +518,8 @@ class GalleryViewModel(
         searchJob?.cancel()
         _currentSearchText.value = ""
         filterManager.updateSearchText("")
+        // 検索クリア時はRecyclerViewを表示可能にする
+        _shouldHideRecyclerView.value = false
         applyCurrentFiltersAndSearch()
     }
 
@@ -543,9 +557,14 @@ class GalleryViewModel(
                 _clothItems.value = items
                 _isEmpty.value = items.isEmpty()
                 
+                // 検索完了後のRecyclerView表示制御: 結果があるときのみ表示
+                _shouldHideRecyclerView.value = items.isEmpty()
+                
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "フィルタリング・検索エラーが発生しました"
                 Log.e(TAG, "Filter/search error", e)
+                // エラー時もRecyclerViewは非表示
+                _shouldHideRecyclerView.value = true
             } finally {
                 _isLoading.value = false
             }
