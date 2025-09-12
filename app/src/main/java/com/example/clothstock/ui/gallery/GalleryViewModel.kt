@@ -486,6 +486,8 @@ class GalleryViewModel(
      * 検索を実行（デバウンシング付き）
      */
     fun performSearch(searchText: String) {
+        // ちらつき防止: 検索開始時に即座にローディング状態を設定
+        _isLoading.value = true
         _currentSearchText.value = searchText
         
         // 既存の検索ジョブをキャンセル
